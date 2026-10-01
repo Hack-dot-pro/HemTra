@@ -14,7 +14,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P0-T2** Khởi tạo Vite + React 19 + TS; chạy `npm view` chốt phiên bản (design §2.1), ghi vào `design.md`/state; Tailwind v4 qua `@tailwindcss/vite`
 - [x] **P0-T3** ESLint + Prettier + `tsc --noEmit` + scripts `lint`, `typecheck`, `test`, `test:e2e`, `build`
 - [x] **P0-T4** Cài Vitest + RTL + MSW + Playwright; viết 1 test mẫu chạy xanh
-- [ ] **P0-T5** Copy tài nguyên vào `src/assets/`; nén ảnh nền (WebP + PNG dự phòng), tạo `THIRD_PARTY.md`
+- [x] **P0-T5** Copy tài nguyên vào `src/assets/`; nén ảnh nền (WebP + PNG dự phòng), tạo `THIRD_PARTY.md`
 - [ ] **P0-T6** Supabase CLI: `supabase init`, chạy được `supabase start` (local)
 - [ ] **P0-T7** Sinh icon PWA từ `Favicon.png` (192, 512, maskable, apple-touch 180)
 - **Gate:** QC ☐ · SEC ☐
