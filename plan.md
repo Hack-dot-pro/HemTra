@@ -12,7 +12,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 📖 `AGENT.md`, `design.md §2, §10`
 - [x] **P0-T1** Tạo repo, `git init`, `.gitignore` (có `.env*`, `node_modules`, `dist`), `.env.example`
 - [x] **P0-T2** Khởi tạo Vite + React 19 + TS; chạy `npm view` chốt phiên bản (design §2.1), ghi vào `design.md`/state; Tailwind v4 qua `@tailwindcss/vite`
-- [ ] **P0-T3** ESLint + Prettier + `tsc --noEmit` + scripts `lint`, `typecheck`, `test`, `test:e2e`, `build`
+- [x] **P0-T3** ESLint + Prettier + `tsc --noEmit` + scripts `lint`, `typecheck`, `test`, `test:e2e`, `build`
 - [ ] **P0-T4** Cài Vitest + RTL + MSW + Playwright; viết 1 test mẫu chạy xanh
 - [ ] **P0-T5** Copy tài nguyên vào `src/assets/`; nén ảnh nền (WebP + PNG dự phòng), tạo `THIRD_PARTY.md`
 - [ ] **P0-T6** Supabase CLI: `supabase init`, chạy được `supabase start` (local)

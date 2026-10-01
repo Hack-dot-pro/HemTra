@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T21:51:38+07:00",
+    "last_updated": "2026-10-01T21:52:40+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P0",
-    "task": "P0-T3",
+    "task": "P0-T4",
     "step": "CODE",
-    "note": "P0-T2 done. Sang P0-T3: ESLint+Prettier+tsc+scripts."
+    "note": "P0-T3 done. Sang P0-T4: Vitest+RTL+MSW+Playwright+test mau."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -155,6 +155,17 @@
       "skills_read": [
         "frontend-stack/skill.md"
       ]
+    },
+    {
+      "at": "2026-10-01T21:52:40+07:00",
+      "agent": "main-coding",
+      "event": "P0-T3 done",
+      "cmd": "npm run lint && npm run typecheck",
+      "output": "lint exit 0; typecheck exit 0",
+      "skills_read": [
+        "frontend-stack/skill.md",
+        "testing/skill.md"
+      ]
     }
   ],
   "phases": {
@@ -168,7 +179,7 @@
       "tasks": {
         "P0-T1": "done",
         "P0-T2": "done",
-        "P0-T3": "pending",
+        "P0-T3": "done",
         "P0-T4": "pending",
         "P0-T5": "pending",
         "P0-T6": "pending",
@@ -395,6 +406,11 @@
       "at": "2026-10-01T21:51:38+07:00",
       "agent": "main-coding",
       "event": "DONE P0-T2. Versions locked, design.md §2.1 updated."
+    },
+    {
+      "at": "2026-10-01T21:52:40+07:00",
+      "agent": "main-coding",
+      "event": "DONE P0-T3."
     }
   ]
 }
