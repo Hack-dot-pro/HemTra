@@ -16,7 +16,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P0-T4** Cài Vitest + RTL + MSW + Playwright; viết 1 test mẫu chạy xanh
 - [x] **P0-T5** Copy tài nguyên vào `src/assets/`; nén ảnh nền (WebP + PNG dự phòng), tạo `THIRD_PARTY.md`
 - [ ] **P0-T6** Supabase CLI: `supabase init`, chạy được `supabase start` (local)
-- [ ] **P0-T7** Sinh icon PWA từ `Favicon.png` (192, 512, maskable, apple-touch 180)
+- [x] **P0-T7** Sinh icon PWA từ `Favicon.png` (192, 512, maskable, apple-touch 180)
 - **Gate:** QC ☐ · SEC ☐
 
 ## P1 — Backend: database & RLS
