@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T22:36:21+07:00",
+    "last_updated": "2026-10-01T23:05:00+07:00",
     "last_agent": "qc-test"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T4",
+    "task": "P1-T6",
     "step": "CODE",
-    "note": "P1-T3 done. Sang P1-T4: trigger menu_version + realtime app_meta."
+    "note": "P1-T4,T5 done (SEC tasks xong: menu_version+realtime, next_bill_code/session_fresh/is_admin). Sang P1-T6: RLS policies toan bang."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -308,8 +308,8 @@
         "P1-T1": "done",
         "P1-T2": "done",
         "P1-T3": "done",
-        "P1-T4": "pending",
-        "P1-T5": "pending",
+        "P1-T4": "done",
+        "P1-T5": "done",
         "P1-T6": "pending",
         "P1-T7": "pending",
         "P1-T8": "pending",
@@ -577,6 +577,15 @@
       "at": "2026-10-01T22:36:21+07:00",
       "agent": "main-coding",
       "event": "DONE P1-T3."
+    },
+    {
+      "ts": "2026-10-01T23:05:00+07:00",
+      "event": "DONE P1-T4 (menu_version trigger 3 bang SECURITY DEFINER, realtime app_meta, test 1->2->3, pg_proc prosecdef true)"
+    },
+    {
+      "ts": "2026-10-01T23:05:10+07:00",
+      "event": "DONE P1-T5 (next_bill_code HT-261001-0001..0003, revoke 42501, session_fresh fresh=true/expired=false/no_jwt=false; is_admin test o T10)"
     }
-  ]
+  ],
+  "tasks": {}
 }
