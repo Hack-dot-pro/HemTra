@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T23:45:00+07:00",
+    "last_updated": "2026-10-01T23:55:00+07:00",
     "last_agent": "qc-test"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T8",
+    "task": "P1-T9",
     "step": "CODE",
-    "note": "P1-T7 done (create_bill 12 test PASS). Sang P1-T8: storage bucket bills."
+    "note": "P1-T8 done (storage 9 test PASS, fixture user admin-created). Sang P1-T9: seed 7 nhom."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -312,7 +312,7 @@
         "P1-T5": "done",
         "P1-T6": "done",
         "P1-T7": "done",
-        "P1-T8": "pending",
+        "P1-T8": "done",
         "P1-T9": "pending",
         "P1-T10": "pending"
       }
@@ -593,6 +593,10 @@
     {
       "ts": "2026-10-01T23:45:00+07:00",
       "event": "DONE P1-T7 (create_bill: 12 test PASS - online total 53000, idempotent, menu_version_changed/required, product_unavailable, topping_not_available, unauthorized, anon 42501, rate_limit hit lan 11, offline drift=true backdate -2d, offline_code_invalid)"
+    },
+    {
+      "ts": "2026-10-01T23:55:00+07:00",
+      "event": "DONE P1-T8 (bucket bills private 300KB/png; test: upload OK 200, sai duong dan 400 RLS, mime 415, anon 400, overwrite 400, delete 400, signed URL 200, anon GET 400)"
     }
   ],
   "tasks": {}
