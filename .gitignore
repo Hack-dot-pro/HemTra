@@ -1,0 +1,14 @@
+# Secrets - khong commit len git
+.env
+.env.local
+.env.*.local
+
+# Deps & build
+node_modules/
+dist/
+
+# Supabase CLI
+.branches/
+.temp/
+supabase/.branches/
+supabase/.temp/
