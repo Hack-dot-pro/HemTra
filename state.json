@@ -1,0 +1,400 @@
+{
+  "_readme": "Bộ nhớ đệm cho agent. Đọc ngay sau AGENT.md. Chỉ NỐI THÊM vào log; không xóa lịch sử. Schema cố định, xem AGENT.md §8 và loop.md §7.",
+  "project": {
+    "name": "Hem Tra",
+    "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
+    "repo_initialized": false,
+    "created": "2026-10-01",
+    "last_updated": "2026-10-01T21:51:38+07:00",
+    "last_agent": "main-coding"
+  },
+  "pointer": {
+    "phase": "P0",
+    "task": "P0-T3",
+    "step": "CODE",
+    "note": "P0-T2 done. Sang P0-T3: ESLint+Prettier+tsc+scripts."
+  },
+  "limits": {
+    "max_qc_rounds": 3,
+    "max_sec_rounds": 3,
+    "max_total_rounds": 5,
+    "max_same_signature": 2,
+    "max_fix_attempts_per_issue": 2,
+    "max_no_progress_actions": 3
+  },
+  "loop": {
+    "qc_round": 0,
+    "sec_round": 0,
+    "failure_signatures": [],
+    "last_report": null
+  },
+  "decisions": {
+    "hosting": "Cloudflare Pages (static) - không dùng Workers",
+    "backend": "Supabase (Auth, Postgres+RLS, Storage, Realtime, Edge Functions, pg_cron)",
+    "otp": "Google OAuth + Email OTP 6 số qua SMTP riêng",
+    "staff_login": "username + password, email nội bộ <username>@hem.local",
+    "session_max_days": 7,
+    "bill_retention_days": 15,
+    "bill_code_format": "HT-YYMMDD-0001 (offline: HT-YYMMDD-OFF-xxxx)",
+    "bill_width_px": 720,
+    "facebook_url": "https://www.facebook.com/linh.kh.142",
+    "phones": "0338525677 (Vi) - 0362335733 (Linh)",
+    "address": "Phường Long Nguyên, Thành Phố Hồ Chí Minh",
+    "greeting": "Cảm ơn khách hàng thân yêu của Hẻm",
+    "payment_info_on_bill": false,
+    "font": "Calibri, Carlito, sans-serif",
+    "charts": "ApexCharts (chart_1 = line zoom/pan/brush; chart_2 = radialBar)",
+    "tests": "Vitest + RTL + MSW + Playwright + supabase test db",
+    "offline": "Có - menu cache IndexedDB theo menu_version + outbox bill idempotent",
+    "versions_locked": {
+      "react": "19.3.0",
+      "react-dom": "19.3.0",
+      "vite": "8.3.2",
+      "tailwindcss": "4.3.3",
+      "@tailwindcss/vite": "4.3.3",
+      "@vitejs/plugin-react": "5.2.0",
+      "typescript": "5.9.3",
+      "@supabase/supabase-js": "2.117.2",
+      "@types/react": "19.3.0",
+      "@types/react-dom": "19.3.0",
+      "react-apexcharts": "2.1.1 (chot P8)",
+      "vite-plugin-pwa": "1.3.0 (chot P4)"
+    }
+  },
+  "open_questions": [
+    {
+      "id": "Q-001",
+      "phase": "P3",
+      "text": "Email Google dùng làm BOOTSTRAP_ADMIN_EMAIL?",
+      "status": "open"
+    },
+    {
+      "id": "Q-002",
+      "phase": "P3",
+      "text": "Thông tin SMTP gửi OTP (Gmail App Password hoặc Resend)?",
+      "status": "open"
+    },
+    {
+      "id": "Q-003",
+      "phase": "P9",
+      "text": "Staff có được thêm user mới không? (giả định hiện tại: có, chỉ role staff)",
+      "status": "assumed"
+    },
+    {
+      "id": "Q-004",
+      "phase": "P6",
+      "text": "Chốt bộ icon đồ uống và icon còn thiếu (trân châu, matcha...)",
+      "status": "open"
+    }
+  ],
+  "blockers": [],
+  "backlog": [],
+  "off_plan_actions": [
+    {
+      "at": "2026-10-01T21:37:38+07:00",
+      "agent": "assistant-offplan",
+      "event": "Cai supabase/agent-skills (2 skills) + tao .opencode/skills/backend/skill.md va security/skill.md adapt HemTra. Co uy quyen truc tiep tu user (AGENT.md: skills chi user duoc sua)."
+    },
+    {
+      "at": "2026-10-01T21:45:47+07:00",
+      "agent": "assistant-offplan",
+      "event": "Viet them 8 skill.md (.opencode/skills/frontend-stack, uiux, auth, pwa-offline, pos-bill, dashboard, testing, release) bao phu P0-P11 + cap nhat AGENT.md (§2 map, §5 skills_read, §12 Skill Compliance Protocol). Co uy quyen truc tiep tu user."
+    }
+  ],
+  "evidence": [
+    {
+      "at": "2026-10-01T21:37:38+07:00",
+      "agent": "assistant-offplan",
+      "event": "npx skills list: 2 skills installed (supabase, supabase-postgres-best-practices); supabase CLI 2.119.0; grep secret trong .opencode/skills + .agents/skills: 0 match."
+    },
+    {
+      "at": "2026-10-01T21:45:47+07:00",
+      "agent": "assistant-offplan",
+      "event": "skills_read",
+      "skills": [
+        "plan.md",
+        "design.md",
+        "AGENT.md",
+        "loop.md",
+        "subagent.md",
+        "backend/skill.md",
+        "security/skill.md"
+      ],
+      "note": "Doc toan bo truoc khi viet 8 skills + sua AGENT.md"
+    },
+    {
+      "at": "2026-10-01T21:45:47+07:00",
+      "agent": "assistant-offplan",
+      "event": "Verify: 10 skills OK; grep secret trong .opencode/skills: 0 match; AGENT.md 138 dong."
+    },
+    {
+      "at": "2026-10-01T21:48:15+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        "frontend-stack/skill.md",
+        "testing/skill.md",
+        "security/skill.md"
+      ],
+      "note": "P0: doc 3 skills bat buoc/tham khao truoc khi code."
+    },
+    {
+      "at": "2026-10-01T21:50:06+07:00",
+      "agent": "main-coding",
+      "event": "P0-T1 done",
+      "cmd": "git commit -m feat(P0-T1)",
+      "output": "8570dea feat(P0-T1): gitignore + .env.example; git check-ignore .env -> ignored OK",
+      "note": "lint/test N/A: chua co package.json (lap o P0-T2)."
+    },
+    {
+      "at": "2026-10-01T21:51:38+07:00",
+      "agent": "main-coding",
+      "event": "P0-T2 done",
+      "cmd": "npm install && npm run build",
+      "output": "found 0 vulnerabilities; tsc 0 loi; vite build 514ms, dist/index.html 0.52kB",
+      "skills_read": [
+        "frontend-stack/skill.md"
+      ]
+    }
+  ],
+  "phases": {
+    "P0": {
+      "title": "Khởi tạo dự án",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P0-T1": "done",
+        "P0-T2": "done",
+        "P0-T3": "pending",
+        "P0-T4": "pending",
+        "P0-T5": "pending",
+        "P0-T6": "pending",
+        "P0-T7": "pending"
+      }
+    },
+    "P1": {
+      "title": "Backend: database & RLS",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P1-T1": "pending",
+        "P1-T2": "pending",
+        "P1-T3": "pending",
+        "P1-T4": "pending",
+        "P1-T5": "pending",
+        "P1-T6": "pending",
+        "P1-T7": "pending",
+        "P1-T8": "pending",
+        "P1-T9": "pending",
+        "P1-T10": "pending"
+      }
+    },
+    "P2": {
+      "title": "UI/UX nền tảng & login",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P2-T1": "pending",
+        "P2-T2": "pending",
+        "P2-T3": "pending",
+        "P2-T4": "pending",
+        "P2-T5": "pending",
+        "P2-T6": "pending",
+        "P2-T7": "pending"
+      }
+    },
+    "P3": {
+      "title": "Xác thực, bootstrap admin, phiên",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P3-T0": "pending",
+        "P3-T1": "pending",
+        "P3-T2": "pending",
+        "P3-T3": "pending",
+        "P3-T4": "pending",
+        "P3-T5": "pending",
+        "P3-T6": "pending",
+        "P3-T7": "pending",
+        "P3-T8": "pending"
+      }
+    },
+    "P4": {
+      "title": "PWA, offline, chống kẹt cache",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P4-T1": "pending",
+        "P4-T2": "pending",
+        "P4-T3": "pending",
+        "P4-T4": "pending",
+        "P4-T5": "pending",
+        "P4-T6": "pending",
+        "P4-T7": "pending",
+        "P4-T8": "pending",
+        "P4-T9": "pending"
+      }
+    },
+    "P5": {
+      "title": "Menu Sản phẩm",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P5-T1": "pending",
+        "P5-T2": "pending",
+        "P5-T3": "pending",
+        "P5-T4": "pending",
+        "P5-T5": "pending",
+        "P5-T6": "pending"
+      }
+    },
+    "P6": {
+      "title": "Menu Thanh toán & Bill PNG",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P6-T0": "pending",
+        "P6-T1": "pending",
+        "P6-T2": "pending",
+        "P6-T3": "pending",
+        "P6-T4": "pending",
+        "P6-T5": "pending",
+        "P6-T6": "pending",
+        "P6-T7": "pending",
+        "P6-T8": "pending",
+        "P6-T9": "pending"
+      }
+    },
+    "P7": {
+      "title": "Menu Quản lý bill & dọn 15 ngày",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P7-T1": "pending",
+        "P7-T2": "pending",
+        "P7-T3": "pending",
+        "P7-T4": "pending",
+        "P7-T5": "pending"
+      }
+    },
+    "P8": {
+      "title": "Dashboard & báo cáo",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P8-T1": "pending",
+        "P8-T2": "pending",
+        "P8-T3": "pending",
+        "P8-T4": "pending",
+        "P8-T5": "pending",
+        "P8-T6": "pending",
+        "P8-T7": "pending"
+      }
+    },
+    "P9": {
+      "title": "Menu Quản lý user",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P9-T1": "pending",
+        "P9-T2": "pending",
+        "P9-T3": "pending",
+        "P9-T4": "pending",
+        "P9-T5": "pending"
+      }
+    },
+    "P10": {
+      "title": "Củng cố bảo mật toàn hệ thống",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P10-T1": "pending",
+        "P10-T2": "pending",
+        "P10-T3": "pending",
+        "P10-T4": "pending",
+        "P10-T5": "pending"
+      }
+    },
+    "P11": {
+      "title": "E2E toàn luồng & triển khai",
+      "status": "pending",
+      "gates": {
+        "qc": null,
+        "sec": null
+      },
+      "tasks": {
+        "P11-T1": "pending",
+        "P11-T2": "pending",
+        "P11-T3": "pending",
+        "P11-T4": "pending",
+        "P11-T5": "pending",
+        "P11-T6": "pending"
+      }
+    }
+  },
+  "log": [
+    {
+      "at": "2026-10-01T00:00:00+07:00",
+      "agent": "bootstrap-docs",
+      "event": "Khởi tạo bộ tài liệu: AGENT, design, plan, loop, subagent, skills, state."
+    },
+    {
+      "at": "2026-10-01T21:37:38+07:00",
+      "agent": "assistant-offplan",
+      "event": "Cai + tinh chinh Supabase skills cho HemTra (off-plan, theo yeu cau user)."
+    },
+    {
+      "at": "2026-10-01T21:45:47+07:00",
+      "agent": "assistant-offplan",
+      "event": "Hoan tat bo 10 skills + hien phap §12 (off-plan, theo yeu cau user)."
+    },
+    {
+      "at": "2026-10-01T21:48:15+07:00",
+      "agent": "main-coding",
+      "event": "START P0-T1."
+    },
+    {
+      "at": "2026-10-01T21:50:06+07:00",
+      "agent": "main-coding",
+      "event": "DONE P0-T1."
+    },
+    {
+      "at": "2026-10-01T21:51:38+07:00",
+      "agent": "main-coding",
+      "event": "DONE P0-T2. Versions locked, design.md §2.1 updated."
+    }
+  ]
+}
