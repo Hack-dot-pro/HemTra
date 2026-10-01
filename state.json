@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T23:55:00+07:00",
+    "last_updated": "2026-10-02T00:00:00+07:00",
     "last_agent": "qc-test"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T9",
+    "task": "P1-T10",
     "step": "CODE",
-    "note": "P1-T8 done (storage 9 test PASS, fixture user admin-created). Sang P1-T9: seed 7 nhom."
+    "note": "P1-T9 done (seed 7 nhom, menu_version reset 1). Sang P1-T10: test SQL tong hop."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -313,7 +313,7 @@
         "P1-T6": "done",
         "P1-T7": "done",
         "P1-T8": "done",
-        "P1-T9": "pending",
+        "P1-T9": "done",
         "P1-T10": "pending"
       }
     },
@@ -597,6 +597,10 @@
     {
       "ts": "2026-10-01T23:55:00+07:00",
       "event": "DONE P1-T8 (bucket bills private 300KB/png; test: upload OK 200, sai duong dan 400 RLS, mime 415, anon 400, overwrite 400, delete 400, signed URL 200, anon GET 400)"
+    },
+    {
+      "ts": "2026-10-02T00:00:00+07:00",
+      "event": "DONE P1-T9 (seed 7 nhom that, menu_version reset 1; SP/topping mau bo qua theo design 'chi dev' — khong co dev env)"
     }
   ],
   "tasks": {}
