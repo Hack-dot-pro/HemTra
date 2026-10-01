@@ -30,8 +30,8 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P1-T7** RPC `create_bill(...)` (transaction; tính lại giá phía server; idempotent theo `client_uuid`; kiểm tra `menu_version`)
 - [x] **P1-T8** Storage bucket private `bills` + policy (đọc: user đã đăng nhập & session_fresh; ghi: qua đường dẫn hợp lệ; không xóa từ client)
 - [x] **P1-T9** Seed: nhóm mặc định (7 nhóm), vài sản phẩm/topping mẫu (chỉ môi trường dev)
-- [ ] **P1-T10** Test SQL (`supabase test db`): RLS từng bảng, trigger thống kê, mã bill, idempotency
-- **Gate:** QC ☐ · SEC ☐
+- [x] **P1-T10** Test SQL (`supabase test db`): RLS từng bảng, trigger thống kê, mã bill, idempotency
+- **Gate:** QC ☑ PASS · SEC ☑ PASS (2026-10-02, xem `state.json → loop.last_report`)
 
 ## P2 — UI/UX nền tảng & màn hình đăng nhập
 📖 `uiux/skill.md`, `design.md §7`

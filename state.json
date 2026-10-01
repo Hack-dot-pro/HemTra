@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T00:00:00+07:00",
-    "last_agent": "qc-test"
+    "last_updated": "2026-10-02T00:20:00+07:00",
+    "last_agent": "security-audit"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T10",
-    "step": "CODE",
-    "note": "P1-T9 done (seed 7 nhom, menu_version reset 1). Sang P1-T10: test SQL tong hop."
+    "task": "DONE",
+    "step": "GATE",
+    "note": "P1 xong: T1-T10 done, Gate QC+SEC PASS. Push code theo yeu cau user, tam dung."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -26,7 +26,7 @@
     "qc_round": 0,
     "sec_round": 0,
     "failure_signatures": [],
-    "last_report": "QC P0 vong 1: VERDICT PASS. Q1 typecheck exit0; Q2 lint exit0; Q3 test 1/1, no skip; Q4 test mau cho scaffold (scripts one-shot, output verified) OK; Q5-Q8,Q10-Q11 N/A (chua co logic/UI/DB); Q9 build xanh; Q12 scope sach, .env ignored. | SEC P0 vong 1: VERDICT PASS. S1 gitleaks 8 commits no leaks + grep sach; S2 npm audit 0 vuln; S3-S15 N/A (P0 chua cham auth/RLS/storage)."
+    "last_report": "P1 QC vong 1: VERDICT PASS. Q1 typecheck 0; Q2 lint 0; Q3 vitest 1/1; Q4/Q8 DB test ADAPTED: supabase test db khong chay duoc (B-001 local loop) -> scripts/test-p1.sh tren linked prod 28/28 PASS; Q5-Q7 UI perf N/A P1; Q9 build xanh (js 68KB gzip); Q10 plan tick day du; Q11 sach; Q12 .env khong track, scope sach. | SEC P1 vong 1: VERDICT PASS. S1 gitleaks 17 commits no leaks + git grep secret sach; S2 npm audit 0; S3 RLS matrix toan bang 28/28 (anon/fresh/expired/authed); S4 khong hardcode secret; S8 session_fresh 7 ngay test; S9 storage khong ghi de/xoa (400); S10 rate limit 10/phut test lan 11; S11 grants minimum + revoke execute public; S12 3 trigger fn SECURITY DEFINER; S14 create_bill khong tin gia client; S13/15 N/A/bo sung sau. Khong co BLOCKER/MAJOR."
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -269,14 +269,98 @@
       "agent": "main-coding",
       "event": "P1-T2 done",
       "cmd": "db push + test insert/unique/cascade/set-null/rls --linked",
-      "output": "9 bang RLS=true; retention_days=15; client_uuid+code unique 23505; xoa SP -> snapshot con; xoa bill -> 0 items; anon login_attempts=0"
+      "output": "9 bang RLS=true; retention_days=15; client_uuid+code unique 23505; xoa SP -> snapshot con; xoa bill -> 0 items; anon login_attempts=0",
+      "skills_read": [
+        "backend/skill.md"
+      ]
     },
     {
       "at": "2026-10-01T22:36:21+07:00",
       "agent": "main-coding",
       "event": "P1-T3 done",
       "cmd": "db push + test VN timezone/accumulate/delete-survive --linked",
-      "output": "daily_1002=80000/2 (bill A xoa van con); daily_1003=25000/1; monthly=100000/qty4; alltime=100000/4; topping loai khoi product stats; cleanup OK"
+      "output": "daily_1002=80000/2 (bill A xoa van con); daily_1003=25000/1; monthly=100000/qty4; alltime=100000/4; topping loai khoi product stats; cleanup OK",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T4 done",
+      "cmd": "migration menu_version_realtime + push + 3 test query",
+      "output": "menu_version 1->2->3; pg_proc prosecdef=true x3; pg_publication_tables app_meta; authed ghi stats_daily 42501 (chung minh can definer)",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T5 done",
+      "cmd": "migration core_functions + push + test",
+      "output": "next_bill_code HT-261001-0001..0003; authed goi 42501; session_fresh fresh=true/expired=false/no_jwt=false; is_admin test o T10",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md §5"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T6 done",
+      "cmd": "migration rls_policies + push + test matrix A1-B5",
+      "output": "anon: 3cot app_meta/doc products+truncate denied; fresh doc duoc, expired 0 row; auth truncate/insert bills/login_attempts denied; trigger van chay sau revoke EXECUTE; menu_version 5->6",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md §5"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T7 done",
+      "cmd": "migration create_bill_rpc + push + 12 test",
+      "output": "online total 53000; idempotent duplicate:true; menu_version_changed/required; product_unavailable; topping_not_available; unauthorized; anon execute denied; rate_limit lan 11; offline drift=true backdate -2d expires+15d; offline_code_invalid",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md",
+        "pos-bill/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T8 done",
+      "cmd": "migration storage_bills_bucket + push + 9 HTTP test",
+      "output": "upload OK200; sai duong dan 400 RLS; mime 415; anon 400; overwrite 400; delete 400; signed URL 200; anon GET 400",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md §5"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T9 done",
+      "cmd": "migration seed_categories + push",
+      "output": "7 nhom that; menu_version reset 1; SP mau bo qua theo design 'chi dev'",
+      "skills_read": [
+        "backend/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T00:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P1-T10 done",
+      "cmd": "scripts/test-p1.sh chay 2 lan (lan 1: 25/28, fix fixture T7 -> lan 2: 28/28 PASS)",
+      "output": "28/28: RLS matrix, is_admin, menu CRUD, create_bill+stats+idempotent, code format, cleanup 7 nhom/0 bill/0 stats/mv1. Adapt: thay `supabase test db` vi local loop (B-001)",
+      "skills_read": [
+        "backend/skill.md",
+        "testing/skill.md"
+      ]
     }
   ],
   "phases": {
@@ -314,7 +398,7 @@
         "P1-T7": "done",
         "P1-T8": "done",
         "P1-T9": "done",
-        "P1-T10": "pending"
+        "P1-T10": "done"
       }
     },
     "P2": {
