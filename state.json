@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T23:05:00+07:00",
+    "last_updated": "2026-10-01T23:20:00+07:00",
     "last_agent": "qc-test"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T6",
+    "task": "P1-T7",
     "step": "CODE",
-    "note": "P1-T4,T5 done (SEC tasks xong: menu_version+realtime, next_bill_code/session_fresh/is_admin). Sang P1-T6: RLS policies toan bang."
+    "note": "P1-T6 done (RLS + grants min, test A1-B5 PASS). Sang P1-T7: RPC create_bill."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -310,7 +310,7 @@
         "P1-T3": "done",
         "P1-T4": "done",
         "P1-T5": "done",
-        "P1-T6": "pending",
+        "P1-T6": "done",
         "P1-T7": "pending",
         "P1-T8": "pending",
         "P1-T9": "pending",
@@ -585,6 +585,10 @@
     {
       "ts": "2026-10-01T23:05:10+07:00",
       "event": "DONE P1-T5 (next_bill_code HT-261001-0001..0003, revoke 42501, session_fresh fresh=true/expired=false/no_jwt=false; is_admin test o T10)"
+    },
+    {
+      "ts": "2026-10-01T23:20:00+07:00",
+      "event": "DONE P1-T6 (grants min + 10 policy; test: anon chi doc 3cot app_meta, denied products/truncate; fresh doc duoc, expired 0 row; insert bills/truncate denied; trigger van chay sau revoke EXECUTE; menu_version 5->6)"
     }
   ],
   "tasks": {}

@@ -26,7 +26,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P1-T3** Migration thống kê vĩnh viễn: `stats_daily`, `stats_product_monthly`, `stats_product_alltime` + trigger cập nhật khi chèn bill
 - [x] **P1-T4** Trigger tăng `menu_version` khi menu thay đổi; bật Realtime cho `app_meta`
 - [x] **P1-T5** Hàm `next_bill_code()` (reset theo ngày VN, nguyên tử), hàm `session_fresh()` (JWT ≤ 7 ngày), hàm `is_admin()`
-- [ ] **P1-T6** 🔒 RLS + policy cho **mọi** bảng theo bảng quyền (design §4.1)
+- [x] **P1-T6** 🔒 RLS + policy cho **mọi** bảng theo bảng quyền (design §4.1)
 - [ ] **P1-T7** RPC `create_bill(...)` (transaction; tính lại giá phía server; idempotent theo `client_uuid`; kiểm tra `menu_version`)
 - [ ] **P1-T8** Storage bucket private `bills` + policy (đọc: user đã đăng nhập & session_fresh; ghi: qua đường dẫn hợp lệ; không xóa từ client)
 - [ ] **P1-T9** Seed: nhóm mặc định (7 nhóm), vài sản phẩm/topping mẫu (chỉ môi trường dev)
