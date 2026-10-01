@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T22:18:23+07:00",
+    "last_updated": "2026-10-01T22:22:14+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P0",
-    "task": "P0-T6",
-    "step": "CODE",
-    "note": "P0-T5 done. Sang P0-T6: supabase init + start."
+    "task": "GATE",
+    "step": "QC",
+    "note": "P0-T6 done (adapted). Chay Gate P0: QC -> SEC."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -63,7 +63,8 @@
       "@testing-library/react": "16.3.3",
       "msw": "2.15.0",
       "@playwright/test": "1.63.0 (chromium+webkit OK)"
-    }
+    },
+    "p0t6_direction": "User chon 2026-10-01: link truc tiep prod HemTra (tsnrggxczipzqvvpcbld), viet migration local + push len prod. Chap nhan rui ro; giam thieu: migration review ky + backup truoc khi push."
   },
   "open_questions": [
     {
@@ -91,7 +92,16 @@
       "status": "open"
     }
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "id": "B-001",
+      "phase": "P0",
+      "task": "P0-T6",
+      "at": "2026-10-01T22:18:32+07:00",
+      "text": "supabase start that bai: container khong ping/phan giai DNS nhau tren bridge network (ping IP 100% loss). DB Postgres khoi dong OK, chi chet o buoc Initialising schema. Da thu 5 cach (start, debug, -x realtime, test DNS, test IP, kiem tra iptables/nft).",
+      "status": "resolved-link-prod-ok"
+    }
+  ],
   "backlog": [],
   "off_plan_actions": [
     {
@@ -201,6 +211,26 @@
       "skills_read": [
         "frontend-stack/skill.md"
       ]
+    },
+    {
+      "at": "2026-10-01T22:18:32+07:00",
+      "agent": "main-coding",
+      "event": "P0-T6 BLOCKED",
+      "cmd": "supabase start; docker network DNS/IP test",
+      "output": "DB ready OK; Realtime migrate DBConnection timeout; ping container-IP 100% loss; nslookup khong tra loi",
+      "skills_read": [
+        "frontend-stack/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-01T22:22:14+07:00",
+      "agent": "main-coding",
+      "event": "P0-T6 done (ADAPTED)",
+      "cmd": "supabase init && supabase link --project-ref tsnrggxczipzqvvpcbld && supabase db query select current_database(), current_user --linked",
+      "output": "Finished supabase link; postgres/postgres OK. Local start bat kha thi do mang Docker sandbox (B-001); user duyet link prod.",
+      "skills_read": [
+        "frontend-stack/skill.md"
+      ]
     }
   ],
   "phases": {
@@ -217,7 +247,7 @@
         "P0-T3": "done",
         "P0-T4": "done",
         "P0-T5": "done",
-        "P0-T6": "pending",
+        "P0-T6": "done",
         "P0-T7": "done"
       }
     },
@@ -461,6 +491,21 @@
       "at": "2026-10-01T22:18:23+07:00",
       "agent": "main-coding",
       "event": "DONE P0-T7."
+    },
+    {
+      "at": "2026-10-01T22:18:32+07:00",
+      "agent": "main-coding",
+      "event": "BLOCKED P0-T6 (B-001). Dung theo loop.md §6.7, hoi user."
+    },
+    {
+      "at": "2026-10-01T22:19:47+07:00",
+      "agent": "main-coding",
+      "event": "User chon lam thang prod. Can DB password de supabase link."
+    },
+    {
+      "at": "2026-10-01T22:22:14+07:00",
+      "agent": "main-coding",
+      "event": "DONE P0-T6 (adapted: link prod)."
     }
   ]
 }
