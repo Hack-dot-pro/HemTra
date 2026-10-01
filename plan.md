@@ -23,7 +23,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 📖 `backend/skill.md`, `security/skill.md §RLS`
 - [x] **P1-T1** Migration bảng: `profiles`, `app_meta`, `categories`, `products`, `toppings`, `product_toppings`
 - [x] **P1-T2** Migration: `bills`, `bill_items`, `login_attempts`
-- [ ] **P1-T3** Migration thống kê vĩnh viễn: `stats_daily`, `stats_product_monthly`, `stats_product_alltime` + trigger cập nhật khi chèn bill
+- [x] **P1-T3** Migration thống kê vĩnh viễn: `stats_daily`, `stats_product_monthly`, `stats_product_alltime` + trigger cập nhật khi chèn bill
 - [ ] **P1-T4** Trigger tăng `menu_version` khi menu thay đổi; bật Realtime cho `app_meta`
 - [ ] **P1-T5** Hàm `next_bill_code()` (reset theo ngày VN, nguyên tử), hàm `session_fresh()` (JWT ≤ 7 ngày), hàm `is_admin()`
 - [ ] **P1-T6** 🔒 RLS + policy cho **mọi** bảng theo bảng quyền (design §4.1)

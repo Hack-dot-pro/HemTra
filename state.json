@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T22:34:01+07:00",
+    "last_updated": "2026-10-01T22:36:21+07:00",
     "last_agent": "qc-test"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T3",
+    "task": "P1-T4",
     "step": "CODE",
-    "note": "P1-T2 done. Sang P1-T3: stats_* + trigger."
+    "note": "P1-T3 done. Sang P1-T4: trigger menu_version + realtime app_meta."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -270,6 +270,13 @@
       "event": "P1-T2 done",
       "cmd": "db push + test insert/unique/cascade/set-null/rls --linked",
       "output": "9 bang RLS=true; retention_days=15; client_uuid+code unique 23505; xoa SP -> snapshot con; xoa bill -> 0 items; anon login_attempts=0"
+    },
+    {
+      "at": "2026-10-01T22:36:21+07:00",
+      "agent": "main-coding",
+      "event": "P1-T3 done",
+      "cmd": "db push + test VN timezone/accumulate/delete-survive --linked",
+      "output": "daily_1002=80000/2 (bill A xoa van con); daily_1003=25000/1; monthly=100000/qty4; alltime=100000/4; topping loai khoi product stats; cleanup OK"
     }
   ],
   "phases": {
@@ -300,7 +307,7 @@
       "tasks": {
         "P1-T1": "done",
         "P1-T2": "done",
-        "P1-T3": "pending",
+        "P1-T3": "done",
         "P1-T4": "pending",
         "P1-T5": "pending",
         "P1-T6": "pending",
@@ -565,6 +572,11 @@
       "at": "2026-10-01T22:34:01+07:00",
       "agent": "main-coding",
       "event": "DONE P1-T2."
+    },
+    {
+      "at": "2026-10-01T22:36:21+07:00",
+      "agent": "main-coding",
+      "event": "DONE P1-T3."
     }
   ]
 }
