@@ -21,7 +21,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P1 — Backend: database & RLS
 📖 `backend/skill.md`, `security/skill.md §RLS`
-- [ ] **P1-T1** Migration bảng: `profiles`, `app_meta`, `categories`, `products`, `toppings`, `product_toppings`
+- [x] **P1-T1** Migration bảng: `profiles`, `app_meta`, `categories`, `products`, `toppings`, `product_toppings`
 - [ ] **P1-T2** Migration: `bills`, `bill_items`, `login_attempts`
 - [ ] **P1-T3** Migration thống kê vĩnh viễn: `stats_daily`, `stats_product_monthly`, `stats_product_alltime` + trigger cập nhật khi chèn bill
 - [ ] **P1-T4** Trigger tăng `menu_version` khi menu thay đổi; bật Realtime cho `app_meta`

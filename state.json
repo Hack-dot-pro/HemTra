@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-01T22:23:32+07:00",
+    "last_updated": "2026-10-01T22:31:39+07:00",
     "last_agent": "qc-test"
   },
   "pointer": {
     "phase": "P1",
-    "task": "P1-T1",
+    "task": "P1-T2",
     "step": "CODE",
-    "note": "P0 done (QC+SEC PASS). Bat dau P1-T1: migration profiles/app_meta/categories/products/toppings/product_toppings."
+    "note": "P1-T1 done. Sang P1-T2: migration bills, bill_items, login_attempts."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -241,6 +241,28 @@
       "at": "2026-10-01T22:23:32+07:00",
       "agent": "security-audit",
       "event": "SEC REPORT P0 vong 1: PASS (chi tiet trong loop.last_report)"
+    },
+    {
+      "at": "2026-10-01T22:27:54+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        "backend/skill.md",
+        "security/skill.md §5 RLS",
+        "testing/skill.md §4"
+      ],
+      "note": "P1 bat buoc doc truoc khi code."
+    },
+    {
+      "at": "2026-10-01T22:31:39+07:00",
+      "agent": "main-coding",
+      "event": "P1-T1 done",
+      "cmd": "supabase migration new + db push + 6 test query --linked",
+      "output": "6 bang RLS=true; app_meta row(1); price/username/id check chan 23514; anon count=0; updated_at trigger true; migration list khop",
+      "skills_read": [
+        "backend/skill.md",
+        "security/skill.md §5"
+      ]
     }
   ],
   "phases": {
@@ -263,13 +285,13 @@
     },
     "P1": {
       "title": "Backend: database & RLS",
-      "status": "pending",
+      "status": "in_progress",
       "gates": {
         "qc": null,
         "sec": null
       },
       "tasks": {
-        "P1-T1": "pending",
+        "P1-T1": "done",
         "P1-T2": "pending",
         "P1-T3": "pending",
         "P1-T4": "pending",
@@ -521,6 +543,16 @@
       "at": "2026-10-01T22:23:32+07:00",
       "agent": "main-coding",
       "event": "CLOSE P0 (QC+SEC PASS). START P1."
+    },
+    {
+      "at": "2026-10-01T22:27:54+07:00",
+      "agent": "main-coding",
+      "event": "START P1-T1: migration core tables."
+    },
+    {
+      "at": "2026-10-01T22:31:39+07:00",
+      "agent": "main-coding",
+      "event": "DONE P1-T1 (push prod, 6 bang, RLS deny-by-default)."
     }
   ]
 }
