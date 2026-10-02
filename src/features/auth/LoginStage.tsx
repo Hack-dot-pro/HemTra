@@ -10,7 +10,7 @@ import {
   validateLoginForm,
   type LoginFormErrors,
 } from './loginForm'
-import { signIn, type SignInResult } from './signIn'
+import { signIn, type SignInFn } from './signIn'
 import { requestUnlockOtp, verifyUnlockOtp, type UnlockResult } from './loginApi'
 import { IOS_INSTALL_GUIDE } from './install'
 import { useInstallPrompt } from './useInstallPrompt'
@@ -19,7 +19,7 @@ import { useBootstrapStatus } from '../setup/useBootstrapStatus'
 import type { SetupApi } from '../setup/api'
 
 export type LoginStageProps = {
-  onSignIn?: (username: string, password: string) => Promise<SignInResult>
+  onSignIn?: SignInFn
   // DI cho test — mặc định đọc trạng thái bootstrap thật (P3-T3)
   bootstrapApi?: SetupApi
   // DI cho test — mặc định gọi EF auth-login (P3-T4)
@@ -39,6 +39,10 @@ export default function LoginStage({
   const location = useLocation()
   // Đến từ màn thiết lập lần đầu (P3-T3) — hiện lời xác nhận rồi dọn state.
   const setupDone = Boolean((location.state as { setupDone?: boolean } | null)?.setupDone)
+  // Phiên 7 ngày hết hạn bị tự đăng xuất (P3-T5) — hiện gợi ý đăng nhập lại.
+  const sessionExpired = Boolean(
+    (location.state as { sessionExpired?: boolean } | null)?.sessionExpired,
+  )
   const [savedUsername, setSavedUsername] = useState<string | null>(() => getSavedUsername() || null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -46,9 +50,11 @@ export default function LoginStage({
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<LoginFormErrors>({})
   const [status, setStatus] = useState<SubmitStatus>('idle')
-  const [hint, setHint] = useState<string | null>(() =>
-    setupDone ? 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.' : null,
-  )
+  const [hint, setHint] = useState<string | null>(() => {
+    if (sessionExpired) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+    if (setupDone) return 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.'
+    return null
+  })
   const [showGuide, setShowGuide] = useState(false)
   // Khôi phục lượt đăng nhập qua OTP sau 5 lần sai (P3-T4, design §4.3)
   const [locked, setLocked] = useState(false)
@@ -67,8 +73,8 @@ export default function LoginStage({
   const { status: bootstrapStatus } = useBootstrapStatus(bootstrapApi)
 
   useEffect(() => {
-    if (setupDone) navigate('/login', { replace: true, state: null })
-  }, [setupDone, navigate])
+    if (setupDone || sessionExpired) navigate('/login', { replace: true, state: null })
+  }, [setupDone, sessionExpired, navigate])
 
   useEffect(() => {
     if (!showGuide) return
@@ -128,7 +134,7 @@ export default function LoginStage({
     if (hasFormError(found)) return
 
     setStatus('submitting')
-    const result = await onSignIn(values.username.trim(), password)
+    const result = await onSignIn(values.username.trim(), password, remember)
     if (!result.ok) {
       setStatus('idle')
       setPassword('')

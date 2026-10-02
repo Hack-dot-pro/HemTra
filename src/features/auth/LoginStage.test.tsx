@@ -109,7 +109,7 @@ describe('LoginStage', () => {
     await user.type(screen.getByLabelText('Mật khẩu'), 'mat-khau')
     await user.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
-    await waitFor(() => expect(onSignIn).toHaveBeenCalledWith('linh', 'mat-khau'))
+    await waitFor(() => expect(onSignIn).toHaveBeenCalledWith('linh', 'mat-khau', true))
     await waitFor(() => expect(window.localStorage.getItem(USERNAME_KEY)).toBe('linh'))
 
     cleanup()
@@ -122,7 +122,8 @@ describe('LoginStage', () => {
     await user.click(screen.getByRole('checkbox', { name: /ghi nhớ/i }))
     await user.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
-    await waitFor(() => expect(onSignIn).toHaveBeenCalledTimes(2))
+    // P3-T5: bỏ "ghi nhớ" → phiên sẽ lưu ở sessionStorage (remember=false)
+    await waitFor(() => expect(onSignIn).toHaveBeenCalledWith('toi', 'mat-khau', false))
     expect(window.localStorage.getItem(USERNAME_KEY)).toBeNull()
     expect(window.sessionStorage.getItem(USERNAME_KEY)).toBe('toi')
   })
@@ -278,6 +279,31 @@ describe('LoginStage — liên kết Thiết lập lần đầu (P3-T3)', () => 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.',
     )
+  })
+})
+
+describe('LoginStage — phiên hết hạn 7 ngày (P3-T5)', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+  })
+
+  afterEach(cleanup)
+
+  it('đến từ trang bị tự đăng xuất (state sessionExpired) → gợi ý đăng nhập lại', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { sessionExpired: true } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginStage bootstrapApi={BOOTSTRAPPED_API} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+    )
+    // form đăng nhập vẫn dùng được
+    expect(await screen.findByLabelText('Mật khẩu')).toBeInTheDocument()
   })
 })
 

@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T13:43:15+07:00",
+    "last_updated": "2026-10-02T14:06:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T5",
+    "task": "P3-T6",
     "step": "CODE",
-    "note": "P3-T4 DONE (EF auth-login deploy cloud + smoke 19/19: lockout 5/15 username+IP, unlock-otp/verify generic, login 200 session; FE: lib/http.ts + loginApi + signIn that + LoginStage luong OTP khoi phuc; xoa dead export wrongPassword - dong backlog QC P2-004; bo Turnstile trong design/plan/skills). 106 unit + 15 e2e xanh, coverage 97.61%, gitleaks 0. Tiep tuc: P3-T5 quan ly session 7 ngay (ghi nho localStorage/sessionStorage + session_fresh() server + tu dang xuat het han)."
+    "note": "P3-T5 DONE (session 7 ngay client: supabase client + storage route theo ghi nho, login_at, useSessionExpiry tu dang xuat ve /login sessionExpired; server session_fresh() da co tu P1 - khong migration). 133 unit + 15 e2e xanh, coverage 95.66%, build gzip 147.46KB, gitleaks 0. Luu y evidence: session_fresh() so iat JWT (refresh lam moi iat) - login_at client la lop chan 7 ngay lien tuc, session_fresh chan token cu/replay. Tiep tuc: P3-T6 EF admin-recovery (email trung app_meta.admin_email) + noi nut Quen mat khau voi luong OTP (backlog)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -651,6 +651,26 @@
       "event": "p3t4_auth_login",
       "file": ".opencode/evidence/p3t4-auth-login.md",
       "result": "EF auth-login deploy --use-api + smoke cloud 19/19 PASS (lockout 5 lan 401 -> lan 6 429 locked, unlock-otp luon 200 generic, unlock-verify token sai 401, login dung 200 session, CORS 204, EF 405/400); FE: lib/http.ts + setup/api refactor + loginApi + signIn that + LoginStage luong OTP (DI onUnlockSend/onUnlockVerify). Checks: typecheck 0, lint 0, vitest 106/106 coverage lines 97.61%, build gzip 91.78KB, e2e 15/15, gitleaks 0. Nhan: khi dang khoa, mat khau DUNG van bi 429 (dung); unlock-verify thanh cong chua smoke duoc (can mailbox) - giai doan trong evidence."
+    },
+    {
+      "at": "2026-10-02T13:50:00+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/auth/skill.md",
+        ".opencode/skills/backend/skill.md",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/testing/skill.md",
+        "design.md §4.3"
+      ],
+      "note": "Doc truoc khi lam P3-T5 (quan ly session 7 ngay) theo AGENT.md §12.1 (P3: auth + backend + security(§Auth), tham khao testing). Kiem tra: session_fresh() da co tu P1 (migration 20261001154333), RLS da goi; client chua co supabase client/session xu ly nao."
+    },
+    {
+      "at": "2026-10-02T14:06:00+07:00",
+      "agent": "assistant",
+      "event": "p3t5_session_7ngay",
+      "file": ".opencode/evidence/p3t5-session-7ngay.md",
+      "result": "Client session: lib/supabase.ts getSupabase() + routedAuthStorage (ghi nho ls/ss, xoa ca 2), lib/session.ts applyAuthSession (co -> login_at -> setSession) + endAuthSession (signOut local), sessionGuard evaluateSession + useSessionExpiry (mount + 60s, qua 7 ngay -> /login sessionExpired), signIn nhan remember, LoginStage truyen remember + hint het han. Khong migration (session_fresh() P1). Checks: typecheck 0, lint 0, vitest 133/133 coverage 95.66%, build gzip 147.46KB, e2e 15/15, gitleaks 0."
     }
   ],
   "phases": {
@@ -721,7 +741,7 @@
         "P3-T2": "done",
         "P3-T3": "done",
         "P3-T4": "done",
-        "P3-T5": "pending",
+        "P3-T5": "done",
         "P3-T6": "pending",
         "P3-T7": "pending",
         "P3-T8": "pending",
@@ -1048,6 +1068,14 @@
     {
       "ts": "2026-10-02T13:43:15+07:00",
       "event": "DONE P3-T4: EF auth-login (lockout 5/15 phut username+IP, loi luon chung chung, unlock-otp luon 200, unlock-verify xoa luot sai) + signIn() that + LoginStage hien luong OTP khoi phuc sau 5 lan sai; bo Turnstile trong design/plan/skills (quyet dinh user); xoa dead export wrongPassword (dong backlog QC P2-004). Smoke cloud 19/19 PASS, 106 unit + 15 e2e xanh, coverage 97.61%, gitleaks 0. Ke tiep P3-T5 session 7 ngay."
+    },
+    {
+      "ts": "2026-10-02T13:50:00+07:00",
+      "event": "START P3-T5: quan ly session 7 ngay (nho localStorage vs sessionStorage, login_at client + session_fresh() server, tu dang xuat het han). Luu y: session_fresh() da hoan thanh tu P1; T5 lam phan client. supabase-js da pin 2.117.2 nhung chua dung trong src/."
+    },
+    {
+      "ts": "2026-10-02T14:06:00+07:00",
+      "event": "DONE P3-T5: quan ly session 7 ngay (ghi nho ls vs ss, login_at client + session_fresh server P1, tu dang xuat het han -> /login co goi y). 133 unit + 15 e2e xanh, coverage 95.66%, build gzip 147.46KB (supabase-js vao bundle lan dau), gitleaks 0. Ke tiep P3-T6 EF admin-recovery."
     }
   ],
   "tasks": {}

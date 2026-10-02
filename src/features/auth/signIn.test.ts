@@ -2,6 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SIGN_IN_ERROR } from './loginForm'
 import { signIn } from './signIn'
 import { NETWORK_ERROR } from '../../lib/http'
+import { applyAuthSession, CANNOT_SAVE_SESSION } from '../../lib/session'
+
+// Không tạo Supabase client thật trong unit test (testing/skill.md §2) —
+// phần lưu phiên (P3-T5) mock ở đây, logic của nó test riêng trong session.test.ts
+vi.mock('../../lib/session', () => ({
+  applyAuthSession: vi.fn(async () => {}),
+  CANNOT_SAVE_SESSION: 'Không thể lưu phiên đăng nhập, thử lại sau.',
+}))
 
 function stubFetch(status: number, body: unknown) {
   vi.stubGlobal(
@@ -19,20 +27,43 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('signIn (P3-T4 — EF auth-login)', () => {
-  it('đăng nhập đúng → ok:true (session do P3-T5 lưu)', async () => {
+describe('signIn (P3-T4 — EF auth-login, P3-T5 — lưu phiên)', () => {
+  it('đăng nhập đúng → ok:true và LƯU PHIÊN với cờ ghi nhớ (mặc định bật)', async () => {
     stubFetch(200, { ok: true, session: { access_token: 'jwt', refresh_token: 'r' } })
     await expect(signIn('linh', 'mat-khau')).resolves.toEqual({ ok: true })
     expect(String(vi.mocked(fetch).mock.calls[0][1]?.body)).toContain('"action":"login"')
+    expect(applyAuthSession).toHaveBeenCalledWith(
+      { access_token: 'jwt', refresh_token: 'r' },
+      true,
+    )
   })
 
-  it('sai mật khẩu → thông báo chung chung từ server, không có cờ locked', async () => {
+  it('ghi nhớ tắt → truyền remember=false để lưu ở sessionStorage', async () => {
+    stubFetch(200, { ok: true, session: { access_token: 'jwt', refresh_token: 'r' } })
+    await expect(signIn('linh', 'mat-khau', false)).resolves.toEqual({ ok: true })
+    expect(applyAuthSession).toHaveBeenCalledWith(
+      { access_token: 'jwt', refresh_token: 'r' },
+      false,
+    )
+  })
+
+  it('lưu phiên thất bại → báo lỗi, KHÔNG báo đăng nhập thành công', async () => {
+    stubFetch(200, { ok: true, session: { access_token: 'jwt', refresh_token: 'r' } })
+    vi.mocked(applyAuthSession).mockRejectedValueOnce(new Error('boom'))
+    await expect(signIn('linh', 'mat-khau')).resolves.toEqual({
+      ok: false,
+      message: CANNOT_SAVE_SESSION,
+    })
+  })
+
+  it('sai mật khẩu → thông báo chung chung từ server, không có cờ locked, không lưu phiên', async () => {
     stubFetch(401, { error: 'Tài khoản hoặc mật khẩu không đúng.', locked: false })
     await expect(signIn('linh', 'sai')).resolves.toEqual({
       ok: false,
       message: 'Tài khoản hoặc mật khẩu không đúng.',
       locked: false,
     })
+    expect(applyAuthSession).not.toHaveBeenCalled()
   })
 
   it('bị khóa sau 5 lần sai → locked:true để UI gợi ý khôi phục OTP', async () => {

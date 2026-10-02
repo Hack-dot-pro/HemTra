@@ -7,10 +7,13 @@ import ProductsPage from '../features/products/ProductsPage.tsx'
 import PosPage from '../features/pos/PosPage.tsx'
 import BillsPage from '../features/bills/BillsPage.tsx'
 import UsersPage from '../features/users/UsersPage.tsx'
+import { useSessionExpiry } from '../features/auth/sessionGuard.ts'
 
 // Định tuyến 5 menu (design.md §7.3). P2 chưa có phiên nên trang chủ = đăng nhập;
 // route guard theo role sẽ làm ở P3-T7.
 export function AppRoutes() {
+  // P3-T5: tự đăng xuất khi phiên vượt 7 ngày (login_at) — không phải guard role.
+  useSessionExpiry()
   return (
     <Routes>
       <Route path="/login" element={<LoginStage />} />
