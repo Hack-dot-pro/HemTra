@@ -79,8 +79,9 @@ Nguyên tắc ưu tiên **ổn định & tốc độ**, không nhất thiết b�
 1. Màn hình đăng ký chỉ hiện khi `app_meta.bootstrapped = false`.
 2. Đăng nhập **Google OAuth**; Edge Function `bootstrap-admin` kiểm tra email Google **trùng secret `BOOTSTRAP_ADMIN_EMAIL`** (chống người lạ chiếm quyền admin trước), và chưa có admin.
 3. Gửi **OTP 6 số** đến Gmail đó (Supabase Auth email OTP, hết hạn 10 phút, giới hạn lần thử).
-4. Xác minh OTP → đặt `username` + mật khẩu cho admin → ghi `profiles.role = 'admin'`, `app_meta.bootstrapped = true`.
+4. Xác minh OTP → đặt `username` + mật khẩu cho admin → ghi `profiles.role = 'admin'`, `app_meta.bootstrapped = true`, và **`app_meta.admin_email` = email Google vừa xác minh** (email này là "key admin" cho khôi phục/đổi về sau, §4.4).
 5. Từ đây: Supabase **tắt signup công khai**; route đăng ký trả 404.
+6. **Secret theo môi trường**: `BOOTSTRAP_ADMIN_EMAIL` chỉ có hiệu lực tới khi `bootstrapped=true`. Môi trường test set = email dev (lấy mẫu OTP), **PROD set = email người vận hành** để họ tự bootstrap lần đầu. Sau bootstrap có thể xoá/đổi secret mà không ảnh hưởng hệ thống (xem Q-005, `state.json → decisions.admin_transfer`).
 
 ### 4.3 Đăng nhập thường ngày
 - Frontend chỉ nhập **mật khẩu**; `username` được nhớ ở localStorage sau lần đầu (có nút "Đổi tài khoản"). Không bao giờ lưu mật khẩu.
@@ -89,8 +90,14 @@ Nguyên tắc ưu tiên **ổn định & tốc độ**, không nhất thiết b�
 - **Ghi nhớ đăng nhập**: bật → session ở `localStorage`; tắt → `sessionStorage`.
 - **Giới hạn 7 ngày**: (a) client kiểm tra `login_at`; (b) RLS thêm hàm `session_fresh()` so `iat` của JWT với 7 ngày → quá hạn là mất quyền truy cập dù client bị sửa.
 
-### 4.4 Khôi phục mật khẩu
-- **Admin**: "Quên mật khẩu" → Google OAuth lại → OTP email → đặt mật khẩu mới.
+### 4.4 Khôi phục mật khẩu & đổi email khôi phục
+- **Admin — "Quên mật khẩu"**: Google OAuth lại → Edge Function `admin-recovery` **bắt buộc email Google trùng `app_meta.admin_email`** → OTP 6 số → đặt mật khẩu mới.
+  > Nếu không ràng buộc này thì bất kỳ tài khoản Google nào cũng reset được mật khẩu admin = lỗ hổng nghiêm trọng.
+- **Admin — Đổi email khôi phục ("đổi key admin", làm được bất cứ lúc nào khi đã đăng nhập)** — phải qua **đúng 2 điều kiện, theo thứ tự**:
+  1. **Chứng minh quyền sở hữu hiện tại**: OTP gửi tới email Google **hiện tại** (`app_meta.admin_email`) **và** nhập đúng mật khẩu admin hiện tại.
+  2. **Xác thực email mới**: OTP gửi tới email Google **mới** → đặt **mật khẩu mới** → ghi đè `app_meta.admin_email` = email mới.
+  - Thực hiện qua Edge Function `change-recovery-email`: server tự kiểm **cả 2 OTP + mật khẩu**, không tin client; thiếu bất kỳ điều kiện nào → từ chối, không thay đổi gì.
+  - Mật khẩu mới có hiệu lực ngay; email cũ không còn dùng được để khôi phục.
 - **Staff**: không tự khôi phục; admin cấp lại trong menu User (sinh mật khẩu tạm, buộc đổi ở lần đăng nhập kế).
 
 ### 4.5 SMTP
@@ -101,7 +108,7 @@ Mailer mặc định của Supabase bị giới hạn rất thấp. Dùng **SMTP
 | Bảng | Mục đích |
 |---|---|
 | `profiles` | id (= auth.users.id), username (unique, lowercase), display_name, role, must_change_password, created_by, created_at |
-| `app_meta` | key/value: `bootstrapped`, `menu_version` (int tăng tự động), `schema_version` |
+| `app_meta` | key/value: `bootstrapped`, `menu_version` (int tăng tự động), `schema_version`, `admin_email` (email Google admin gốc — **chỉ `service_role` đọc/ghi**, không grant cho anon/authenticated; xem §4.4) |
 | `categories` | nhóm sản phẩm (mở rộng được), icon, sort_order, is_active |
 | `products` | category_id, name, price (int VND), icon, is_active, updated_at |
 | `toppings` | name, price, icon, is_active (sản phẩm phụ) |

@@ -12,7 +12,7 @@
     "phase": "P3",
     "task": "P3-T0",
     "step": "PLAN",
-    "note": "P2 DONE (QC+SEC PASS vong 1). Q-005 da chot: user chon A+B (tach secret theo moi truong + luu email admin vao DB va cho doi tu trong app) -> can user sua design.md §4.2/§4.4 + them task P3 (agent khong tu sua). Tiep tuc: hoan tat P3-T0 (hoi BOOTSTRAP_ADMIN_EMAIL, SMTP, domain)."
+    "note": "P2 DONE (QC+SEC PASS vong 1, commit 9f72cf6). Q-005 chot A+B (2 dieu kien doi key) -> da ghi design.md §4.2/§4.4/§5 + plan.md P3-T8 (test chuyen T9). P3 in_progress, dang o P3-T0: can user tra loi BOOTSTRAP_ADMIN_EMAIL, SMTP, domain Pages (Q-001, Q-002)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -65,7 +65,7 @@
       "@playwright/test": "1.63.0 (chromium+webkit OK)"
     },
     "p0t6_direction": "User chon 2026-10-01: link truc tiep prod HemTra (tsnrggxczipzqvvpcbld), viet migration local + push len prod. Chap nhan rui ro; giam thieu: migration review ky + backup truoc khi push.",
-    "admin_transfer": "User chon 2026-10-02 (Q-005) = phuong an A + B: (A) tach secret BOOTSTRAP_ADMIN_EMAIL theo moi truong - test bootstrap bang email dev, tren PROD set secret = email nguoi van hanh de ho bootstrap lan dau; (B) luc bootstrap luu email admin vao DB (app_meta) + form 'Doi email khoi phuc' trong app (bat buoc mat khau hien tai + OTP xac minh email moi) de doi key admin bat luc ma khong dung DB/secret. Kiem tra bat buoc: luong Quen mat khau PHAI trung email admin da luu (neu khong -> BLOCKER). Can user sua design.md §4.2/§4.4 + them task P3.",
+    "admin_transfer": "User chon 2026-10-02 (Q-005) = phuong an A + B, doi key admin bat luc khi dang nhap, dat 2 dieu kien theo thu tu: (1) OTP Google hien tai (app_meta.admin_email) + mat khau admin hien tai; (2) OTP Google moi -> doi mat khau moi + ghi de app_meta.admin_email. A: tach secret BOOTSTRAP_ADMIN_EMAIL theo moi truong (test = email dev de lay mau OTP; PROD = email nguoi van hanh de ho bootstrap lan dau; secret het hieu luc sau bootstrapped=true). B: luu admin_email trong app_meta, chi service_role doc/ghi; luong Quen mat khau (admin-recovery) bat buoc trung admin_email. Day la quyet dinh cua user -> duoc phep ghi vao design.md §4.2/§4.4/§5 + plan.md P3 (T8 doi email khôi phục, test chuyen sang T9).",
     "login_stage_bg": "User chon 2026-10-02: lay anh goc login-hero.png (940x1672) thay ban trich tu template.html; nen dashboard giu backdrop-blur-md (12px)."
   },
   "open_questions": [
@@ -98,7 +98,7 @@
       "phase": "P3",
       "text": "Bàn giao admin: ai chot email Google admin + cach doi 'key admin' sau khi bootstrap? Bao gom: (a) luong Quen mat khau hien chua ro co kiem tra Google email phai trung email admin khong (neu khong -> BLOCKER, ai cung reset duoc mat khau admin); (b) cach doi sang Google khac khi chuyen giao cho nguoi van hanh.",
       "status": "decided",
-      "answer": "Chon phuong an A + B (2026-10-02): tach secret theo moi truong + luu email admin vao DB va cho doi tu trong app. Buoc con lai: user sua design.md §4.2/§4.4 va them task vao plan.md P3."
+      "answer": "Chon phuong an A + B (2026-10-02), doi key admin bat luc can DUNG 2 dieu kien theo thu tu: (1) OTP Google hien tai + mat khau admin hien tai; (2) OTP Google moi -> doi mat khau moi + ghi de app_meta.admin_email. Da ghi vao design.md §4.2/§4.4/§5 + plan.md P3-T8 (user phep sau khi chot)."
     }
   ],
   "blockers": [
@@ -594,7 +594,7 @@
     },
     "P3": {
       "title": "Xác thực, bootstrap admin, phiên",
-      "status": "pending",
+      "status": "in_progress",
       "gates": {
         "qc": null,
         "sec": null
@@ -608,7 +608,8 @@
         "P3-T5": "pending",
         "P3-T6": "pending",
         "P3-T7": "pending",
-        "P3-T8": "pending"
+        "P3-T8": "pending",
+        "P3-T9": "pending"
       }
     },
     "P4": {
@@ -891,6 +892,10 @@
     {
       "ts": "2026-10-02T09:06:00+07:00",
       "event": "CLOSE P2 (QC+SEC PASS, phase=done). START P3-T0."
+    },
+    {
+      "ts": "2026-10-02T09:20:00+07:00",
+      "event": "User phep nang cap Q-005 vao tai lieu: ghi design.md §4.2/§4.4/§5 (2 dieu kien doi key admin) + plan.md P3-T8 moi, doi P3-T8 cu (test) thanh P3-T9; state P3 -> in_progress"
     }
   ],
   "tasks": {}

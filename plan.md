@@ -52,9 +52,10 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [ ] **P3-T3** Màn hình đăng ký lần đầu (Google → OTP → đặt username+mật khẩu); ẩn vĩnh viễn sau bootstrap
 - [ ] **P3-T4** 🔒 Edge Function `auth-login` (lockout 5/15 phút theo username+IP, Turnstile sau 3 lần sai, thông báo lỗi chung chung)
 - [ ] **P3-T5** Quản lý session: "ghi nhớ" (localStorage) vs tắt (sessionStorage), giới hạn 7 ngày client + `session_fresh()` server, tự đăng xuất khi hết hạn
-- [ ] **P3-T6** Khôi phục mật khẩu admin qua Google + OTP; staff hiển thị "Liên hệ admin"
+- [ ] **P3-T6** Khôi phục mật khẩu admin qua Google + OTP — EF `admin-recovery` **bắt buộc email Google trùng `app_meta.admin_email`**; staff hiển thị "Liên hệ admin"
 - [ ] **P3-T7** Route guard theo role; đổi mật khẩu bản thân (nhập mật khẩu cũ); `must_change_password` buộc đổi lần đầu
-- [ ] **P3-T8** Test: unit (guard, session), Playwright (bootstrap, login sai/đúng, lockout, hết hạn 7 ngày, khôi phục)
+- [ ] **P3-T8** 🔒 Đổi email khôi phục (chuyển giao admin) — EF `change-recovery-email` + form: **(1)** OTP email Google hiện tại **+ mật khẩu admin hiện tại**, **(2)** OTP email Google mới → đặt mật khẩu mới + ghi đè `app_meta.admin_email` (design §4.4, Q-005)
+- [ ] **P3-T9** Test: unit (guard, session), Playwright (bootstrap, login sai/đúng, lockout, hết hạn 7 ngày, khôi phục, đổi email khôi phục)
 - **Gate:** QC ☐ · SEC ☐
 
 ## P4 — PWA, offline, chống kẹt cache
