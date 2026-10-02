@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T08:55:00+07:00",
+    "last_updated": "2026-10-02T11:00:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T2",
+    "task": "P3-T3",
     "step": "CODE",
-    "note": "P3-T1 DONE (SMTP Gmail sender=Hem Tra, 7 subject+template VI, OTP 6so/10ph, rate 30/h; smoke OTP+recover 200; evidence p3t1-smtp-email-config.md). disable_signup van false den khi bootstrap (decisions.p3t1_disable_signup). Tiep tuc: P3-T2 EF bootstrap-admin."
+    "note": "P3-T2 DONE (migration admin_email + EF bootstrap-admin deployed; smoke cloud PASS a-j; cloud RESET ve pre-bootstrap). Test EF tren CLOUD vi supabase start local fail (Docker nested iptables, trung B-001). Tiep tuc: P3-T3 man hinh dang ky lan dau (nhan email OTP -> dat username+mat khau, goi EF bootstrap-admin)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -71,7 +71,10 @@
     "smtp": "Gmail App Password (Q-002 tra loi 2026-10-02) — user tu tao App Password 16 ky tu va dan vao Supabase Dashboard -> Authentication -> SMTP; agent khong nhan/luu mat khau nay o bat ky dau. | UPDATE 2026-10-02: App Password 16 ky tu dat trong .env (da boc nhay), PATCH qua Management API xong, smoke gui thu OK. Luu y: doc .env phai strip dau nhay, khong thi AUTH bi 535.",
     "domain_pages": "hemtra.pages.dev (Q-tra loi 2026-10-02, tam thoi) — origin Cloudflare Pages; da set site_url + uri_allow_list cua Supabase Auth. Co domain rieng thi doi o P11.",
     "auth_method": "User chon 2026-10-02: BO Google OAuth, chi dung Email OTP 6 số qua SMTP cho ca bootstrap, Quen mat khau va Doi key admin. Ly do: OTP gui vao dung hop thu da chung minh so huu email; khong can Google Cloud Console/OAuth client/consent screen; giam 1 diem hong cau hinh. Hau qua design: §4.2/§4.4 doi tu Google OAuth -> OTP email (da ghi).",
-    "p3t1_disable_signup": "Chot 2026-10-02: disable_signup giu FALSE den khi bootstrap xong, sau do EF bootstrap-admin (P3-T2) tu dat true. Ly do (docs GoTrue): khi disable_signup=true chi con invite tao user duoc -> bat som se chan luong tao user moi (ca OAuth lan OTP) nen se chan luong bootstrap admin neu bat som. Khoan nay chong lai bang bootstrap-admin EF kiem tra bootstrapped=false + email trung secret (design §4.2 buoc 2) + khong cho dang ky tu do tren UI (P3-T3 chi hien khi bootstrapped=false)."
+    "p3t1_disable_signup": "Chot 2026-10-02: disable_signup giu FALSE den khi bootstrap xong, sau do EF bootstrap-admin (P3-T2) tu dat true. Ly do (docs GoTrue): khi disable_signup=true chi con invite tao user duoc -> bat som se chan luong tao user moi (ca OAuth lan OTP) nen se chan luong bootstrap admin neu bat som. Khoan nay chong lai bang bootstrap-admin EF kiem tra bootstrapped=false + email trung secret (design §4.2 buoc 2) + khong cho dang ky tu do tren UI (P3-T3 chi hien khi bootstrapped=false).",
+    "p3t2_test_target": "Chot 2026-10-02: test EF/DB tren CLOUD (dev) thay local stack — supabase start khong chay duoc tren may nay (Docker nested, iptables legacy/nft conflict -> packet container-to-container bi drop, trung B-001 P0-T6). Cloud API luon song: db query --linked, db push, db advisors, functions deploy --use-api, secrets set. Sau moi lan test bootstrap cloud phai RESET (xoa user+profile, bootstrapped=false, admin_email=null, disable_signup=false) de P3-T3/T9 chay lai duoc.",
+    "p3t2_ef_secrets": "Chot 2026-10-02: EF bootstrap-admin dung 3 secrets: BOOTSTRAP_ADMIN_EMAIL, MGMT_ACCESS_TOKEN (PAT — EF tu PATCH disable_signup=true sau khi bootstrap, theo design §4.2.5 + decisions.p3t1_disable_signup), HEMTRA_PROJECT_REF (ten SUPABASE_PROJECT_REF bi tu choi — reserved prefix SUPABASE_). PAT trong EF secrets: ruyi ro neu EF bi exploit — chan bang verify_jwt=false + bootstrapped guard + email secret + OTP server-side; chi 1 endpoint duoc PATCH auth config.",
+    "p3t2_admin_auth_email": "Chot 2026-10-02: admin GIU email that trong auth.users (khong doi sang <username>@hem.local nhu staff). Ly do: recovery/doi key (P3-T6/P3-T8) gui OTP den email that qua signInWithOtp — neu doi email thi GoTrue khong tim duoc user. Hau qua cho P3-T4 (auth-login EF): username->email mapping phac doan ...@hem.local dung cho staff; admin phai tra app_meta.admin_email (role=admin)."
   },
   "open_questions": [
     {
@@ -128,7 +131,9 @@
     "QC P2-004 MINOR: dead export - wrongPassword() export nhung khong dung ngoai signIn.ts (src/features/auth/signIn.ts:12)",
     "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery",
     "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
-    "P3-T7: dat security_update_password_require_current_password=true (hien false) theo design §4.1 'doi mat khau cua minh nhap mat khau cu'"
+    "P3-T7: dat security_update_password_require_current_password=true (hien false) theo design §4.1 'doi mat khau cua minh nhap mat khau cu'",
+    "Advisors security WARN pre-existing (khong lien quan migration T2): set_updated_at search_path mutable; leaked password protection disabled (PATCH auth config de bat); rls_auto_enable/create_bill/is_admin SECURITY DEFINER executable — xem lai o security audit gate P3.",
+    "Moi truong dev nay khong chay duoc supabase start local (Docker nested iptables legacy/nft conflict -> container-to-container drop). Neu sau nay can local stack (test db reset/RLS), sua iptables hoac dung remote dev."
   ],
   "off_plan_actions": [
     {
@@ -568,6 +573,34 @@
       "event": "p3t1_smtp_email_config",
       "file": ".opencode/evidence/p3t1-smtp-email-config.md",
       "result": "smtp+subjects+templates PATCHed OK; email send blocked: Gmail 535 (App Password 17 ky tu vs 16); .env line quoted"
+    },
+    {
+      "at": "2026-10-02T11:00:00+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        "auth/skill.md",
+        "backend/skill.md",
+        "security/skill.md"
+      ],
+      "note": "P3 bat buoc doc het truoc khi code P3-T2 (ma tran AGENT.md 12.1)"
+    },
+    {
+      "at": "2026-10-02T13:30:00+07:00",
+      "agent": "main-coding",
+      "event": "p3t2_bootstrap_admin_ef",
+      "file": ".opencode/evidence/p3t2-bootstrap-admin-ef.md",
+      "result": "migration 20261002040248 pushed (admin_email chi service_role, grants verify) + EF deployed --use-api + secrets (BOOTSTRAP_ADMIN_EMAIL/MGMT_ACCESS_TOKEN/HEMTRA_PROJECT_REF); smoke cloud PASS a-j (anti-oracle, OTP verify server-side, disable_signup flip, guard 409); cloud RESET pre-bootstrap. Advisors 0 ERROR/15 pre-existing."
+    },
+    {
+      "at": "2026-10-02T13:31:00+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        "supabase/SKILL.md",
+        "supabase-postgres-best-practices/SKILL.md"
+      ],
+      "note": "Doc them truoc khi lam migration + EF theo backend/skill.md §1 (supabase skill cho CLI/EF, best-practices cho grant/data type)."
     }
   ],
   "phases": {
@@ -635,7 +668,7 @@
       "tasks": {
         "P3-T0": "done",
         "P3-T1": "done",
-        "P3-T2": "pending",
+        "P3-T2": "done",
         "P3-T3": "pending",
         "P3-T4": "pending",
         "P3-T5": "pending",
@@ -945,6 +978,10 @@
     {
       "ts": "2026-10-02T10:40:00+07:00",
       "event": "DONE P3-T1: SMTP + 7 subject/template tieng Viet PATCH thanh cong; smoke OTP 200 + recover 200 (email gui duoc); user test da xoa; nguoi goi loi truoc do la script gui ca dau nhay kep (password user dung). START P3-T2 (EF bootstrap-admin)."
+    },
+    {
+      "ts": "2026-10-02T13:32:00+07:00",
+      "event": "DONE P3-T2: migration app_meta.admin_email (grant column-level, advisors 0 ERROR) + EF bootstrap-admin (2 action, verify_jwt=false, anti-oracle request-otp, OTP server-side, PATCH disable_signup qua PAT). Deploy --use-api (Docker bundler DNS fail), secrets set (doi SUPABASE_PROJECT_REF -> HEMTRA_PROJECT_REF vi reserved prefix). Smoke cloud PASS het (email la 200 khong tao user, OTP sai 401, complete 200, DB+login+signup_disabled verify, guard 409). RESET cloud ve pre-bootstrap. Local supabase start van fail (iptabless nested, trung B-001) -> test tren cloud."
     }
   ],
   "tasks": {}

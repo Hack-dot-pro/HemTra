@@ -48,7 +48,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 📖 `backend/skill.md`, `security/skill.md §Auth`
 - [x] **P3-T0** Hỏi user: `BOOTSTRAP_ADMIN_EMAIL`, thông tin SMTP (Gmail App Password hoặc Resend), domain Pages. **Dừng nếu chưa có.** → đủ 2026-10-02 (lưu ở `state.json → decisions`, không commit secret)
 - [x] **P3-T1** 🔒 Cấu hình Supabase Auth: OTP email 6 số/hết hạn 10 phút, `site_url`/redirect (đã xong qua Management API), SMTP riêng, tắt signup công khai **sau khi bootstrap** (design §4.2.5). *Không dùng Google OAuth (chốt 2026-10-02)* → xong 2026-10-02 (SMTP Gmail + 7 subject/template VI; smoke OTP+recover 200; evidence p3t1-smtp-email-config.md)
-- [ ] **P3-T2** 🔒 Edge Function `bootstrap-admin` (kiểm tra email trùng secret, chỉ chạy khi `bootstrapped=false`)
+- [x] **P3-T2** 🔒 Edge Function `bootstrap-admin` (kiểm tra email trùng secret, chỉ chạy khi `bootstrapped=false`)
 - [ ] **P3-T3** Màn hình đăng ký lần đầu (nhập email admin → OTP → đặt username+mật khẩu); ẩn vĩnh viễn sau bootstrap
 - [ ] **P3-T4** 🔒 Edge Function `auth-login` (lockout 5/15 phút theo username+IP, Turnstile sau 3 lần sai, thông báo lỗi chung chung)
 - [ ] **P3-T5** Quản lý session: "ghi nhớ" (localStorage) vs tắt (sessionStorage), giới hạn 7 ngày client + `session_fresh()` server, tự đăng xuất khi hết hạn

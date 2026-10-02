@@ -386,6 +386,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# P3-T2: bootstrap-admin goi truoc khi co phien → verify_jwt = false;
+# bao ve bang bootstrapped + secret email + OTP xac minh server-side (design §4.2).
+[functions.bootstrap-admin]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
