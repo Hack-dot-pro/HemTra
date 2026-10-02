@@ -10,9 +10,9 @@
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T1",
+    "task": "P3-T2",
     "step": "CODE",
-    "note": "P2 DONE (QC+SEC PASS vong 1, commit 9f72cf6). Q-005 chot A+B -> design §4.2/§4.4/§5 + plan P3-T8 (commit 92779bc). P3-T0 DONE (cau tra loi luu o decisions: bootstrap_admin_email, smtp, domain_pages). Tiep tuc: P3-T1 cau hinh Supabase Auth." 
+    "note": "P3-T1 DONE (SMTP Gmail sender=Hem Tra, 7 subject+template VI, OTP 6so/10ph, rate 30/h; smoke OTP+recover 200; evidence p3t1-smtp-email-config.md). disable_signup van false den khi bootstrap (decisions.p3t1_disable_signup). Tiep tuc: P3-T2 EF bootstrap-admin."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -31,7 +31,7 @@
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
     "backend": "Supabase (Auth, Postgres+RLS, Storage, Realtime, Edge Functions, pg_cron)",
-    "otp": "Google OAuth + Email OTP 6 số qua SMTP riêng",
+    "otp": "Email OTP 6 số qua SMTP riêng — KHONG dung Google OAuth (user chon 2026-10-02, khong can Google Cloud Console)",
     "staff_login": "username + password, email nội bộ <username>@hem.local",
     "session_max_days": 7,
     "bill_retention_days": 15,
@@ -65,11 +65,13 @@
       "@playwright/test": "1.63.0 (chromium+webkit OK)"
     },
     "p0t6_direction": "User chon 2026-10-01: link truc tiep prod HemTra (tsnrggxczipzqvvpcbld), viet migration local + push len prod. Chap nhan rui ro; giam thieu: migration review ky + backup truoc khi push.",
-    "admin_transfer": "User chon 2026-10-02 (Q-005) = phuong an A + B, doi key admin bat luc khi dang nhap, dat 2 dieu kien theo thu tu: (1) OTP Google hien tai (app_meta.admin_email) + mat khau admin hien tai; (2) OTP Google moi -> doi mat khau moi + ghi de app_meta.admin_email. A: tach secret BOOTSTRAP_ADMIN_EMAIL theo moi truong (test = email dev de lay mau OTP; PROD = email nguoi van hanh de ho bootstrap lan dau; secret het hieu luc sau bootstrapped=true). B: luu admin_email trong app_meta, chi service_role doc/ghi; luong Quen mat khau (admin-recovery) bat buoc trung admin_email. Day la quyet dinh cua user -> duoc phep ghi vao design.md §4.2/§4.4/§5 + plan.md P3 (T8 doi email khôi phục, test chuyen sang T9).",
+    "admin_transfer": "User chon 2026-10-02 (Q-005) = phuong an A + B, doi key admin bat luc khi dang nhap, dat 2 dieu kien theo thu tu: (1) OTP email hien tai (gui den app_meta.admin_email) + mat khau admin hien tai; (2) OTP email moi -> doi mat khau moi + ghi de app_meta.admin_email. A: tach secret BOOTSTRAP_ADMIN_EMAIL theo moi truong (test = email dev de lay mau OTP; PROD = email nguoi van hanh de ho bootstrap lan dau; secret het hieu luc sau bootstrapped=true). B: luu admin_email trong app_meta, chi service_role doc/ghi; luong Quen mat khau (admin-recovery) bat buoc trung admin_email. Day la quyet dinh cua user -> duoc phep ghi vao design.md §4.2/§4.4/§5 + plan.md P3 (T8 doi email khôi phục, test chuyen sang T9).",
     "login_stage_bg": "User chon 2026-10-02: lay anh goc login-hero.png (940x1672) thay ban trich tu template.html; nen dashboard giu backdrop-blur-md (12px).",
     "bootstrap_admin_email": "pquangvinh1999@gmail.com (Q-001 tra loi 2026-10-02) — dat lam secret BOOTSTRAP_ADMIN_EMAIL cua moi truong test de lay mau OTP; theo A, PROD se doi sang email nguoi van hanh truoc khi ban giao.",
-    "smtp": "Gmail App Password (Q-002 tra loi 2026-10-02) — user tu tao App Password 16 ky tu va dan vao Supabase Dashboard -> Authentication -> SMTP; agent khong nhan/luu mat khau nay o bat ky dau.",
-    "domain_pages": "hemtra.pages.dev (Q-tra loi 2026-10-02, tam thoi) — origin Cloudflare Pages, dua vao redirect URI cua Google Provider + Supabase Auth URL Configuration. Co domain rieng thi doi o P11."
+    "smtp": "Gmail App Password (Q-002 tra loi 2026-10-02) — user tu tao App Password 16 ky tu va dan vao Supabase Dashboard -> Authentication -> SMTP; agent khong nhan/luu mat khau nay o bat ky dau. | UPDATE 2026-10-02: App Password 16 ky tu dat trong .env (da boc nhay), PATCH qua Management API xong, smoke gui thu OK. Luu y: doc .env phai strip dau nhay, khong thi AUTH bi 535.",
+    "domain_pages": "hemtra.pages.dev (Q-tra loi 2026-10-02, tam thoi) — origin Cloudflare Pages; da set site_url + uri_allow_list cua Supabase Auth. Co domain rieng thi doi o P11.",
+    "auth_method": "User chon 2026-10-02: BO Google OAuth, chi dung Email OTP 6 số qua SMTP cho ca bootstrap, Quen mat khau va Doi key admin. Ly do: OTP gui vao dung hop thu da chung minh so huu email; khong can Google Cloud Console/OAuth client/consent screen; giam 1 diem hong cau hinh. Hau qua design: §4.2/§4.4 doi tu Google OAuth -> OTP email (da ghi).",
+    "p3t1_disable_signup": "Chot 2026-10-02: disable_signup giu FALSE den khi bootstrap xong, sau do EF bootstrap-admin (P3-T2) tu dat true. Ly do (docs GoTrue): khi disable_signup=true chi con invite tao user duoc -> bat som se chan luong tao user moi (ca OAuth lan OTP) nen se chan luong bootstrap admin neu bat som. Khoan nay chong lai bang bootstrap-admin EF kiem tra bootstrapped=false + email trung secret (design §4.2 buoc 2) + khong cho dang ky tu do tren UI (P3-T3 chi hien khi bootstrapped=false)."
   },
   "open_questions": [
     {
@@ -77,7 +79,7 @@
       "phase": "P3",
       "text": "Email Google dùng làm BOOTSTRAP_ADMIN_EMAIL?",
       "status": "answered",
-      "answer": "Da chot 2026-10-02 — xem decisions.bootstrap_admin_email (chi set lam secret Supabase, khong commit vao repo)."
+      "answer": "Da chot 2026-10-02 — xem decisions.bootstrap_admin_email (chi set lam secret Supabase, khong commit vao repo). Khong dung Google OAuth, chi OTP email."
     },
     {
       "id": "Q-002",
@@ -103,7 +105,7 @@
       "phase": "P3",
       "text": "Bàn giao admin: ai chot email Google admin + cach doi 'key admin' sau khi bootstrap? Bao gom: (a) luong Quen mat khau hien chua ro co kiem tra Google email phai trung email admin khong (neu khong -> BLOCKER, ai cung reset duoc mat khau admin); (b) cach doi sang Google khac khi chuyen giao cho nguoi van hanh.",
       "status": "decided",
-      "answer": "Chon phuong an A + B (2026-10-02), doi key admin bat luc can DUNG 2 dieu kien theo thu tu: (1) OTP Google hien tai + mat khau admin hien tai; (2) OTP Google moi -> doi mat khau moi + ghi de app_meta.admin_email. Da ghi vao design.md §4.2/§4.4/§5 + plan.md P3-T8 (user phep sau khi chot)."
+      "answer": "Chon phuong an A + B (2026-10-02), doi key admin bat luc can DUNG 2 dieu kien theo thu tu: (1) OTP email hien tai + mat khau admin hien tai; (2) OTP email moi -> doi mat khau moi + ghi de app_meta.admin_email. Da ghi vao design.md §4.2/§4.4/§5 + plan.md P3-T8 (user phep sau khi chot)."
     }
   ],
   "blockers": [
@@ -118,13 +120,15 @@
   ],
   "backlog": [
     "P3: thay signIn() stub bang Edge Function auth-login (hien luon thanh cong) — src/features/auth/signIn.ts",
-    "P3-T6: noi nut 'Quen mat khau' voi luong khoi phuc Google+OTP (hien chi hien goi y lien he admin)",
+    "P3-T6: noi nut 'Quen mat khau' voi luong khoi phuc OTP email (hien chi hien goi y lien he admin)",
     "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)",
     "QC P2-001 MINOR: login-hero.png rac o root -> da dung lam source nen login (src/assets/login-stage.webp|jpg), giu root goc kieu Logo.png/background.png",
     "QC P2-002 MINOR: lech scope - repo track nhieu file ngoai app (.claude/, agent/, .opencode/ skills, PNG goc o root) -> chot tach hay ghi chu",
     "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
     "QC P2-004 MINOR: dead export - wrongPassword() export nhung khong dung ngoai signIn.ts (src/features/auth/signIn.ts:12)",
-    "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery"
+    "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery",
+    "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
+    "P3-T7: dat security_update_password_require_current_password=true (hien false) theo design §4.1 'doi mat khau cua minh nhap mat khau cu'"
   ],
   "off_plan_actions": [
     {
@@ -540,6 +544,30 @@
       "agent": "main-coding",
       "event": "User tra loi Q-005: chon phuong an A + B cho chuyen giao/doi email admin; nen dashboard giu blur 12px",
       "output": "ghi decisions.admin_transfer + Q-005 status=decided; can user sua design.md §4.2/§4.4 + them task P3 (agent khong tu sua design/plan noi dung)"
+    },
+    {
+      "at": "2026-10-02T09:45:00+07:00",
+      "agent": "main-coding",
+      "event": "P3-T1 (phan duoc lam truoc secret): cau hinh Supabase Auth qua Management API",
+      "cmd": "PATCH /v1/projects/tsnrggxczipzqvvpcbld/config/auth (Authorization: SUPABASE_ACCESS_TOKEN tu .env) + GET xac minh",
+      "output": "mailer_otp_length 8->6; mailer_otp_exp 3600->600; site_url http://localhost:3000 -> https://hemtra.pages.dev; uri_allow_list '' -> 'https://hemtra.pages.dev/**'; cac truong khac giu nguyen (PATCH partial, da probe)",
+      "skills_read": [
+        "security/skill.md",
+        "backend/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T09:45:00+07:00",
+      "agent": "main-coding",
+      "event": "Kiem tra config truoc do (GET) va OpenAPI Management API (path PATCH /v1/projects/{ref}/config/auth, body UpdateAuthConfigBody, required=[])",
+      "output": "truoc: disable_signup=false, google off, smtp null, otp 8/3600, site_url localhost. Con thieu cho P3-T1: chi SMTP App Password (user bo vao .env). Da bo Google OAuth (khong can client id/secret)."
+    },
+    {
+      "at": "2026-10-02T10:05:00+07:00",
+      "agent": "assistant",
+      "event": "p3t1_smtp_email_config",
+      "file": ".opencode/evidence/p3t1-smtp-email-config.md",
+      "result": "smtp+subjects+templates PATCHed OK; email send blocked: Gmail 535 (App Password 17 ky tu vs 16); .env line quoted"
     }
   ],
   "phases": {
@@ -606,7 +634,7 @@
       },
       "tasks": {
         "P3-T0": "done",
-        "P3-T1": "pending",
+        "P3-T1": "done",
         "P3-T2": "pending",
         "P3-T3": "pending",
         "P3-T4": "pending",
@@ -905,6 +933,18 @@
     {
       "ts": "2026-10-02T09:35:00+07:00",
       "event": "DONE P3-T0 (traloi: admin email + Gmail App Password + hemtra.pages.dev -> decisions); START P3-T1"
+    },
+    {
+      "ts": "2026-10-02T09:46:00+07:00",
+      "event": "P3-T1 nua vong: PATCH auth config xong (OTP 6 so/10 phut, site_url, uri_allow_list); cho user Google OAuth client + SMTP"
+    },
+    {
+      "ts": "2026-10-02T10:05:00+07:00",
+      "event": "P3-T1: PATCH SMTP+subjects+templates OK (200, verify GET; rate_limit_email_sent 2->30; free tier chan template truoc khi co SMTP - probe 400/401). Smoke OTP 500 + SMTP AUTH 535 -> App Password 17 ky tu (dung 16) sai; cho user tao lai. Evidence: .opencode/evidence/p3t1-smtp-email-config.md"
+    },
+    {
+      "ts": "2026-10-02T10:40:00+07:00",
+      "event": "DONE P3-T1: SMTP + 7 subject/template tieng Viet PATCH thanh cong; smoke OTP 200 + recover 200 (email gui duoc); user test da xoa; nguoi goi loi truoc do la script gui ca dau nhay kep (password user dung). START P3-T2 (EF bootstrap-admin)."
     }
   ],
   "tasks": {}
