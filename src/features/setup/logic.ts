@@ -13,9 +13,6 @@ export const MIN_PASSWORD_LENGTH = 6
 // GoTrue giới hạn gửi OTP 60s/email — client tự chặn giữa 2 lần gửi.
 export const RESEND_COOLDOWN_MS = 60_000
 
-export const NETWORK_ERROR = 'Không thể kết nối máy chủ, thử lại sau.'
-export const SERVER_ERROR = 'Lỗi máy chủ, thử lại sau.'
-
 export type SetupStep = 'email' | 'otp'
 
 export type SetupFormValues = {

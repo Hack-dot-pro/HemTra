@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CONFIG_ERROR, EF_DONE_MESSAGE, defaultApi } from './api'
-import { NETWORK_ERROR, SERVER_ERROR } from './logic'
+import { NETWORK_ERROR, SERVER_ERROR } from '../../lib/http'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {

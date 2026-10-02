@@ -15,7 +15,7 @@ Hệ thống web/PWA quản lý doanh thu quán Hẻm Trà: đăng nhập, quả
 | CSS | **Tailwind CSS v4** (`@tailwindcss/vite`) + CSS Glassmorphism tự viết | Yêu cầu. Cố định bản `4.x` đã kiểm chứng ổn định (xem 2.1) |
 | Backend | **Supabase** (Auth, Postgres + RLS, Storage, Realtime, Edge Functions, pg_cron) | Gom một chỗ, miễn phí, đủ cho prototype |
 | Hosting | **Cloudflare Pages** (static, miễn phí, băng thông không giới hạn) | Chỉ host frontend + `_headers`; **không dùng Workers** (Supabase Edge Functions đã đủ → bớt một hệ thống) |
-| Bảo vệ biên | Cloudflare WAF/Rate-limit rule (free) + **Turnstile** (free) | Chống bot ở màn đăng nhập |
+| Bảo vệ biên | Cloudflare WAF/Rate-limit rule (free) + lockout ở EF `auth-login` (5 lần sai/15 phút) | Chống bot/sai mật khẩu ở màn đăng nhập (*bỏ Turnstile* — quyết định 2026-10-02, dùng cá nhân) |
 | Lưu ảnh bill | **Supabase Storage** (bucket private `bills`) | Yêu cầu |
 | Biểu đồ | **ApexCharts** (`react-apexcharts`, lazy-load) | Có `radialBar` + `line` có zoom/pan/brush đúng mẫu `chart_1/2.png` |
 | Xuất PNG | `html-to-image` + Web Share API (fallback tải về) | Chạy client, không tốn server |
@@ -87,7 +87,8 @@ Nguyên tắc ưu tiên **ổn định & tốc độ**, không nhất thiết b�
 ### 4.3 Đăng nhập thường ngày
 - Frontend chỉ nhập **mật khẩu**; `username` được nhớ ở localStorage sau lần đầu (có nút "Đổi tài khoản"). Không bao giờ lưu mật khẩu.
 - Username ánh xạ sang email nội bộ `"<username>@hem.local"` trong Supabase Auth (không gửi mail tới đó).
-- Gọi Edge Function `auth-login` (kiểm tra lockout/Turnstile → `signInWithPassword` phía server → trả session).
+- Gọi Edge Function `auth-login` (kiểm tra lockout 5 lần/15 phút theo cặp username+IP → `signInWithPassword` phía server → trả session; thông báo lỗi chung chung).
+- **Khôi phục lượt đăng nhập**: sai ≥ 5 lần → EF trả `429 locked=true`, UI hiện nút "Gửi OTP khôi phục lượt đăng nhập" → EF `unlock-otp` (gửi OTP 6 số qua GoTrue, **luôn trả 200 chung chung** để không dò được username) → `unlock-verify` đúng mã → xóa lượt sai → đăng nhập lại. Nhân viên `@hem.local` không nhận mail thật → thông báo chung, chờ 15 phút hoặc liên hệ admin.
 - **Ghi nhớ đăng nhập**: bật → session ở `localStorage`; tắt → `sessionStorage`.
 - **Giới hạn 7 ngày**: (a) client kiểm tra `login_at`; (b) RLS thêm hàm `session_fresh()` so `iat` của JWT với 7 ngày → quá hạn là mất quyền truy cập dù client bị sửa.
 
@@ -196,7 +197,7 @@ Dùng bộ SVG 2D **có giấy phép cho phép nhúng** (ví dụ Fluent Emoji F
 9. **Manifest:** tên "Hẻm Trà", `display: standalone`, `theme_color #1e8fe8`, icon 192/512/maskable + `apple-touch-icon` 180 sinh từ `Favicon.png`.
 
 ## 9. Bảo mật (tóm tắt; chi tiết `security/skill.md`)
-RLS bật mọi bảng · signup công khai tắt · `service_role` chỉ ở Edge Function · lockout 5 lần/15 phút (username + IP) · Turnstile sau 3 lần sai · giới hạn tạo bill/phút · CSP + HSTS + header an toàn qua `_headers` · bucket `bills` private + signed URL ngắn hạn · validate zod hai đầu · phiên 7 ngày · không log dữ liệu nhạy cảm · `npm audit` + quét secret trong CI.
+RLS bật mọi bảng · signup công khai tắt · `service_role` chỉ ở Edge Function · lockout 5 lần/15 phút (username + IP) + OTP khôi phục lượt đăng nhập · giới hạn tạo bill/phút · CSP + HSTS + header an toàn qua `_headers` · bucket `bills` private + signed URL ngắn hạn · validate zod hai đầu · phiên 7 ngày · không log dữ liệu nhạy cảm · `npm audit` + quét secret trong CI.
 
 ## 10. Cấu trúc thư mục dự án
 

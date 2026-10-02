@@ -391,6 +391,11 @@ deno_version = 2
 [functions.bootstrap-admin]
 verify_jwt = false
 
+# P3-T4: auth-login goi truoc khi co phien -> verify_jwt = false;
+# bao ve bang lockout 5/15 phut + loi chung chung + OTP khoi phuc (design §4.3).
+[functions.auth-login]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

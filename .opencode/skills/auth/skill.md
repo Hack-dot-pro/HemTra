@@ -1,7 +1,7 @@
 # auth/skill.md — Xác thực, phiên, phân quyền, quản lý user (P3, P9)
 
 > Bắt buộc đọc khi làm **P3, P9** và mọi chỗ đụng session/quyền. Nguồn chuẩn: `design.md §4`.
-> RLS chi tiết: `backend/skill.md §5`. Lockout/Turnstile: `security/skill.md §2`.
+> RLS chi tiết: `backend/skill.md §5`. Lockout/OTP khôi phục lượt đăng nhập: `security/skill.md §2`.
 
 ## 1. Cấu hình Supabase Auth (P3-T1 — cần thông tin user ở P3-T0, chưa có thì DỪNG)
 
@@ -14,7 +14,7 @@
 | Function | Nhiệm vụ | Bẫy thường gặp |
 |---|---|---|
 | `bootstrap-admin` | Chỉ chạy khi `app_meta.bootstrapped=false`; kiểm tra email Google **trùng secret `BOOTSTRAP_ADMIN_EMAIL`**; xong ghi `profiles.role='admin'` + `bootstrapped=true` | Quên kiểm tra đã bootstrap → người lạ chiếm admin |
-| `auth-login` | Kiểm tra lockout (username+IP) + Turnstile sau 3 sai → `signInWithPassword` phía server → trả session; lỗi chung chung | Trả về lỗi phân biệt user tồn tại/không |
+| `auth-login` | Kiểm tra lockout (username+IP, 5 lần/15 phút) → `signInWithPassword` phía server → trả session; sai 5 lần → `unlock-otp`/`unlock-verify` khôi phục lượt bằng OTP email; lỗi chung chung | Trả về lỗi phân biệt user tồn tại/không; `unlock-otp` phải LUÔN trả 200 chung chung (chống dò username) |
 | `admin-users` | Tạo user, cấp lại/đặt mật khẩu (sinh tạm), xóa — kiểm quyền **phía server**; chặn mọi tác động lên tài khoản admin từ non-admin | Chỉ kiểm quyền ở UI (bypass bằng gọi API trực tiếp) |
 | `recovery` | Admin: Google OAuth lại → OTP → đặt mật khẩu mới. Staff: hiện "Liên hệ admin" | Mở self-recovery cho staff |
 

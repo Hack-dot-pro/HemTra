@@ -1,14 +1,12 @@
-import { SIGN_IN_ERROR } from './loginForm'
+import { requestLogin } from './loginApi'
 
-export type SignInResult = { ok: true } | { ok: false; message: string }
+export type SignInResult = { ok: true } | { ok: false; message: string; locked?: boolean }
 
-// P2: backend xác thực chưa được nối — P3-T4 thay hàm này bằng Edge Function
-// `auth-login` (lockout 5/15 phút, Turnstile sau 3 lần sai — auth/skill.md §2).
-export async function signIn(_username: string, _password: string): Promise<SignInResult> {
-  await new Promise((resolve) => setTimeout(resolve, 250))
+// P3-T4: gọi EF `auth-login` — lockout 5 lần/15 phút (username+IP); khi bị khóa
+// trả `locked=true` để UI gợi ý khôi phục qua OTP (design §4.3).
+// Lưu phiên + kiểm tra 7 ngày do P3-T5 xử lý (session_fresh() server đã có từ P1).
+export async function signIn(username: string, password: string): Promise<SignInResult> {
+  const result = await requestLogin(username, password)
+  if (!result.ok) return { ok: false, message: result.message, locked: result.locked }
   return { ok: true }
-}
-
-export function wrongPassword(): SignInResult {
-  return { ok: false, message: SIGN_IN_ERROR }
 }

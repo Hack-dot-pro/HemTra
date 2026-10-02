@@ -12,7 +12,7 @@
 ## 2. Chuẩn áp dụng cho HemTra
 
 - RLS bật mọi bảng (xem mẫu đúng ở `backend/skill.md §5`); signup công khai TẮT sau bootstrap; bootstrap chỉ qua Edge Function `bootstrap-admin` kiểm tra email trùng secret + `bootstrapped=false`.
-- Lockout đăng nhập 5 lần/15 phút theo username + IP; Turnstile sau 3 lần sai; thông báo lỗi chung chung (không lộ user tồn tại hay không).
+- Lockout đăng nhập 5 lần/15 phút theo username + IP; sai 5 lần client kích hoạt OTP khôi phục lượt đăng nhập (`unlock-otp` luôn trả 200 chung chung, `unlock-verify` đúng mã mới xóa lượt sai); thông báo lỗi chung chung (không lộ user tồn tại hay không).
 - Phiên tối đa 7 ngày (client `login_at` + server `session_fresh()` so iat JWT); "ghi nhớ" bật → `localStorage`, tắt → `sessionStorage`; không lưu mật khẩu ở bất cứ đâu, chỉ được nhớ username.
 - Bill: không nút xóa, không xóa qua API; job `cleanup-bills` xóa file Storage qua API trước rồi mới xóa dòng DB; tuyệt đối không đụng `stats_*`.
 - Bucket `bills` private; đọc bằng signed URL ngắn hạn; chặn upload sai loại/quá lớn/ghi đè/xóa từ client (upsert cần đủ INSERT + SELECT + UPDATE).

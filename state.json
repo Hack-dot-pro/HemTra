@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T13:12:55+07:00",
+    "last_updated": "2026-10-02T13:43:15+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T4",
+    "task": "P3-T5",
     "step": "CODE",
-    "note": "P3-T3 DONE (route /setup 2 buoc + link tren login, 92 unit + 15 e2e xanh, e2e p3-setup 3 project, cloud van pre-bootstrap - khong goi complete that). Tiep tuc: P3-T4 EF auth-login (lockout 5/15 phut username+IP, Turnstile sau 3 sai, loi chung chung) + signIn() that."
+    "note": "P3-T4 DONE (EF auth-login deploy cloud + smoke 19/19: lockout 5/15 username+IP, unlock-otp/verify generic, login 200 session; FE: lib/http.ts + loginApi + signIn that + LoginStage luong OTP khoi phuc; xoa dead export wrongPassword - dong backlog QC P2-004; bo Turnstile trong design/plan/skills). 106 unit + 15 e2e xanh, coverage 97.61%, gitleaks 0. Tiep tuc: P3-T5 quan ly session 7 ngay (ghi nho localStorage/sessionStorage + session_fresh() server + tu dang xuat het han)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -74,7 +74,10 @@
     "p3t1_disable_signup": "Chot 2026-10-02: disable_signup giu FALSE den khi bootstrap xong, sau do EF bootstrap-admin (P3-T2) tu dat true. Ly do (docs GoTrue): khi disable_signup=true chi con invite tao user duoc -> bat som se chan luong tao user moi (ca OAuth lan OTP) nen se chan luong bootstrap admin neu bat som. Khoan nay chong lai bang bootstrap-admin EF kiem tra bootstrapped=false + email trung secret (design §4.2 buoc 2) + khong cho dang ky tu do tren UI (P3-T3 chi hien khi bootstrapped=false).",
     "p3t2_test_target": "Chot 2026-10-02: test EF/DB tren CLOUD (dev) thay local stack — supabase start khong chay duoc tren may nay (Docker nested, iptables legacy/nft conflict -> packet container-to-container bi drop, trung B-001 P0-T6). Cloud API luon song: db query --linked, db push, db advisors, functions deploy --use-api, secrets set. Sau moi lan test bootstrap cloud phai RESET (xoa user+profile, bootstrapped=false, admin_email=null, disable_signup=false) de P3-T3/T9 chay lai duoc.",
     "p3t2_ef_secrets": "Chot 2026-10-02: EF bootstrap-admin dung 3 secrets: BOOTSTRAP_ADMIN_EMAIL, MGMT_ACCESS_TOKEN (PAT — EF tu PATCH disable_signup=true sau khi bootstrap, theo design §4.2.5 + decisions.p3t1_disable_signup), HEMTRA_PROJECT_REF (ten SUPABASE_PROJECT_REF bi tu choi — reserved prefix SUPABASE_). PAT trong EF secrets: ruyi ro neu EF bi exploit — chan bang verify_jwt=false + bootstrapped guard + email secret + OTP server-side; chi 1 endpoint duoc PATCH auth config.",
-    "p3t2_admin_auth_email": "Chot 2026-10-02: admin GIU email that trong auth.users (khong doi sang <username>@hem.local nhu staff). Ly do: recovery/doi key (P3-T6/P3-T8) gui OTP den email that qua signInWithOtp — neu doi email thi GoTrue khong tim duoc user. Hau qua cho P3-T4 (auth-login EF): username->email mapping phac doan ...@hem.local dung cho staff; admin phai tra app_meta.admin_email (role=admin)."
+    "p3t2_admin_auth_email": "Chot 2026-10-02: admin GIU email that trong auth.users (khong doi sang <username>@hem.local nhu staff). Ly do: recovery/doi key (P3-T6/P3-T8) gui OTP den email that qua signInWithOtp — neu doi email thi GoTrue khong tim duoc user. Hau qua cho P3-T4 (auth-login EF): username->email mapping phac doan ...@hem.local dung cho staff; admin phai tra app_meta.admin_email (role=admin).",
+    "turnstile": "User chon 2026-10-02: BO Turnstile khoi T4 + design (ly do: dung ca nhan, khong can phuc tap; chua co turnstile key). Lockout 5/15 phut van giu. Cap nhat design.md (§2/§4.3/§8.6), plan.md (P3-T4, P10-T5), auth/skill.md, security/skill.md.",
+    "lockout_otp_unlock": "User chon 2026-10-02: sau 5 lan sai (khoa 5/15 phut username+IP) thi UI TU DONG de nghi gui OTP ve email de khoi phuc luot dang nhap (xoa bo dem) — thay cho Turnstile. GoTrue rate limit OTP + anti-oracle (response luon generic). Staff @hem.local khong nhan duoc mail -> doi 15 phut/lien he admin (nhan generic).",
+    "session_7d_note": "User nhan manh 2026-10-02: can reset session sau 7 ngay -> phai login lai — day chinh la P3-T5 (client login_at + session_fresh() server da co tu P1), lam ngay sau T4."
   },
   "open_questions": [
     {
@@ -122,13 +125,11 @@
     }
   ],
   "backlog": [
-    "P3: thay signIn() stub bang Edge Function auth-login (hien luon thanh cong) — src/features/auth/signIn.ts",
     "P3-T6: noi nut 'Quen mat khau' voi luong khoi phuc OTP email (hien chi hien goi y lien he admin)",
     "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)",
     "QC P2-001 MINOR: login-hero.png rac o root -> da dung lam source nen login (src/assets/login-stage.webp|jpg), giu root goc kieu Logo.png/background.png",
     "QC P2-002 MINOR: lech scope - repo track nhieu file ngoai app (.claude/, agent/, .opencode/ skills, PNG goc o root) -> chot tach hay ghi chu",
     "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
-    "QC P2-004 MINOR: dead export - wrongPassword() export nhung khong dung ngoai signIn.ts (src/features/auth/signIn.ts:12)",
     "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery",
     "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
     "P3-T7: dat security_update_password_require_current_password=true (hien false) theo design §4.1 'doi mat khau cua minh nhap mat khau cu'",
@@ -621,6 +622,35 @@
       "agent": "assistant",
       "event": "p3t3_setup_ui",
       "result": "Tao src/lib/supabase.ts (env VITE_, null-safe) + src/features/setup/ (logic/api/useBootstrapStatus/SetupStage) + route /setup + link 'Thiet lap lan dau' tren LoginStage (chi khi not_bootstrapped) + saveUsername sau complete. Contract EF/REST xac minh bang curl truoc khi code. Checks: typecheck 0, lint 0, vitest 92/92 (coverage lines 97.88%, branches 93.13%), build xanh (js 288.95KB/gzip 90.99KB), playwright 15/15 (chromium/webkit/mobile, gom 5 test P3-T3 + anh setup-* 2 viewport + axe 0 serious), gitleaks 0 leak. Phu hop plan.md P3-T3."
+    },
+    {
+      "at": "2026-10-02T13:24:13+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/auth/skill.md",
+        ".opencode/skills/backend/skill.md",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/testing/skill.md",
+        "design.md §4.3"
+      ],
+      "note": "Doc truoc khi lam P3-T4 (EF auth-login) theo AGENT.md §12.2. Bo Turnstile + them OTP khoi phuc luot dang nhap theo chon cua user (xem decisions)."
+    },
+    {
+      "at": "2026-10-02T13:43:15+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/uiux/skill.md"
+      ],
+      "note": "Bo sung khi sua UI LoginStage (trang thai khoa + OTP khoi phuc, P3-T4) — unlock dung lai class field/link/submit/hint/shake, nhan/focus/shake tieng Viet."
+    },
+    {
+      "at": "2026-10-02T13:43:15+07:00",
+      "agent": "assistant",
+      "event": "p3t4_auth_login",
+      "file": ".opencode/evidence/p3t4-auth-login.md",
+      "result": "EF auth-login deploy --use-api + smoke cloud 19/19 PASS (lockout 5 lan 401 -> lan 6 429 locked, unlock-otp luon 200 generic, unlock-verify token sai 401, login dung 200 session, CORS 204, EF 405/400); FE: lib/http.ts + setup/api refactor + loginApi + signIn that + LoginStage luong OTP (DI onUnlockSend/onUnlockVerify). Checks: typecheck 0, lint 0, vitest 106/106 coverage lines 97.61%, build gzip 91.78KB, e2e 15/15, gitleaks 0. Nhan: khi dang khoa, mat khau DUNG van bi 429 (dung); unlock-verify thanh cong chua smoke duoc (can mailbox) - giai doan trong evidence."
     }
   ],
   "phases": {
@@ -690,7 +720,7 @@
         "P3-T1": "done",
         "P3-T2": "done",
         "P3-T3": "done",
-        "P3-T4": "pending",
+        "P3-T4": "done",
         "P3-T5": "pending",
         "P3-T6": "pending",
         "P3-T7": "pending",
@@ -1010,6 +1040,14 @@
     {
       "ts": "2026-10-02T13:12:55+07:00",
       "event": "DONE P3-T3: man hinh dang ky lan dau (2 buoc: email -> OTP+username+mat khau, goi EF bootstrap-admin; anti-oracle hien thi chung; alreadyDone 409 thoat ve login; cooldown 60s; luu username de login chi nhap mat khau). Cloud van pre-bootstrap (khong goi complete that). Tiep T4."
+    },
+    {
+      "ts": "2026-10-02T13:24:13+07:00",
+      "event": "START P3-T4: user chon bo Turnstile, them 'sai 5 lan -> OTP khoi phuc luot dang nhap'; session 7 ngay = P3-T5 (tiep sau). Skills da doc."
+    },
+    {
+      "ts": "2026-10-02T13:43:15+07:00",
+      "event": "DONE P3-T4: EF auth-login (lockout 5/15 phut username+IP, loi luon chung chung, unlock-otp luon 200, unlock-verify xoa luot sai) + signIn() that + LoginStage hien luong OTP khoi phuc sau 5 lan sai; bo Turnstile trong design/plan/skills (quyet dinh user); xoa dead export wrongPassword (dong backlog QC P2-004). Smoke cloud 19/19 PASS, 106 unit + 15 e2e xanh, coverage 97.61%, gitleaks 0. Ke tiep P3-T5 session 7 ngay."
     }
   ],
   "tasks": {}

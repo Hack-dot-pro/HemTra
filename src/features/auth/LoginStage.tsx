@@ -11,6 +11,7 @@ import {
   type LoginFormErrors,
 } from './loginForm'
 import { signIn, type SignInResult } from './signIn'
+import { requestUnlockOtp, verifyUnlockOtp, type UnlockResult } from './loginApi'
 import { IOS_INSTALL_GUIDE } from './install'
 import { useInstallPrompt } from './useInstallPrompt'
 import { useClearCache } from './useClearCache'
@@ -21,11 +22,19 @@ export type LoginStageProps = {
   onSignIn?: (username: string, password: string) => Promise<SignInResult>
   // DI cho test — mặc định đọc trạng thái bootstrap thật (P3-T3)
   bootstrapApi?: SetupApi
+  // DI cho test — mặc định gọi EF auth-login (P3-T4)
+  onUnlockSend?: (username: string) => Promise<UnlockResult>
+  onUnlockVerify?: (username: string, token: string) => Promise<UnlockResult>
 }
 
 type SubmitStatus = 'idle' | 'submitting'
 
-export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginStageProps) {
+export default function LoginStage({
+  onSignIn = signIn,
+  bootstrapApi,
+  onUnlockSend = requestUnlockOtp,
+  onUnlockVerify = verifyUnlockOtp,
+}: LoginStageProps) {
   const navigate = useNavigate()
   const location = useLocation()
   // Đến từ màn thiết lập lần đầu (P3-T3) — hiện lời xác nhận rồi dọn state.
@@ -41,9 +50,16 @@ export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginSta
     setupDone ? 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.' : null,
   )
   const [showGuide, setShowGuide] = useState(false)
+  // Khôi phục lượt đăng nhập qua OTP sau 5 lần sai (P3-T4, design §4.3)
+  const [locked, setLocked] = useState(false)
+  const [unlockSent, setUnlockSent] = useState(false)
+  const [unlockOtp, setUnlockOtp] = useState('')
+  const [unlockBusy, setUnlockBusy] = useState(false)
+  const [unlockHint, setUnlockHint] = useState<string | null>(null)
 
   const userFieldRef = useRef<HTMLLabelElement | null>(null)
   const passFieldRef = useRef<HTMLLabelElement | null>(null)
+  const unlockFieldRef = useRef<HTMLLabelElement | null>(null)
   const guideCloseRef = useRef<HTMLButtonElement | null>(null)
 
   const install = useInstallPrompt()
@@ -63,6 +79,13 @@ export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginSta
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showGuide])
+
+  // Tự focus ô OTP khôi phục sau khi gửi mã
+  useEffect(() => {
+    if (!unlockSent) return
+    const id = window.setTimeout(() => unlockFieldRef.current?.querySelector('input')?.focus(), 0)
+    return () => window.clearTimeout(id)
+  }, [unlockSent])
 
   function shake(ref: RefObject<HTMLLabelElement | null>) {
     const el = ref.current
@@ -110,6 +133,10 @@ export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginSta
       setStatus('idle')
       setPassword('')
       setErrors({ form: result.message })
+      setLocked(Boolean(result.locked))
+      setUnlockSent(false)
+      setUnlockOtp('')
+      setUnlockHint(null)
       shake(passFieldRef)
       passFieldRef.current?.querySelector('input')?.focus()
       return
@@ -118,6 +145,7 @@ export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginSta
     saveUsername(values.username.trim(), remember)
     setStatus('idle')
     setErrors({})
+    setLocked(false)
     navigate('/dashboard')
   }
 
@@ -128,6 +156,52 @@ export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginSta
     setPassword('')
     setErrors({})
     setRemember(true)
+    setLocked(false)
+    setUnlockSent(false)
+    setUnlockOtp('')
+    setUnlockHint(null)
+  }
+
+  // Khôi phục lượt đăng nhập: gửi OTP → nhập 6 số → mở khóa (P3-T4)
+  async function handleUnlockSend() {
+    const target = (savedUsername ?? username).trim()
+    if (!target) {
+      setErrors({ form: 'Vui lòng nhập tài khoản.' })
+      return
+    }
+    setUnlockBusy(true)
+    const result = await onUnlockSend(target)
+    setUnlockBusy(false)
+    if (!result.ok) {
+      setErrors({ form: result.message })
+      return
+    }
+    setErrors({})
+    setUnlockSent(true)
+    setUnlockHint(result.message)
+  }
+
+  async function handleUnlockVerify() {
+    const target = (savedUsername ?? username).trim()
+    if (!/^\d{6}$/.test(unlockOtp)) {
+      setErrors({ form: 'Mã OTP gồm 6 chữ số.' })
+      shake(unlockFieldRef)
+      return
+    }
+    setUnlockBusy(true)
+    const result = await onUnlockVerify(target, unlockOtp)
+    setUnlockBusy(false)
+    if (!result.ok) {
+      setErrors({ form: result.message })
+      shake(unlockFieldRef)
+      return
+    }
+    setLocked(false)
+    setUnlockSent(false)
+    setUnlockOtp('')
+    setUnlockHint(null)
+    setErrors({})
+    setHint(result.message || 'Đã khôi phục lượt đăng nhập. Hãy thử đăng nhập lại.')
   }
 
   async function handleInstall() {
@@ -293,6 +367,85 @@ export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginSta
               <button type="button" className="link" onClick={() => navigate('/setup')}>
                 Thiết lập lần đầu
               </button>
+            )}
+
+            {locked && !unlockSent && (
+              <button
+                type="button"
+                className="link"
+                disabled={unlockBusy}
+                onClick={() => void handleUnlockSend()}
+              >
+                {unlockBusy ? 'Đang gửi OTP…' : 'Gửi OTP khôi phục lượt đăng nhập'}
+              </button>
+            )}
+
+            {locked && unlockSent && (
+              <>
+                <label className="field" id="f-unlock" ref={unlockFieldRef}>
+                  <span className="ico" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="8" cy="14" r="4" />
+                      <path d="M11 11 20 2M17 5l2 2M14 8l2 2" />
+                    </svg>
+                  </span>
+                  <input
+                    id="unlock-otp"
+                    name="unlock-otp"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Mã OTP khôi phục"
+                    aria-label="Mã OTP khôi phục"
+                    autoComplete="one-time-code"
+                    aria-invalid={Boolean(errors.form)}
+                    value={unlockOtp}
+                    onChange={(e) => {
+                      setUnlockOtp(e.target.value.replace(/\D/g, ''))
+                      if (errors.form) setErrors((prev) => ({ ...prev, form: undefined }))
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="submit"
+                  disabled={unlockBusy}
+                  onClick={() => void handleUnlockVerify()}
+                >
+                  {unlockBusy ? 'Đang khôi phục…' : 'Khôi phục lượt đăng nhập'}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 12h16M14 6l6 6-6 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="link"
+                  disabled={unlockBusy}
+                  onClick={() => setUnlockSent(false)}
+                >
+                  Gửi lại OTP
+                </button>
+                {unlockHint && (
+                  <p className="hint" role="status">
+                    {unlockHint}
+                  </p>
+                )}
+              </>
             )}
 
             {hint && (

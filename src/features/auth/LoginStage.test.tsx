@@ -24,13 +24,16 @@ function renderLogin(
   onSignIn?: LoginStageProps['onSignIn'],
   bootstrapApi: SetupApi = BOOTSTRAPPED_API,
   entry: string = '/login',
+  unlock?: Pick<LoginStageProps, 'onUnlockSend' | 'onUnlockVerify'>,
 ) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route
           path="/login"
-          element={<LoginStage onSignIn={onSignIn} bootstrapApi={bootstrapApi} />}
+          element={
+            <LoginStage onSignIn={onSignIn} bootstrapApi={bootstrapApi} {...unlock} />
+          }
         />
         <Route path="/setup" element={<div>SETUP SCREEN</div>} />
       </Routes>
@@ -275,5 +278,97 @@ describe('LoginStage — liên kết Thiết lập lần đầu (P3-T3)', () => 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.',
     )
+  })
+})
+
+describe('LoginStage — khôi phục lượt đăng nhập qua OTP sau 5 lần sai (P3-T4)', () => {
+  const LOCKED_MSG = 'Sai mật khẩu quá 5 lần. Hãy khôi phục bằng OTP hoặc thử lại sau 15 phút.'
+
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+  })
+
+  afterEach(cleanup)
+
+  it('khóa → gợi ý gửi OTP → nhập OTP sai lỗi → OTP đúng thì hết khóa', async () => {
+    const user = userEvent.setup()
+    const onSignIn = vi
+      .fn()
+      .mockResolvedValue({ ok: false, message: LOCKED_MSG, locked: true })
+    const onUnlockSend = vi.fn().mockResolvedValue({ ok: true, message: 'Đã gửi mã OTP.' })
+    const onUnlockVerify = vi.fn().mockResolvedValue({
+      ok: true,
+      message: 'Đã khôi phục lượt đăng nhập. Hãy thử đăng nhập lại.',
+    })
+    renderLogin(onSignIn, BOOTSTRAPPED_API, '/login', { onUnlockSend, onUnlockVerify })
+
+    await user.type(screen.getByLabelText('Tài khoản'), 'linh')
+    await user.type(screen.getByLabelText('Mật khẩu'), 'sai')
+    await user.click(screen.getByRole('button', { name: /đăng nhập/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(LOCKED_MSG)
+    const sendBtn = screen.getByRole('button', { name: 'Gửi OTP khôi phục lượt đăng nhập' })
+    await user.click(sendBtn)
+    expect(onUnlockSend).toHaveBeenCalledWith('linh')
+
+    const otp = await screen.findByLabelText('Mã OTP khôi phục')
+    await waitFor(() => expect(otp).toHaveFocus())
+    expect(screen.getByRole('status')).toHaveTextContent('Đã gửi mã OTP.')
+
+    await user.type(otp, '123')
+    await user.click(screen.getByRole('button', { name: 'Khôi phục lượt đăng nhập' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mã OTP gồm 6 chữ số.')
+    expect(onUnlockVerify).not.toHaveBeenCalled()
+
+    await user.type(otp, '456')
+    await user.click(screen.getByRole('button', { name: 'Khôi phục lượt đăng nhập' }))
+    expect(onUnlockVerify).toHaveBeenCalledWith('linh', '123456')
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Mã OTP khôi phục')).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Đã khôi phục lượt đăng nhập.')
+    expect(screen.queryByRole('button', { name: 'Gửi OTP khôi phục lượt đăng nhập' })).not.toBeInTheDocument()
+    // vẫn còn ô mật khẩu để đăng nhập lại
+    expect(screen.getByLabelText('Mật khẩu')).toBeInTheDocument()
+  })
+
+  it('gửi OTP thất bại → hiện thông báo lỗi, giữ nguyên trạng thái khóa', async () => {
+    const user = userEvent.setup()
+    const onSignIn = vi
+      .fn()
+      .mockResolvedValue({ ok: false, message: LOCKED_MSG, locked: true })
+    const onUnlockSend = vi
+      .fn()
+      .mockResolvedValue({ ok: false, message: 'Không thể gửi OTP, thử lại sau.' })
+    renderLogin(onSignIn, BOOTSTRAPPED_API, '/login', { onUnlockSend })
+
+    await user.type(screen.getByLabelText('Tài khoản'), 'linh')
+    await user.type(screen.getByLabelText('Mật khẩu'), 'sai')
+    await user.click(screen.getByRole('button', { name: /đăng nhập/i }))
+
+    await user.click(await screen.findByRole('button', { name: 'Gửi OTP khôi phục lượt đăng nhập' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Không thể gửi OTP, thử lại sau.')
+    expect(screen.queryByLabelText('Mã OTP khôi phục')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Gửi OTP khôi phục lượt đăng nhập' }),
+    ).toBeInTheDocument()
+  })
+
+  it('sai mật khẩu thường (không khóa) → KHÔNG hiện nút khôi phục OTP', async () => {
+    const user = userEvent.setup()
+    const onSignIn = vi.fn().mockResolvedValue({ ok: false, message: SIGN_IN_ERROR })
+    renderLogin(onSignIn)
+
+    await user.type(screen.getByLabelText('Tài khoản'), 'linh')
+    await user.type(screen.getByLabelText('Mật khẩu'), 'sai')
+    await user.click(screen.getByRole('button', { name: /đăng nhập/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(SIGN_IN_ERROR)
+    expect(
+      screen.queryByRole('button', { name: 'Gửi OTP khôi phục lượt đăng nhập' }),
+    ).not.toBeInTheDocument()
   })
 })

@@ -50,7 +50,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P3-T1** 🔒 Cấu hình Supabase Auth: OTP email 6 số/hết hạn 10 phút, `site_url`/redirect (đã xong qua Management API), SMTP riêng, tắt signup công khai **sau khi bootstrap** (design §4.2.5). *Không dùng Google OAuth (chốt 2026-10-02)* → xong 2026-10-02 (SMTP Gmail + 7 subject/template VI; smoke OTP+recover 200; evidence p3t1-smtp-email-config.md)
 - [x] **P3-T2** 🔒 Edge Function `bootstrap-admin` (kiểm tra email trùng secret, chỉ chạy khi `bootstrapped=false`)
 - [x] **P3-T3** Màn hình đăng ký lần đầu (nhập email admin → OTP → đặt username+mật khẩu); ẩn vĩnh viễn sau bootstrap → xong 2026-10-02 (route `/setup` 2 bước gọi EF `bootstrap-admin`, link "Thiết lập lần đầu" trên login chỉ hiện khi `bootstrapped=false`; 92 unit + 15 e2e xanh, coverage lines 97.88%, gitleaks 0 leak)
-- [ ] **P3-T4** 🔒 Edge Function `auth-login` (lockout 5/15 phút theo username+IP, Turnstile sau 3 lần sai, thông báo lỗi chung chung)
+- [x] **P3-T4** 🔒 Edge Function `auth-login` (lockout 5/15 phút theo username+IP, sai 5 lần thì UI kích hoạt OTP khôi phục lượt đăng nhập qua `unlock-otp`/`unlock-verify`, thông báo lỗi chung chung; *bỏ Turnstile* 2026-10-02) → xong 2026-10-02 (EF deploy cloud, smoke 19/19 PASS, signIn() thật, LoginStage luồng OTP; 106 unit + 15 e2e xanh, coverage lines 97.61%, gitleaks 0 leak)
 - [ ] **P3-T5** Quản lý session: "ghi nhớ" (localStorage) vs tắt (sessionStorage), giới hạn 7 ngày client + `session_fresh()` server, tự đăng xuất khi hết hạn
 - [ ] **P3-T6** Khôi phục mật khẩu admin qua OTP email — EF `admin-recovery` **bắt buộc email trùng `app_meta.admin_email`**; staff hiển thị "Liên hệ admin"
 - [ ] **P3-T7** Route guard theo role; đổi mật khẩu bản thân (nhập mật khẩu cũ); `must_change_password` buộc đổi lần đầu
@@ -130,7 +130,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [ ] **P10-T2** Rate limit tạo bill/phút, giới hạn kích thước & loại file upload
 - [ ] **P10-T3** Quét secret (gitleaks), `npm audit`, kiểm tra thư viện bị bỏ rơi
 - [ ] **P10-T4** Kịch bản tấn công thủ công: IDOR bill, nâng quyền staff→admin, sửa JWT, brute-force, XSS ở ghi chú/tên sản phẩm
-- [ ] **P10-T5** Cloudflare: rule rate-limit + Turnstile bật thật
+- [ ] **P10-T5** Cloudflare: rule rate-limit cho màn đăng nhập (*Turnstile đã bỏ* — quyết định 2026-10-02; lockout 5/15 phút ở EF đã có)
 - **Gate:** QC ☐ · SEC ☐ (SEC chạy toàn diện, không chỉ diff)
 
 ## P11 — E2E toàn luồng & triển khai
