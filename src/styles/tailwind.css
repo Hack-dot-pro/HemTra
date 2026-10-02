@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Design tokens — design.md §7.1/§7.2, uiux/skill.md §1 */
+@theme {
+  --font-sans: "Calibri", "Carlito", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-brand: #1e8fe8;
+  --color-brand-strong: #1b6fd1;
+  --color-stage: #0c4a8a;
+  --color-overlay: rgb(8 30 60 / 0.45);
+  --color-dark-glass: rgb(8 30 60 / 0.62);
+  --color-glass-border: rgb(255 255 255 / 0.3);
+  --radius-glass: 20px;
+  --blur-glass: 24px;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-stage);
+    color: #fff;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

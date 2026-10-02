@@ -1,0 +1,149 @@
+/* Font Carlito self-host (chuỗi fallback Calibri, Carlito, sans-serif) — design.md §7.1 */
+@font-face {
+  font-family: "Carlito";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/carlito-vietnamese-400.woff2") format("woff2");
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
+    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: "Carlito";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/carlito-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Carlito";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/carlito-vietnamese-700.woff2") format("woff2");
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
+    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: "Carlito";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/carlito-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@layer components {
+/* Nền sau đăng nhập — design.md §7.2: ảnh + overlay tối + backdrop-blur.
+   image-set() để tải webp khi hỗ trợ, png chỉ là dự phòng (không tải song song). */
+.app-bg {
+  background-image: url("../assets/background.png");
+  background-image: image-set(
+    url("../assets/background.webp") type("image/webp"),
+    url("../assets/background.png") type("image/png")
+  );
+  background-size: cover;
+  background-position: top;
+  background-repeat: no-repeat;
+}
+
+/* Thẻ kính dùng chung — design.md §7.2 (bg-white/15, border-white/30, backdrop-blur-xl) */
+.glass-card {
+  border-radius: var(--radius-glass);
+  background-color: rgb(255 255 255 / 0.15);
+  border: 1px solid var(--color-glass-border);
+  color: #fff;
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-glass)) saturate(1.15);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 10px 30px rgb(10 70 140 / 0.18);
+}
+
+/* Ô nhập bo tròn viền trắng mờ — uiux/skill.md §2 */
+.glass-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  background-color: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font: inherit;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.glass-input::placeholder {
+  color: rgb(255 255 255 / 0.88);
+  opacity: 1;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: #fff;
+  background-color: rgb(255 255 255 / 0.2);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.28);
+}
+
+.glass-input[aria-invalid="true"] {
+  border-color: #ffd1d1;
+}
+
+/* Nút kính — .glass-btn (viền kính) và .glass-btn-primary (trắng-xanh #1b6fd1) */
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--color-glass-border);
+  background-color: rgb(255 255 255 / 0.15);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.15s;
+}
+
+.glass-btn:hover {
+  background-color: rgb(255 255 255 / 0.25);
+}
+
+.glass-btn:active {
+  transform: scale(0.98);
+}
+
+.glass-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.glass-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.glass-btn-primary {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.92), rgb(214 234 255 / 0.86));
+  border-color: transparent;
+  color: var(--color-brand-strong);
+  box-shadow:
+    0 4px 14px rgb(20 90 180 / 0.18),
+    inset 0 1px 0 #fff;
+}
+
+.glass-btn-primary:hover {
+  background: linear-gradient(180deg, #fff, #e9f3ff);
+}
+}

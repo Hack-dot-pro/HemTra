@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T00:30:00+07:00",
-    "last_agent": "security-audit"
+    "last_updated": "2026-10-02T08:17:56+07:00",
+    "last_agent": "main-coding"
   },
   "pointer": {
-    "phase": "P1",
-    "task": "DONE",
-    "step": "IDLE",
-    "note": "P1 xong (T1-T10, Gate QC+SEC PASS). Da push origin/main @b41f277. TAMP DUNG theo yeu cau user. Phase tiep theo: P2 (UI/UX + LoginStage) — doc uiux/skill.md + design §7 truoc khi code."
+    "phase": "P2",
+    "task": "P2-T7",
+    "step": "QC",
+    "note": "P2 code xong T1-T7 (38 unit + 9/9 e2e + build xanh). Dang goi qc-test cho P2. Gate chua tick."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -102,7 +102,11 @@
       "status": "resolved-link-prod-ok"
     }
   ],
-  "backlog": [],
+  "backlog": [
+    "P3: thay signIn() stub bang Edge Function auth-login (hien luon thanh cong) — src/features/auth/signIn.ts",
+    "P3-T6: noi nut 'Quen mat khau' voi luong khoi phuc Google+OTP (hien chi hien goi y lien he admin)",
+    "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)"
+  ],
   "off_plan_actions": [
     {
       "at": "2026-10-01T21:37:38+07:00",
@@ -361,6 +365,111 @@
         "backend/skill.md",
         "testing/skill.md"
       ]
+    },
+    {
+      "at": "2026-10-02T07:41:04+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        "uiux/skill.md",
+        "testing/skill.md",
+        "auth/skill.md",
+        "security/skill.md(XSS/headers)",
+        "design.md §7,§8,§10",
+        "template.html"
+      ],
+      "note": "P2 bat dau"
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T1 done",
+      "cmd": "tao src/styles/tailwind.css (@theme tokens) + src/styles/glass.css (@font-face Carlito 4 file public/fonts + .glass-card/.glass-input/.glass-btn trong @layer components)",
+      "output": "typecheck 0, lint 0; 4 woff2 latin+vietnamese 400/700 = 100KB; deps: react-router-dom 7.18.4, lucide-react, @axe-core/playwright, @vitest/coverage-v8",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T2 done",
+      "cmd": "trich 2 data URI tu template.html -> src/assets/login-stage.jpg (1080x1920) + login-logo.png (660x478, co alpha); port CSS -> src/features/auth/login-stage.css + LoginStage.tsx",
+      "output": "giu nguyen %: stage 9:16, logo 56.9/29.5/27.4%, card 52.7/42.6/41.3%, --ui clamp, shake + prefers-reduced-motion",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T3 done",
+      "cmd": "loginForm.ts (validate + luu username) + LoginStage form: password-only khi co username luu, Doi tai khoan, Ghi nho, hien/an mat khau, loi tieng Viet",
+      "output": "38 unit test xanh; chi luu username (khong luu mat khau); loi chung chung 'Tai khoan hoac mat khau khong dung.'",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T4 done",
+      "cmd": "install.ts (isStandalone/isIosDevice/canInstall) + useInstallPrompt.ts + nut Tai App",
+      "output": "hidden khi standalone; beforeinstallprompt -> prompt(); iOS -> hop huong dan (dialog Esc + focus)",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T5 done",
+      "cmd": "useClearCache.ts (runner gia lap, P4 se thay hardRefresh) + nut Xoa cache & Tai lai",
+      "output": "test idle->running->done + error path; 38/38 pass",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T6 done",
+      "cmd": "src/app/{App,routes,AppLayout,nav} + 5 trang trong features/* + public/_redirects (SPA fallback)",
+      "output": "10 link menu (sidebar + bottom-nav); chua co phien nen trang chi -> /login; route guard = P3-T7",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "P2-T7 done",
+      "cmd": "vitest --coverage + npx playwright test (chromium/webkit/mobile x 3 test)",
+      "output": "38 unit pass, lines 91.52%; 9/9 e2e pass; axe 0 serious/critical; console 0 loi; build js 277.31KB gzip 88.23KB",
+      "skills_read": [
+        "uiux/skill.md",
+        "testing/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:17:56+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        "uiux/skill.md",
+        "testing/skill.md",
+        "auth/skill.md",
+        "security/skill.md",
+        "design.md §7,§8,§10",
+        "template.html",
+        "subagent.md §2-3"
+      ]
     }
   ],
   "phases": {
@@ -383,10 +492,10 @@
     },
     "P1": {
       "title": "Backend: database & RLS",
-      "status": "in_progress",
+      "status": "done",
       "gates": {
-        "qc": null,
-        "sec": null
+        "qc": "PASS",
+        "sec": "PASS"
       },
       "tasks": {
         "P1-T1": "done",
@@ -403,19 +512,19 @@
     },
     "P2": {
       "title": "UI/UX nền tảng & login",
-      "status": "pending",
+      "status": "in_progress",
       "gates": {
         "qc": null,
         "sec": null
       },
       "tasks": {
-        "P2-T1": "pending",
-        "P2-T2": "pending",
-        "P2-T3": "pending",
-        "P2-T4": "pending",
-        "P2-T5": "pending",
-        "P2-T6": "pending",
-        "P2-T7": "pending"
+        "P2-T1": "done",
+        "P2-T2": "done",
+        "P2-T3": "done",
+        "P2-T4": "done",
+        "P2-T5": "done",
+        "P2-T6": "done",
+        "P2-T7": "done"
       }
     },
     "P3": {
@@ -685,6 +794,18 @@
     {
       "ts": "2026-10-02T00:00:00+07:00",
       "event": "DONE P1-T9 (seed 7 nhom that, menu_version reset 1; SP/topping mau bo qua theo design 'chi dev' — khong co dev env)"
+    },
+    {
+      "ts": "2026-10-02T07:37:06+07:00",
+      "event": "resume: fix state P1->done (lech vs plan.md tick), pointer -> P2"
+    },
+    {
+      "ts": "2026-10-02T07:41:04+07:00",
+      "event": "START P2 (T1->T7)"
+    },
+    {
+      "ts": "2026-10-02T08:17:56+07:00",
+      "event": "DONE P2-T1..T7 (38 unit, coverage lines 91.52%, 9/9 e2e 3 projects, axe 0 serious/critical, build gzip 88.23KB)"
     }
   ],
   "tasks": {}

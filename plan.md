@@ -35,13 +35,13 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P2 — UI/UX nền tảng & màn hình đăng nhập
 📖 `uiux/skill.md`, `design.md §7`
-- [ ] **P2-T1** Design tokens + `glass.css` (glass card, glass input, glass button) + font Carlito self-host + fallback chuỗi Calibri
-- [ ] **P2-T2** Chuyển `template.html` thành component `LoginStage` (giữ nguyên tỉ lệ %, `--ui`, hiệu ứng shake, reduced-motion)
-- [ ] **P2-T3** Form đăng nhập: chỉ nhập mật khẩu khi đã có username lưu; nút "Đổi tài khoản"; checkbox "Ghi nhớ"; hiện/ẩn mật khẩu; thông báo lỗi tiếng Việt
-- [ ] **P2-T4** Nút **"Tải App"** góc phải trên (Chrome prompt + hướng dẫn iOS); ẩn khi standalone
-- [ ] **P2-T5** Nút **"Xóa cache & Tải lại"** trên màn login (logic ở P4; ở đây dựng UI + hook giả lập có test)
-- [ ] **P2-T6** Layout sau đăng nhập: nền `background.png` + overlay, sidebar (desktop) / bottom-nav (mobile) 5 menu, trang trống từng menu
-- [ ] **P2-T7** Test component + ảnh chụp Playwright (390×844 và 1280×800)
+- [x] **P2-T1** Design tokens + `glass.css` (glass card, glass input, glass button) + font Carlito self-host + fallback chuỗi Calibri
+- [x] **P2-T2** Chuyển `template.html` thành component `LoginStage` (giữ nguyên tỉ lệ %, `--ui`, hiệu ứng shake, reduced-motion)
+- [x] **P2-T3** Form đăng nhập: chỉ nhập mật khẩu khi đã có username lưu; nút "Đổi tài khoản"; checkbox "Ghi nhớ"; hiện/ẩn mật khẩu; thông báo lỗi tiếng Việt
+- [x] **P2-T4** Nút **"Tải App"** góc phải trên (Chrome prompt + hướng dẫn iOS); ẩn khi standalone
+- [x] **P2-T5** Nút **"Xóa cache & Tải lại"** trên màn login (logic ở P4; ở đây dựng UI + hook giả lập có test)
+- [x] **P2-T6** Layout sau đăng nhập: nền `background.png` + overlay, sidebar (desktop) / bottom-nav (mobile) 5 menu, trang trống từng menu
+- [x] **P2-T7** Test component + ảnh chụp Playwright (390×844 và 1280×800)
 - **Gate:** QC ☐ · SEC ☐
 
 ## P3 — Xác thực, bootstrap admin, phiên

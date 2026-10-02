@@ -13,10 +13,14 @@
 | `chart 1.png` | `src/assets/chart-line.png` | Mẫu Chart A (đường) |
 | `chart 2.png` | `src/assets/chart-radial.png` | Mẫu Chart B (vòng cung) |
 | `template.html` | (tham khảo, không ship) | Mẫu màn hình login |
+| `template.html` (data URI) | `src/assets/login-stage.jpg`, `src/assets/login-logo.png` | Nền + logo màn login (P2-T2) |
 
 ## 2. Font (P2-T1 — ghi khi nhúng)
 
-- Carlito (woff2, self-host `public/fonts/`) — tương thích số đo Calibri. Giấy phép: OFL _(xác nhận khi tải)_.
+- Carlito (woff2, self-host `public/fonts/`) — tương thích số đo Calibri, thay cho Inter trong template.
+  - Nguồn: Google Fonts (fonts.googleapis.com/css2?family=Carlito) — subset `latin` + `vietnamese`, weight 400/700.
+  - Giấy phép: SIL Open Font License 1.1 (OFL) — cho phép nhúng thương mại.
+  - File: `carlito-latin-400.woff2`, `carlito-latin-700.woff2`, `carlito-vietnamese-400.woff2`, `carlito-vietnamese-700.woff2`.
 
 ## 3. Icon đồ uống (P6-T1 — ghi khi nạp)
 
