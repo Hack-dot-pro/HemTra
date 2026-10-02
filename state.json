@@ -5,7 +5,7 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T14:55:00+07:00",
+    "last_updated": "2026-10-02T15:05:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
@@ -708,6 +708,19 @@
       "agent": "assistant",
       "file": ".opencode/evidence/p3t7-guard-doi-mat-khau.md",
       "event": "Evidence P3-T7: RequireAuth + accessGuard (role + must_change tu profiles, loi mang -> Thu lai), EF change-password (token + mat khau cu server-side, smoke 17/17 gom happy path user tam), man /change-password + link desktop/mobile, e2e bơm phien (injectAuth + page.route profiles). Han che: GoTrue flag security_update_password_require_current_password chong PATCH 404 hosted -> backlog huong dan cai tay."
+    },
+    {
+      "at": "2026-10-02T15:05:00+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/auth/skill.md §4.4/§4 + EF table",
+        ".opencode/skills/backend/skill.md (EF, app_meta)",
+        ".opencode/skills/security/skill.md (admin-only, service_role)",
+        ".opencode/skills/testing/skill.md",
+        ".opencode/skills/uiux/skill.md"
+      ],
+      "note": "Doc truoc khi lam P3-T8 (EF change-recovery-email 2 dieu kien Q-005 + form) - AGENT.md §12.1."
     }
   ],
   "phases": {
@@ -1129,6 +1142,10 @@
     {
       "ts": "2026-10-02T14:55:00+07:00",
       "event": "DONE P3-T7: route guard + doi mat khau ban thay + must_change_password. RequireAuth/ accessGuard doc profiles.role + co flag tu RLS (khong tin claim; 5 menu ca 2 role theo §4.1; mang cham chot -> man Thu lai). EF change-password: xac thuc access_token + mat khau cu bang password grant server-side, doi mat khau minh, dat must_change=false; smoke cloud 17/17 (user tam, gom dang nhap mat khau moi/bo mat khau cu). UI /change-password 3 o + link desktop/mobile; index -> /dashboard. 184 unit + 36 e2e (bơm phien) xanh, coverage 96.27%, gzip 149.84KB, gitleaks 0. Ke tiep P3-T8 change-recovery-email."
+    },
+    {
+      "ts": "2026-10-02T15:05:00+07:00",
+      "event": "START P3-T8: EF change-recovery-email (admin-only; request-current: mat khau + OTP email hien tai; request-new: OTP email moi, shouldCreateUser=true; complete: kiem ca 2 OTP + mat khau -> xoa junk, dat mat khau moi, doi auth.users.email + app_meta.admin_email). Form 3 buoc + link admin-only (RequireAuth cung cap role qua context). Cloud pre-bootstrap -> smoke bang user tam + generateLink lay OTP (neu verify duoc) / contract neu khong."
     }
   ],
   "tasks": {}

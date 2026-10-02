@@ -406,6 +406,11 @@ verify_jwt = false
 [functions.change-password]
 verify_jwt = false
 
+# P3-T8: change-recovery-email nhan user access_token + tu kiem role=admin
+# (profiles) -> verify_jwt = false nhu cac EF khac.
+[functions.change-recovery-email]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
