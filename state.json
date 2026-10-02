@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T16:08:46+07:00",
+    "last_updated": "2026-10-02T16:45:30+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T9",
+    "task": "Gate QC",
     "step": "READ",
-    "note": "DONE P3-T8: EF change-recovery-email (commit truoc 7d54c04, cloud ACTIVE v1) + form 3 buoc /change-recovery-email + link admin-only (AuthProfileContext tu RequireAuth). Smoke cloud 28/28 PASS (script + output luu .opencode/evidence/p3t8-smoke.sh|.out; OTP lay qua admin/generate_link type=magiclink -> verify type=email). 214 unit + 36 e2e xanh, coverage lines 96.17%, gzip 151.47KB, gitleaks 31 commits 0 leak, npm audit 0. Con lai P3-T9: test Playwright (bootstrap, login sai/dung, lockout, het han 7 ngay, khôi phục, doi email khôi phục) -> roi QC/SEC gate P3."
+    "note": "DONE P3-T9: e2e/p3-auth.spec.ts 11 test x 3 project = 33 (login dung/sai, lockout 5 lan + OTP unlock, het han 7 ngay, token het han/token bi sua, khôi phục admin 2 buoc, doi email khôi phục 3 buoc + staff bi chan, setup 409/403 + bootstrap xong thi /setup an). helpers injectAuth +loginAtMsAgo/+expiredToken + CORS cho mock. 69 e2e + 214 unit xanh, typecheck/lint 0. Ke tiep: Gate QC P3 (qc-test) roi Gate SEC (security-audit)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -741,6 +741,18 @@
         "uiux/skill.md"
       ],
       "note": "EF change-recovery-email smoke cloud 28/28 PASS (contract + 2 dieu kien Q-005 + doc sach); form 3 buoc changeRecoveryEmailApi + ChangeRecoveryEmailPage (validate, cooldown 60s, endAuthSession sau complete vi server huy phien cu), route /change-recovery-email, link admin-only qua AuthProfileContext (RequireAuth chia sẻ profiles da kiem). Typecheck 0, lint 0, 214 unit, coverage 96.17%, gzip 151.47KB, e2e 36/36, gitleaks 0, audit 0."
+    },
+    {
+      "at": "2026-10-02T16:45:30+07:00",
+      "agent": "main-coding",
+      "event": "P3-T9 done",
+      "file": ".opencode/evidence/p3t9-test-auth.md",
+      "skills_read": [
+        "testing/skill.md",
+        "auth/skill.md",
+        "uiux/skill.md"
+      ],
+      "note": "Playwright mock tang mang theo hop dong EF (khong mock code app): 11 test x 3 project. Bui JWT base64url length + WebKit CORS + getByLabel exact da ghi evidence. 69 e2e/214 unit/typecheck/lint xanh."
     }
   ],
   "phases": {
@@ -815,7 +827,7 @@
         "P3-T6": "done",
         "P3-T7": "done",
         "P3-T8": "done",
-        "P3-T9": "pending"
+        "P3-T9": "done"
       }
     },
     "P4": {
@@ -1174,6 +1186,10 @@
     {
       "ts": "2026-10-02T16:08:46+07:00",
       "event": "DONE P3-T8: doi email khôi phục. EF smoke 28/28 (script .opencode/evidence/p3t8-smoke.sh, tu dong xoa user tam + tra admin_email=null); frontend 3 buoc + link admin-only (AuthProfileContext, khong doc lai profiles) + loi moi o login. 214 unit + 36 e2e, coverage 96.17%, gzip 151.47KB, gitleaks 0. Xoa image.png rac (commit 7d54c04, khong ai tham chieu). Ke tiep P3-T9 test Playwright."
+    },
+    {
+      "ts": "2026-10-02T16:45:30+07:00",
+      "event": "DONE P3-T9: test phase P3. Them e2e/p3-auth.spec.ts (33 test) + mo rong helpers (loginAtMsAgo, expiredToken, CORS). Tong e2e 69/69, unit 214/214, typecheck 0, lint 0. Ghi 3 bay vao evidence (JWT base64url, WebKit CORS, getByLabel exact). Ke tiep Gate QC P3."
     }
   ],
   "tasks": {}

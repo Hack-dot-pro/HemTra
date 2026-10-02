@@ -11,20 +11,27 @@ const PROFILE_ID = '00000000-0000-4000-8000-000000000001'
 export type InjectAuthOptions = {
   role?: 'admin' | 'staff'
   mustChangePassword?: boolean
+  /** P3-T9: lùi login_at (ms) để test tự đăng xuất khi vượt 7 ngày. */
+  loginAtMsAgo?: number
+  /** P3-T9: token đã hết hạn → auth-js tự gọi /token?grant_type=refresh_token. */
+  expiredToken?: boolean
 }
 
 export async function injectAuth(page: Page, options: InjectAuthOptions = {}): Promise<void> {
   const role = options.role ?? 'admin'
   const mustChangePassword = options.mustChangePassword ?? false
+  const loginAtMsAgo = options.loginAtMsAgo ?? 0
+  const expiredToken = options.expiredToken ?? false
 
   await page.addInitScript(
-    ({ storageKey, profileId }) => {
+    ({ storageKey, profileId, loginAtMsAgo, expiredToken }) => {
       const nowSeconds = Math.floor(Date.now() / 1000)
+      const expSeconds = expiredToken ? nowSeconds - 60 : nowSeconds + 86400
       const session = {
         access_token: 'e2e-fake-access-token',
         refresh_token: 'e2e-fake-refresh-token',
-        expires_in: 86400,
-        expires_at: nowSeconds + 86400,
+        expires_in: expiredToken ? -60 : 86400,
+        expires_at: expSeconds,
         token_type: 'bearer',
         user: {
           id: profileId,
@@ -41,10 +48,10 @@ export async function injectAuth(page: Page, options: InjectAuthOptions = {}): P
       }
       // Ghi nhớ = '1' → token + login_at cùng ở localStorage (lib/supabase.ts)
       window.localStorage.setItem('hemtra.remember', '1')
-      window.localStorage.setItem('hemtra.login_at', String(Date.now()))
+      window.localStorage.setItem('hemtra.login_at', String(Date.now() - loginAtMsAgo))
       window.localStorage.setItem(storageKey, JSON.stringify(session))
     },
-    { storageKey: AUTH_TOKEN_KEY, profileId: PROFILE_ID },
+    { storageKey: AUTH_TOKEN_KEY, profileId: PROFILE_ID, loginAtMsAgo, expiredToken },
   )
 
   // loadAccessProfile đọc profiles qua REST — trả đúng 1 dòng theo role/cờ.
@@ -53,7 +60,13 @@ export async function injectAuth(page: Page, options: InjectAuthOptions = {}): P
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      headers: { 'Content-Range': '0-0/1' },
+      // REST là cross-origin — WebKit cần header CORS (xem e2e/p3-auth.spec.ts)
+      headers: {
+        'Content-Range': '0-0/1',
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info, range',
+        'access-control-expose-headers': 'content-range',
+      },
       body: JSON.stringify([
         {
           id: PROFILE_ID,
