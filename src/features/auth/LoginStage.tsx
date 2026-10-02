@@ -47,6 +47,10 @@ export default function LoginStage({
   const recoveryDone = Boolean(
     (location.state as { recoveryDone?: boolean } | null)?.recoveryDone,
   )
+  // Đổi email khôi phục thành công qua /change-recovery-email (P3-T8).
+  const changeEmailDone = Boolean(
+    (location.state as { changeEmailDone?: boolean } | null)?.changeEmailDone,
+  )
   const [savedUsername, setSavedUsername] = useState<string | null>(() => getSavedUsername() || null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -55,6 +59,7 @@ export default function LoginStage({
   const [errors, setErrors] = useState<LoginFormErrors>({})
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [hint, setHint] = useState<string | null>(() => {
+    if (changeEmailDone) return 'Đã đổi email khôi phục. Hãy đăng nhập bằng mật khẩu mới.'
     if (recoveryDone) return 'Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.'
     if (sessionExpired) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
     if (setupDone) return 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.'
@@ -78,9 +83,9 @@ export default function LoginStage({
   const { status: bootstrapStatus } = useBootstrapStatus(bootstrapApi)
 
   useEffect(() => {
-    if (setupDone || sessionExpired || recoveryDone)
+    if (setupDone || sessionExpired || recoveryDone || changeEmailDone)
       navigate('/login', { replace: true, state: null })
-  }, [setupDone, sessionExpired, recoveryDone, navigate])
+  }, [setupDone, sessionExpired, recoveryDone, changeEmailDone, navigate])
 
   useEffect(() => {
     if (!showGuide) return

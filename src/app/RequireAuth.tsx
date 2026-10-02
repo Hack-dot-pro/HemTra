@@ -6,8 +6,10 @@ import {
   type AccessDecision,
   type AccessProfile,
 } from '../features/auth/accessGuard'
+import { AuthProfileContext } from './authProfileContext'
 
 type Status = 'checking' | 'error' | AccessDecision
+type Loaded = { path: string; status: Status; profile: AccessProfile | null }
 
 export type RequireAuthProps = {
   /** DI cho test — mặc định đọc profiles thật (accessGuard.loadAccessProfile). */
@@ -18,11 +20,13 @@ export type RequireAuthProps = {
 //   - chưa đăng nhập / profiles.role không hợp lệ → /login
 //   - must_change_password=true → ép qua /change-password (trừ chính nó)
 //   - lỗi mạng khi đọc profiles → màn "thử lại" (không đá ra login vì mạng chập chờn)
+// P3-T8: profiles đã kiểm được chia sẻ cho subtree (AuthProfileContext) —
+//   link admin-only ở AppLayout không phải đọc lại bảng profiles.
 export default function RequireAuth({ loadProfile = loadAccessProfile }: RequireAuthProps) {
   const location = useLocation()
   // Kết quả gắn với pathname đã kiểm — đổi route mà chưa có kết quả mới (kể cả
   // kết quả cũ của route khác) → "đang kiểm tra", không chớp nhoáng trang cũ.
-  const [result, setResult] = useState<{ path: string; status: Status } | null>(null)
+  const [result, setResult] = useState<Loaded | null>(null)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
@@ -30,19 +34,24 @@ export default function RequireAuth({ loadProfile = loadAccessProfile }: Require
     loadProfile()
       .then((profile) => {
         if (cancelled) return
-        setResult({ path: location.pathname, status: evaluateAccess(profile, location.pathname) })
+        setResult({
+          path: location.pathname,
+          status: evaluateAccess(profile, location.pathname),
+          profile,
+        })
       })
       .catch(() => {
         if (cancelled) return
-        setResult({ path: location.pathname, status: 'error' })
+        setResult({ path: location.pathname, status: 'error', profile: null })
       })
     return () => {
       cancelled = true
     }
   }, [loadProfile, location.pathname, attempt])
 
-  const status: Status =
-    result && result.path === location.pathname ? result.status : 'checking'
+  const loaded: Loaded | null =
+    result && result.path === location.pathname ? result : null
+  const status: Status = loaded ? loaded.status : 'checking'
 
   if (status === 'checking') {
     return (
@@ -73,5 +82,11 @@ export default function RequireAuth({ loadProfile = loadAccessProfile }: Require
   if (status === 'change-password') {
     return <Navigate to="/change-password" replace state={{ forced: true }} />
   }
-  return <Outlet />
+  // Cho qua → chia sẻ profiles đã kiểm cho con (P3-T8: link admin-only, trang
+  // đổi email khôi phục) — AppLayout KHÔNG phải đọc lại profiles một lần nữa.
+  return (
+    <AuthProfileContext.Provider value={loaded?.profile ?? null}>
+      <Outlet />
+    </AuthProfileContext.Provider>
+  )
 }

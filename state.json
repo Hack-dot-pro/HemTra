@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T15:05:00+07:00",
+    "last_updated": "2026-10-02T16:08:46+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T8",
+    "task": "P3-T9",
     "step": "READ",
-    "note": "P3-T7 DONE (RequireAuth guard: session + profiles.role/must_change, loi mang -> Thu lai; EF change-password smoke 17/17 gom happy path user tam + flag must_change=false; man /change-password 3 o + link sidebar/mobile; e2e bơm phien injectAuth + page.route profiles - ghi han che evidence). 184 unit + 36 e2e xanh, coverage 96.27%, gzip 149.84KB, gitleaks 0. GoTrue flag security_update_password_require_current_password -> 404 hosted, chuyen sang backlog (cai tay Dashboard). Tiep tuc: P3-T8 EF change-recovery-email (doi email khôi phục, Q-005 2 dieu kien) + form."
+    "note": "DONE P3-T8: EF change-recovery-email (commit truoc 7d54c04, cloud ACTIVE v1) + form 3 buoc /change-recovery-email + link admin-only (AuthProfileContext tu RequireAuth). Smoke cloud 28/28 PASS (script + output luu .opencode/evidence/p3t8-smoke.sh|.out; OTP lay qua admin/generate_link type=magiclink -> verify type=email). 214 unit + 36 e2e xanh, coverage lines 96.17%, gzip 151.47KB, gitleaks 31 commits 0 leak, npm audit 0. Con lai P3-T9: test Playwright (bootstrap, login sai/dung, lockout, het han 7 ngay, khôi phục, doi email khôi phục) -> roi QC/SEC gate P3."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -721,6 +721,26 @@
         ".opencode/skills/uiux/skill.md"
       ],
       "note": "Doc truoc khi lam P3-T8 (EF change-recovery-email 2 dieu kien Q-005 + form) - AGENT.md §12.1."
+    },
+    {
+      "at": "2026-10-02T15:26:17+07:00",
+      "agent": "main-coding",
+      "event": "resume",
+      "note": "resume from P3-T8/CODE — doc AGENT.md, state.json, plan.md[P3], loop.md, design.md §4.4, 5 skill bat buoc P3 (auth/backend/security/testing/uiux); git status: chi package-lock.json (npm bo truong libc) + supabase/.env.example (untracked, copy giong root). EF da deploy: GET /v1/projects/*/functions -> change-recovery-email ACTIVE v1."
+    },
+    {
+      "at": "2026-10-02T16:08:46+07:00",
+      "agent": "main-coding",
+      "event": "P3-T8 done",
+      "file": ".opencode/evidence/p3t8-doi-email-khoi-phuc.md",
+      "skills_read": [
+        "auth/skill.md",
+        "backend/skill.md",
+        "security/skill.md",
+        "testing/skill.md",
+        "uiux/skill.md"
+      ],
+      "note": "EF change-recovery-email smoke cloud 28/28 PASS (contract + 2 dieu kien Q-005 + doc sach); form 3 buoc changeRecoveryEmailApi + ChangeRecoveryEmailPage (validate, cooldown 60s, endAuthSession sau complete vi server huy phien cu), route /change-recovery-email, link admin-only qua AuthProfileContext (RequireAuth chia sẻ profiles da kiem). Typecheck 0, lint 0, 214 unit, coverage 96.17%, gzip 151.47KB, e2e 36/36, gitleaks 0, audit 0."
     }
   ],
   "phases": {
@@ -794,7 +814,7 @@
         "P3-T5": "done",
         "P3-T6": "done",
         "P3-T7": "done",
-        "P3-T8": "pending",
+        "P3-T8": "done",
         "P3-T9": "pending"
       }
     },
@@ -1146,6 +1166,14 @@
     {
       "ts": "2026-10-02T15:05:00+07:00",
       "event": "START P3-T8: EF change-recovery-email (admin-only; request-current: mat khau + OTP email hien tai; request-new: OTP email moi, shouldCreateUser=true; complete: kiem ca 2 OTP + mat khau -> xoa junk, dat mat khau moi, doi auth.users.email + app_meta.admin_email). Form 3 buoc + link admin-only (RequireAuth cung cap role qua context). Cloud pre-bootstrap -> smoke bang user tam + generateLink lay OTP (neu verify duoc) / contract neu khong."
+    },
+    {
+      "ts": "2026-10-02T15:26:17+07:00",
+      "event": "RESUME P3-T8: phien truoc ngat sau khi commit EF change-recovery-email (7d54c04). Kiem tra cloud: function ACTIVE v1, app_meta.admin_email=null, 0 user. Tiep tuc: smoke -> form 3 buoc -> test -> evidence."
+    },
+    {
+      "ts": "2026-10-02T16:08:46+07:00",
+      "event": "DONE P3-T8: doi email khôi phục. EF smoke 28/28 (script .opencode/evidence/p3t8-smoke.sh, tu dong xoa user tam + tra admin_email=null); frontend 3 buoc + link admin-only (AuthProfileContext, khong doc lai profiles) + loi moi o login. 214 unit + 36 e2e, coverage 96.17%, gzip 151.47KB, gitleaks 0. Xoa image.png rac (commit 7d54c04, khong ai tham chieu). Ke tiep P3-T9 test Playwright."
     }
   ],
   "tasks": {}

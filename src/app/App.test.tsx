@@ -34,17 +34,28 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /đăng nhập/i })).toBeInTheDocument()
   })
 
-  it('đã đăng nhập: layout với đủ 5 menu + link Đổi mật khẩu khi vào /dashboard', async () => {
+  it('đã đăng nhập: layout với đủ 5 menu + link Đổi mật khẩu (admin thêm đổi email)', async () => {
     vi.mocked(loadAccessProfile).mockResolvedValue({ role: 'admin', mustChangePassword: false })
     window.history.pushState({}, '', '/dashboard')
     render(<App />)
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
-    // 5 menu × (sidebar + bottom-nav) + 2 link "Đổi mật khẩu" (desktop + mobile)
-    expect(screen.getAllByRole('link')).toHaveLength(12)
+    // 5 menu × (sidebar + bottom-nav) + 2 link Đổi mật khẩu + 2 link Đổi email khôi phục
+    expect(screen.getAllByRole('link')).toHaveLength(14)
     for (const label of ['Sản phẩm', 'Thanh toán', 'Quản lý bill', 'Quản lý user']) {
       expect(screen.getAllByRole('link', { name: label })).toHaveLength(2)
     }
     expect(screen.getAllByRole('link', { name: 'Đổi mật khẩu' })).toHaveLength(2)
+    expect(screen.getAllByRole('link', { name: 'Đổi email khôi phục' })).toHaveLength(2)
+  })
+
+  it('đã đăng nhập bằng staff → KHÔNG thấy link Đổi email khôi phục (P3-T8)', async () => {
+    vi.mocked(loadAccessProfile).mockResolvedValue({ role: 'staff', mustChangePassword: false })
+    window.history.pushState({}, '', '/dashboard')
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    // 5 menu × 2 + 2 link Đổi mật khẩu — không có link đổi email khôi phục
+    expect(screen.getAllByRole('link')).toHaveLength(12)
+    expect(screen.queryAllByRole('link', { name: 'Đổi email khôi phục' })).toHaveLength(0)
   })
 
   it('chưa đăng nhập vào /dashboard → bị đá về /login', async () => {

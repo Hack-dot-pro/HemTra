@@ -330,6 +330,20 @@ describe('LoginStage — sau khi khôi phục mật khẩu (P3-T6)', () => {
     )
     expect(await screen.findByLabelText('Mật khẩu')).toBeInTheDocument()
   })
+
+  it('đến từ /change-recovery-email thành công (state changeEmailDone) → gợi ý mật khẩu mới', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { changeEmailDone: true } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginStage bootstrapApi={BOOTSTRAPPED_API} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Đã đổi email khôi phục. Hãy đăng nhập bằng mật khẩu mới.',
+    )
+  })
 })
 
 describe('LoginStage — khôi phục lượt đăng nhập qua OTP sau 5 lần sai (P3-T4)', () => {

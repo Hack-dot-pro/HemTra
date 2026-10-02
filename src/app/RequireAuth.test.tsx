@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import RequireAuth from './RequireAuth.tsx'
+import { useAuthProfile } from './authProfileContext'
 import type { AccessProfile } from '../features/auth/accessGuard'
 
 function ForcedHint() {
@@ -70,5 +71,23 @@ describe('RequireAuth (P3-T7)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Thử lại' }))
     expect(await screen.findByText('DASHBOARD SCREEN')).toBeInTheDocument()
+  })
+
+  it('cho qua → chia sẻ profile (role + cờ) cho con qua AuthProfileContext (P3-T8)', async () => {
+    function ProfileProbe() {
+      const profile = useAuthProfile()
+      return <div>PROFILE {JSON.stringify(profile)}</div>
+    }
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Routes>
+          <Route element={<RequireAuth loadProfile={async () => ({ role: 'admin', mustChangePassword: false })} />}>
+            <Route path="/dashboard" element={<ProfileProbe />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('PROFILE {"role":"admin","mustChangePassword":false}')).toBeInTheDocument()
   })
 })

@@ -1,0 +1,50 @@
+===== P3-T8 SMOKE: EF change-recovery-email =====
+A. CONTRACT (admin_email chua co)
+PASS: khong token -> 401
+PASS: khong token + body thieu password -> 401
+PASS: action la (truoc xac thuc) -> 400
+tao user staff: 200
+tao profile staff (role=staff): 201
+staff token len 810
+PASS: staff request-current -> 403
+PASS: staff request-new -> 403
+PASS: staff complete -> 403
+tao user admin: 200
+tao profile admin (role=admin): 201
+admin token len 810
+PASS: admin_email = null truoc smoke
+PASS: admin_email null: request-current -> 400
+PASS: admin_email null: request-new -> 400
+PASS: admin_email null: complete -> 400
+B. DAT app_meta.admin_email = p3t8-smoke-admin@example.com (service_role)
+patch app_meta: 204
+PASS: app_meta.admin_email da set
+PASS: admin token + thieu password -> 400
+PASS: admin token + complete rong -> 400
+PASS: request-current SAI mat khau -> 401
+PASS: request-new trung email hien tai -> 400
+PASS: request-new email user khac co profile -> 409
+PASS: request-current DUNG mat khau -> 200
+PASS: request-new email moi -> 200 (sinh user tam)
+PASS: complete OTP sai -> 401
+C. HAPPY PATH (2 dieu kien: OTP email hien tai + mat khau, roi OTP email moi)
+PASS: buoc 1: gui OTP email hien tai -> 200
+OTP hien tai = 010051
+PASS: buoc 2: gui OTP email moi -> 200
+OTP moi = 293788
+PASS: complete du 2 dieu kien -> 200
+D. KIEM TRA SAU COMPLETE
+PASS: app_meta.admin_email = email moi
+PASS: auth.users.email = email moi (gianh id admin)
+PASS: dang nhap mat khau MOI -> ok
+PASS: mat khau/mat khau CU bi huy
+PASS: profile admin van con
+PASS: khong con user tam (1 user tai email moi)
+===========================================
+TONG: PASS=28 FAIL=0
+-- CLEANUP (xoa user tam + tra app_meta ve null) --
+xoa user p3t8-smoke-admin-moi@example.com: 200
+xoa user p3t8-smoke-staff@example.com: 200
+xoa profile p3t8smokeadm: 204
+xoa profile p3t8smokestaff: 204
+app_meta.admin_email -> null: 204

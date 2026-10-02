@@ -4,6 +4,7 @@ import RequireAuth from './RequireAuth.tsx'
 import LoginStage from '../features/auth/LoginStage.tsx'
 import RecoveryStage from '../features/auth/RecoveryStage.tsx'
 import ChangePasswordPage from '../features/auth/ChangePasswordPage.tsx'
+import ChangeRecoveryEmailPage from '../features/auth/ChangeRecoveryEmailPage.tsx'
 import SetupStage from '../features/setup/SetupStage.tsx'
 import DashboardPage from '../features/dashboard/DashboardPage.tsx'
 import ProductsPage from '../features/products/ProductsPage.tsx'
@@ -36,6 +37,8 @@ export function AppRoutes() {
           <Route path="users" element={<UsersPage />} />
           {/* Đổi mật khẩu bản thân — bắt buộc khi must_change_password (§4.1) */}
           <Route path="change-password" element={<ChangePasswordPage />} />
+          {/* Đổi email khôi phục — 2 điều kiện Q-005 (§4.4); link chỉ hiện cho admin */}
+          <Route path="change-recovery-email" element={<ChangeRecoveryEmailPage />} />
         </Route>
       </Route>
 
