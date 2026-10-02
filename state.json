@@ -10,9 +10,9 @@
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T0",
-    "step": "PLAN",
-    "note": "P2 DONE (QC+SEC PASS vong 1, commit 9f72cf6). Q-005 chot A+B (2 dieu kien doi key) -> da ghi design.md §4.2/§4.4/§5 + plan.md P3-T8 (test chuyen T9). P3 in_progress, dang o P3-T0: can user tra loi BOOTSTRAP_ADMIN_EMAIL, SMTP, domain Pages (Q-001, Q-002)."
+    "task": "P3-T1",
+    "step": "CODE",
+    "note": "P2 DONE (QC+SEC PASS vong 1, commit 9f72cf6). Q-005 chot A+B -> design §4.2/§4.4/§5 + plan P3-T8 (commit 92779bc). P3-T0 DONE (cau tra loi luu o decisions: bootstrap_admin_email, smtp, domain_pages). Tiep tuc: P3-T1 cau hinh Supabase Auth." 
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -66,20 +66,25 @@
     },
     "p0t6_direction": "User chon 2026-10-01: link truc tiep prod HemTra (tsnrggxczipzqvvpcbld), viet migration local + push len prod. Chap nhan rui ro; giam thieu: migration review ky + backup truoc khi push.",
     "admin_transfer": "User chon 2026-10-02 (Q-005) = phuong an A + B, doi key admin bat luc khi dang nhap, dat 2 dieu kien theo thu tu: (1) OTP Google hien tai (app_meta.admin_email) + mat khau admin hien tai; (2) OTP Google moi -> doi mat khau moi + ghi de app_meta.admin_email. A: tach secret BOOTSTRAP_ADMIN_EMAIL theo moi truong (test = email dev de lay mau OTP; PROD = email nguoi van hanh de ho bootstrap lan dau; secret het hieu luc sau bootstrapped=true). B: luu admin_email trong app_meta, chi service_role doc/ghi; luong Quen mat khau (admin-recovery) bat buoc trung admin_email. Day la quyet dinh cua user -> duoc phep ghi vao design.md §4.2/§4.4/§5 + plan.md P3 (T8 doi email khôi phục, test chuyen sang T9).",
-    "login_stage_bg": "User chon 2026-10-02: lay anh goc login-hero.png (940x1672) thay ban trich tu template.html; nen dashboard giu backdrop-blur-md (12px)."
+    "login_stage_bg": "User chon 2026-10-02: lay anh goc login-hero.png (940x1672) thay ban trich tu template.html; nen dashboard giu backdrop-blur-md (12px).",
+    "bootstrap_admin_email": "pquangvinh1999@gmail.com (Q-001 tra loi 2026-10-02) — dat lam secret BOOTSTRAP_ADMIN_EMAIL cua moi truong test de lay mau OTP; theo A, PROD se doi sang email nguoi van hanh truoc khi ban giao.",
+    "smtp": "Gmail App Password (Q-002 tra loi 2026-10-02) — user tu tao App Password 16 ky tu va dan vao Supabase Dashboard -> Authentication -> SMTP; agent khong nhan/luu mat khau nay o bat ky dau.",
+    "domain_pages": "hemtra.pages.dev (Q-tra loi 2026-10-02, tam thoi) — origin Cloudflare Pages, dua vao redirect URI cua Google Provider + Supabase Auth URL Configuration. Co domain rieng thi doi o P11."
   },
   "open_questions": [
     {
       "id": "Q-001",
       "phase": "P3",
       "text": "Email Google dùng làm BOOTSTRAP_ADMIN_EMAIL?",
-      "status": "open"
+      "status": "answered",
+      "answer": "Da chot 2026-10-02 — xem decisions.bootstrap_admin_email (chi set lam secret Supabase, khong commit vao repo)."
     },
     {
       "id": "Q-002",
       "phase": "P3",
       "text": "Thông tin SMTP gửi OTP (Gmail App Password hoặc Resend)?",
-      "status": "open"
+      "status": "answered",
+      "answer": "Gmail App Password — xem decisions.smtp; mat khau do user tu dan vao Supabase Dashboard (agent khong nhan)."
     },
     {
       "id": "Q-003",
@@ -600,7 +605,7 @@
         "sec": null
       },
       "tasks": {
-        "P3-T0": "pending",
+        "P3-T0": "done",
         "P3-T1": "pending",
         "P3-T2": "pending",
         "P3-T3": "pending",
@@ -896,6 +901,10 @@
     {
       "ts": "2026-10-02T09:20:00+07:00",
       "event": "User phep nang cap Q-005 vao tai lieu: ghi design.md §4.2/§4.4/§5 (2 dieu kien doi key admin) + plan.md P3-T8 moi, doi P3-T8 cu (test) thanh P3-T9; state P3 -> in_progress"
+    },
+    {
+      "ts": "2026-10-02T09:35:00+07:00",
+      "event": "DONE P3-T0 (traloi: admin email + Gmail App Password + hemtra.pages.dev -> decisions); START P3-T1"
     }
   ],
   "tasks": {}

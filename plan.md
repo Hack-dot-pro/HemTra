@@ -46,7 +46,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P3 — Xác thực, bootstrap admin, phiên
 📖 `backend/skill.md`, `security/skill.md §Auth`
-- ❓ **P3-T0** Hỏi user: `BOOTSTRAP_ADMIN_EMAIL`, thông tin SMTP (Gmail App Password hoặc Resend), domain Pages. **Dừng nếu chưa có.**
+- [x] **P3-T0** Hỏi user: `BOOTSTRAP_ADMIN_EMAIL`, thông tin SMTP (Gmail App Password hoặc Resend), domain Pages. **Dừng nếu chưa có.** → đủ 2026-10-02 (lưu ở `state.json → decisions`, không commit secret)
 - [ ] **P3-T1** 🔒 Cấu hình Supabase Auth: tắt signup công khai, bật Google provider, email OTP (6 số, 10 phút), SMTP riêng
 - [ ] **P3-T2** 🔒 Edge Function `bootstrap-admin` (kiểm tra email trùng secret, chỉ chạy khi `bootstrapped=false`)
 - [ ] **P3-T3** Màn hình đăng ký lần đầu (Google → OTP → đặt username+mật khẩu); ẩn vĩnh viễn sau bootstrap
