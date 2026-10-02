@@ -8,7 +8,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['src/lib/**', 'src/features/*/logic.ts', 'src/features/auth/*.ts'],
+        include: ['src/lib/**', 'src/features/*/logic.ts', 'src/features/auth/*.ts', 'src/features/setup/*.ts'],
       reporter: ['text-summary'],
     },
     setupFiles: ['./src/test/setup.ts'],

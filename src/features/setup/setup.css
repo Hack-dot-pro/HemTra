@@ -1,0 +1,44 @@
+/* Phần thêm riêng cho màn "Thiết lập lần đầu" (P3-T3).
+   Nhập từ login-stage.css (sân khấu dùng chung) — file này chỉ chứa phần bổ sung. */
+
+/* Card có thể dài (3 ô nhập + nút) — giới hạn trong phần dưới của sân khấu, cuộn khi tràn */
+.login-page .setup-card {
+  max-height: calc(57.4% - 16px);
+  overflow-y: auto;
+}
+
+.login-page .setup-title {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(14px, calc(var(--ui) * 0.042), 20px);
+  font-weight: 700;
+  color: #fff;
+}
+
+.login-page .setup-sub {
+  margin: calc(var(--ui) * -0.006) 0 0;
+  text-align: center;
+  font-size: clamp(11px, calc(var(--ui) * 0.028), 13.5px);
+  color: rgb(255 255 255 / 0.92);
+}
+
+/* Ô OTP: chữ số thưa, canh giữa */
+.login-page .setup-otp input {
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nút dạng link khi bị vô hiệu (Gửi lại mã trong lúc đợi) */
+.login-page .setup-card button.link:disabled {
+  opacity: 0.6;
+  cursor: default;
+  text-decoration: none;
+}
+
+/* Panel kiểm tra trạng thái / lỗi kiểm tra */
+.login-page .setup-status {
+  text-align: center;
+  font-size: clamp(12px, calc(var(--ui) * 0.031), 14.5px);
+  color: rgb(255 255 255 / 0.95);
+}

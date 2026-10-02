@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T11:00:00+07:00",
+    "last_updated": "2026-10-02T13:12:55+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T3",
+    "task": "P3-T4",
     "step": "CODE",
-    "note": "P3-T2 DONE (migration admin_email + EF bootstrap-admin deployed; smoke cloud PASS a-j; cloud RESET ve pre-bootstrap). Test EF tren CLOUD vi supabase start local fail (Docker nested iptables, trung B-001). Tiep tuc: P3-T3 man hinh dang ky lan dau (nhan email OTP -> dat username+mat khau, goi EF bootstrap-admin)."
+    "note": "P3-T3 DONE (route /setup 2 buoc + link tren login, 92 unit + 15 e2e xanh, e2e p3-setup 3 project, cloud van pre-bootstrap - khong goi complete that). Tiep tuc: P3-T4 EF auth-login (lockout 5/15 phut username+IP, Turnstile sau 3 sai, loi chung chung) + signIn() that."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -601,6 +601,26 @@
         "supabase-postgres-best-practices/SKILL.md"
       ],
       "note": "Doc them truoc khi lam migration + EF theo backend/skill.md §1 (supabase skill cho CLI/EF, best-practices cho grant/data type)."
+    },
+    {
+      "at": "2026-10-02T12:54:52+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/auth/skill.md",
+        ".opencode/skills/backend/skill.md",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/testing/skill.md",
+        ".opencode/skills/uiux/skill.md",
+        "design.md §4.2/§7"
+      ],
+      "note": "Doc truoc khi lam P3-T3 (man hinh dang ky lan dau) theo AGENT.md §12.2; doc ca EF bootstrap-admin va RLS app_meta de biet hop dong API."
+    },
+    {
+      "at": "2026-10-02T13:12:55+07:00",
+      "agent": "assistant",
+      "event": "p3t3_setup_ui",
+      "result": "Tao src/lib/supabase.ts (env VITE_, null-safe) + src/features/setup/ (logic/api/useBootstrapStatus/SetupStage) + route /setup + link 'Thiet lap lan dau' tren LoginStage (chi khi not_bootstrapped) + saveUsername sau complete. Contract EF/REST xac minh bang curl truoc khi code. Checks: typecheck 0, lint 0, vitest 92/92 (coverage lines 97.88%, branches 93.13%), build xanh (js 288.95KB/gzip 90.99KB), playwright 15/15 (chromium/webkit/mobile, gom 5 test P3-T3 + anh setup-* 2 viewport + axe 0 serious), gitleaks 0 leak. Phu hop plan.md P3-T3."
     }
   ],
   "phases": {
@@ -669,7 +689,7 @@
         "P3-T0": "done",
         "P3-T1": "done",
         "P3-T2": "done",
-        "P3-T3": "pending",
+        "P3-T3": "done",
         "P3-T4": "pending",
         "P3-T5": "pending",
         "P3-T6": "pending",
@@ -982,6 +1002,14 @@
     {
       "ts": "2026-10-02T13:32:00+07:00",
       "event": "DONE P3-T2: migration app_meta.admin_email (grant column-level, advisors 0 ERROR) + EF bootstrap-admin (2 action, verify_jwt=false, anti-oracle request-otp, OTP server-side, PATCH disable_signup qua PAT). Deploy --use-api (Docker bundler DNS fail), secrets set (doi SUPABASE_PROJECT_REF -> HEMTRA_PROJECT_REF vi reserved prefix). Smoke cloud PASS het (email la 200 khong tao user, OTP sai 401, complete 200, DB+login+signup_disabled verify, guard 409). RESET cloud ve pre-bootstrap. Local supabase start van fail (iptabless nested, trung B-001) -> test tren cloud."
+    },
+    {
+      "ts": "2026-10-02T12:54:52+07:00",
+      "event": "START P3-T3 (skills doc: auth/backend/security/testing/uiux + design §4.2/§7; EF contract doc tu bootstrap-admin/index.ts)"
+    },
+    {
+      "ts": "2026-10-02T13:12:55+07:00",
+      "event": "DONE P3-T3: man hinh dang ky lan dau (2 buoc: email -> OTP+username+mat khau, goi EF bootstrap-admin; anti-oracle hien thi chung; alreadyDone 409 thoat ve login; cooldown 60s; luu username de login chi nhap mat khau). Cloud van pre-bootstrap (khong goi complete that). Tiep T4."
     }
   ],
   "tasks": {}

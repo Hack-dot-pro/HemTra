@@ -1,7 +1,18 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
+
+// Không gọi mạng trong unit test (testing/skill.md §2) — coi như đã bootstrap
+vi.mock('../features/setup/api', () => ({
+  defaultApi: {
+    fetchBootstrapped: async () => ({ ok: true, data: true }),
+    requestOtp: async () => ({ ok: true, data: null }),
+    complete: async () => ({ ok: true, data: null }),
+  },
+  EF_DONE_MESSAGE: 'Hệ thống đã được thiết lập',
+  CONFIG_ERROR: 'Ứng dụng chưa được cấu hình Supabase (thiếu VITE_SUPABASE_URL).',
+}))
 
 afterEach(cleanup)
 

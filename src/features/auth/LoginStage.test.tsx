@@ -1,15 +1,39 @@
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginStage, { type LoginStageProps } from './LoginStage.tsx'
 import { SIGN_IN_ERROR, USERNAME_KEY } from './loginForm'
 import type { InstallPromptEvent } from './install'
+import type { SetupApi } from '../setup/api'
 
-function renderLogin(onSignIn?: LoginStageProps['onSignIn']) {
+// API bootstrap giả lập — mặc định "đã bootstrap" để test P2 không phụ thuộc mạng (P3-T3)
+function fakeBootstrapApi(
+  fetchBootstrapped: SetupApi['fetchBootstrapped'],
+): SetupApi {
+  return {
+    fetchBootstrapped,
+    requestOtp: vi.fn(async () => ({ ok: true, data: null })),
+    complete: vi.fn(async () => ({ ok: true, data: null })),
+  }
+}
+
+const BOOTSTRAPPED_API = fakeBootstrapApi(async () => ({ ok: true, data: true }))
+
+function renderLogin(
+  onSignIn?: LoginStageProps['onSignIn'],
+  bootstrapApi: SetupApi = BOOTSTRAPPED_API,
+  entry: string = '/login',
+) {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <LoginStage onSignIn={onSignIn} />
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route
+          path="/login"
+          element={<LoginStage onSignIn={onSignIn} bootstrapApi={bootstrapApi} />}
+        />
+        <Route path="/setup" element={<div>SETUP SCREEN</div>} />
+      </Routes>
     </MemoryRouter>,
   )
 }
@@ -201,5 +225,55 @@ describe('LoginStage — hộp hướng dẫn cài app trên iOS (bổ sung QC Q
     renderLogin()
     expect(screen.queryByRole('button', { name: /tải app/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /xóa cache/i })).toBeInTheDocument()
+  })
+})
+
+describe('LoginStage — liên kết Thiết lập lần đầu (P3-T3)', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+  })
+
+  afterEach(cleanup)
+
+  it('hiện link khi hệ thống CHƯA bootstrap và điều hướng sang /setup', async () => {
+    const user = userEvent.setup()
+    const api = fakeBootstrapApi(async () => ({ ok: true, data: false }))
+    renderLogin(undefined, api)
+
+    await user.click(await screen.findByRole('button', { name: 'Thiết lập lần đầu' }))
+    expect(screen.getByText('SETUP SCREEN')).toBeInTheDocument()
+  })
+
+  it('ẩn link khi đã bootstrap — màn đăng ký biến mất vĩnh viễn', async () => {
+    renderLogin(undefined, BOOTSTRAPPED_API)
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Thiết lập lần đầu' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('ẩn link khi không đọc được trạng thái (không chặn đăng nhập)', async () => {
+    const api = fakeBootstrapApi(async () => ({ ok: false, message: 'lỗi' }))
+    renderLogin(undefined, api)
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Thiết lập lần đầu' })).not.toBeInTheDocument(),
+    )
+    expect(screen.getByLabelText('Mật khẩu')).toBeInTheDocument()
+  })
+
+  it('hiện lời xác nhận khi đến từ màn thiết lập xong (state setupDone)', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { setupDone: true } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginStage bootstrapApi={BOOTSTRAPPED_API} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.',
+    )
   })
 })

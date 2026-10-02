@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Download, RotateCcw } from 'lucide-react'
 import './login-stage.css'
 import {
@@ -14,15 +14,22 @@ import { signIn, type SignInResult } from './signIn'
 import { IOS_INSTALL_GUIDE } from './install'
 import { useInstallPrompt } from './useInstallPrompt'
 import { useClearCache } from './useClearCache'
+import { useBootstrapStatus } from '../setup/useBootstrapStatus'
+import type { SetupApi } from '../setup/api'
 
 export type LoginStageProps = {
   onSignIn?: (username: string, password: string) => Promise<SignInResult>
+  // DI cho test — mặc định đọc trạng thái bootstrap thật (P3-T3)
+  bootstrapApi?: SetupApi
 }
 
 type SubmitStatus = 'idle' | 'submitting'
 
-export default function LoginStage({ onSignIn = signIn }: LoginStageProps) {
+export default function LoginStage({ onSignIn = signIn, bootstrapApi }: LoginStageProps) {
   const navigate = useNavigate()
+  const location = useLocation()
+  // Đến từ màn thiết lập lần đầu (P3-T3) — hiện lời xác nhận rồi dọn state.
+  const setupDone = Boolean((location.state as { setupDone?: boolean } | null)?.setupDone)
   const [savedUsername, setSavedUsername] = useState<string | null>(() => getSavedUsername() || null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -30,7 +37,9 @@ export default function LoginStage({ onSignIn = signIn }: LoginStageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<LoginFormErrors>({})
   const [status, setStatus] = useState<SubmitStatus>('idle')
-  const [hint, setHint] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(() =>
+    setupDone ? 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.' : null,
+  )
   const [showGuide, setShowGuide] = useState(false)
 
   const userFieldRef = useRef<HTMLLabelElement | null>(null)
@@ -39,6 +48,11 @@ export default function LoginStage({ onSignIn = signIn }: LoginStageProps) {
 
   const install = useInstallPrompt()
   const cache = useClearCache()
+  const { status: bootstrapStatus } = useBootstrapStatus(bootstrapApi)
+
+  useEffect(() => {
+    if (setupDone) navigate('/login', { replace: true, state: null })
+  }, [setupDone, navigate])
 
   useEffect(() => {
     if (!showGuide) return
@@ -274,6 +288,12 @@ export default function LoginStage({ onSignIn = signIn }: LoginStageProps) {
             >
               Quên mật khẩu
             </button>
+
+            {bootstrapStatus === 'not_bootstrapped' && (
+              <button type="button" className="link" onClick={() => navigate('/setup')}>
+                Thiết lập lần đầu
+              </button>
+            )}
 
             {hint && (
               <p className="hint" role="status">

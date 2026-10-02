@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './AppLayout.tsx'
 import LoginStage from '../features/auth/LoginStage.tsx'
+import SetupStage from '../features/setup/SetupStage.tsx'
 import DashboardPage from '../features/dashboard/DashboardPage.tsx'
 import ProductsPage from '../features/products/ProductsPage.tsx'
 import PosPage from '../features/pos/PosPage.tsx'
@@ -13,6 +14,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginStage />} />
+      {/* Đăng ký lần đầu — chỉ dùng được khi bootstrapped=false (design §4.2) */}
+      <Route path="/setup" element={<SetupStage />} />
 
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/login" replace />} />
