@@ -64,6 +64,18 @@
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 10px 30px rgb(10 70 140 / 0.18);
 }
 
+/* Rung khi lỗi form ngoài login (P3-T7 — ChangePasswordPage);
+   login có .login-page .shake riêng. Tôn trọng reduced-motion (uiux §1). */
+.glass-card .shake {
+  animation: shake 0.35s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card .shake {
+    animation: none;
+  }
+}
+
 /* Ô nhập bo tròn viền trắng mờ — uiux/skill.md §2 */
 .glass-input {
   width: 100%;

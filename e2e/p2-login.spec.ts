@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { injectAuth } from './helpers'
 
 // Chuẩn viewport theo testing/skill.md §3: 390×844 (mobile) và 1280×800 (desktop)
 const VIEWPORTS = [
@@ -49,6 +50,8 @@ test('P2-T7: layout sau đăng nhập có 5 menu, không lỗi console, a11y đ�
   page,
 }, testInfo) => {
   const errors = collectConsoleErrors(page)
+  // P3-T7: guard chặn khi chưa đăng nhập — bơm phiên để test layout thật
+  await injectAuth(page)
   await page.goto('/dashboard')
 
   for (const viewport of VIEWPORTS) {

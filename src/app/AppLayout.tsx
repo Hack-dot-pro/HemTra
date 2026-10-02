@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { KeyRound } from 'lucide-react'
 import { NAV_ITEMS } from './nav'
 
 function navLinkClass(isActive: boolean): string {
@@ -39,11 +40,31 @@ export default function AppLayout() {
                 </NavLink>
               ))}
             </nav>
+
+            {/* P3-T7: đổi mật khẩu bản thân — không phải 1 trong 5 menu (§7.3) */}
+            <div className="mt-auto">
+              <NavLink
+                to="/change-password"
+                className={({ isActive }) => navLinkClass(isActive)}
+              >
+                <KeyRound size={18} aria-hidden="true" />
+                <span>Đổi mật khẩu</span>
+              </NavLink>
+            </div>
           </div>
         </aside>
 
         <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-8 md:pt-8">
           <div className="mx-auto w-full max-w-5xl">
+            {/* Mobile: bottom-nav chỉ có 5 menu → lối vào đổi mật khẩu ở đây (§4.1) */}
+            <div className="mb-3 flex justify-end md:hidden">
+              <NavLink
+                to="/change-password"
+                className="text-xs text-white/75 underline underline-offset-4"
+              >
+                Đổi mật khẩu
+              </NavLink>
+            </div>
             <Outlet />
           </div>
         </main>

@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T14:27:20+07:00",
+    "last_updated": "2026-10-02T14:55:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T7",
+    "task": "P3-T8",
     "step": "READ",
-    "note": "P3-T6 DONE (EF admin-recovery deployed + smoke 11/11 contract/anti-oracle; route /recovery 2 buoc, nut Quen mat khau -> /recovery, staff note \"Lien he admin\"; recoveryDone hint tren login). 152 unit + 21 e2e xanh, coverage 96.22%, gzip 148.34KB, gitleaks 0. Han che: happy path chua smoke (cloud pre-bootstrap admin_email=null, khong mailbox) - xem evidence p3t6. Tiep tuc: P3-T7 route guard theo role + doi mat khau ban than (nhap mat khau cu) + must_change_password."
+    "note": "P3-T7 DONE (RequireAuth guard: session + profiles.role/must_change, loi mang -> Thu lai; EF change-password smoke 17/17 gom happy path user tam + flag must_change=false; man /change-password 3 o + link sidebar/mobile; e2e bơm phien injectAuth + page.route profiles - ghi han che evidence). 184 unit + 36 e2e xanh, coverage 96.27%, gzip 149.84KB, gitleaks 0. GoTrue flag security_update_password_require_current_password -> 404 hosted, chuyen sang backlog (cai tay Dashboard). Tiep tuc: P3-T8 EF change-recovery-email (doi email khôi phục, Q-005 2 dieu kien) + form."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -131,7 +131,7 @@
     "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
     "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery",
     "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
-    "P3-T7: dat security_update_password_require_current_password=true (hien false) theo design §4.1 'doi mat khau cua minh nhap mat khau cu'",
+    "GoTrue security_update_password_require_current_password=true (design §4.1 hardening) — PATCH /auth/v1/admin/config tra 404 tren hosted (project key khong du quyen): can Dashboard (Authentication -> Settings) hoac management API PAT. EF change-password da chan doi mat khau khong qua mat khau cu o tang app (P3-T7) — flag chi la hardening them.",
     "Advisors security WARN pre-existing (khong lien quan migration T2): set_updated_at search_path mutable; leaked password protection disabled (PATCH auth config de bat); rls_auto_enable/create_bill/is_admin SECURITY DEFINER executable — xem lai o security audit gate P3.",
     "Moi truong dev nay khong chay duoc supabase start local (Docker nested iptables legacy/nft conflict -> container-to-container drop). Neu sau nay can local stack (test db reset/RLS), sua iptables hoac dung remote dev."
   ],
@@ -689,6 +689,25 @@
       "agent": "assistant",
       "file": ".opencode/evidence/p3t6-admin-recovery.md",
       "event": "Evidence P3-T6: EF admin-recovery (request-otp anti-oracle luon 200, verify email==app_meta.admin_email -> updateUserById password, 401 thong diep chung) deployed + smoke 11/11; frontend recoveryApi + RecoveryStage 2 buoc + route /recovery + nut Quen mat khau. Happy path chua smoke (pre-bootstrap, khong mailbox)."
+    },
+    {
+      "at": "2026-10-02T14:35:00+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/auth/skill.md (full - §3 doi mat khau/§4 route guard/§5 test)",
+        ".opencode/skills/backend/skill.md (§EF patterns, profiles/RLS)",
+        ".opencode/skills/security/skill.md (mat khau/must_change, S4)",
+        ".opencode/skills/testing/skill.md (unit guard, Playwright)",
+        ".opencode/skills/uiux/skill.md (glass.css, §3 sau dang nhap)"
+      ],
+      "note": "Doc truoc khi lam P3-T7 (route guard theo role tu profiles - khong tin claim; doi mat khau ban thay nhap mat khau cu; must_change_password buoc doi lan dau) theo AGENT.md §12.1."
+    },
+    {
+      "at": "2026-10-02T14:55:00+07:00",
+      "agent": "assistant",
+      "file": ".opencode/evidence/p3t7-guard-doi-mat-khau.md",
+      "event": "Evidence P3-T7: RequireAuth + accessGuard (role + must_change tu profiles, loi mang -> Thu lai), EF change-password (token + mat khau cu server-side, smoke 17/17 gom happy path user tam), man /change-password + link desktop/mobile, e2e bơm phien (injectAuth + page.route profiles). Han che: GoTrue flag security_update_password_require_current_password chong PATCH 404 hosted -> backlog huong dan cai tay."
     }
   ],
   "phases": {
@@ -761,7 +780,7 @@
         "P3-T4": "done",
         "P3-T5": "done",
         "P3-T6": "done",
-        "P3-T7": "pending",
+        "P3-T7": "done",
         "P3-T8": "pending",
         "P3-T9": "pending"
       }
@@ -1102,6 +1121,14 @@
     {
       "ts": "2026-10-02T14:27:20+07:00",
       "event": "DONE P3-T6: khôi phục mat khau admin qua OTP. EF admin-recovery deployed (contract + anti-oracle smoke 11/11; verify khoa email == app_meta.admin_email, 401 thong diep chung). Frontend: recoveryApi, RecoveryStage 2 buoc (email -> OTP + password moi, cooldown 60s, staff note), route /recovery, nut Quen mat khau -> /recovery + hint recoveryDone. 152 unit + 21 e2e xanh, coverage 96.22%, gzip 148.34KB, gitleaks 0. Ke tiep P3-T7 (route guard + doi mat khau + must_change_password)."
+    },
+    {
+      "ts": "2026-10-02T14:35:00+07:00",
+      "event": "START P3-T7: guard RequireAuth (session + profile.role tu profiles, khong tin claim) + EF change-password (xac thuc mat khau cu bang password grant, doi mat khau minh, dat must_change_password=false) + man /change-password (buoc khi must_change) + link Doi mat khau. Cloud pre-bootstrap -> smoke dung user tam tao bang service_role. P3-T9 se bo sung test Playwright dang nhap day du."
+    },
+    {
+      "ts": "2026-10-02T14:55:00+07:00",
+      "event": "DONE P3-T7: route guard + doi mat khau ban thay + must_change_password. RequireAuth/ accessGuard doc profiles.role + co flag tu RLS (khong tin claim; 5 menu ca 2 role theo §4.1; mang cham chot -> man Thu lai). EF change-password: xac thuc access_token + mat khau cu bang password grant server-side, doi mat khau minh, dat must_change=false; smoke cloud 17/17 (user tam, gom dang nhap mat khau moi/bo mat khau cu). UI /change-password 3 o + link desktop/mobile; index -> /dashboard. 184 unit + 36 e2e (bơm phien) xanh, coverage 96.27%, gzip 149.84KB, gitleaks 0. Ke tiep P3-T8 change-recovery-email."
     }
   ],
   "tasks": {}

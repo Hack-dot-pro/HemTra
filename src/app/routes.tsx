@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './AppLayout.tsx'
+import RequireAuth from './RequireAuth.tsx'
 import LoginStage from '../features/auth/LoginStage.tsx'
 import RecoveryStage from '../features/auth/RecoveryStage.tsx'
+import ChangePasswordPage from '../features/auth/ChangePasswordPage.tsx'
 import SetupStage from '../features/setup/SetupStage.tsx'
 import DashboardPage from '../features/dashboard/DashboardPage.tsx'
 import ProductsPage from '../features/products/ProductsPage.tsx'
@@ -10,8 +12,9 @@ import BillsPage from '../features/bills/BillsPage.tsx'
 import UsersPage from '../features/users/UsersPage.tsx'
 import { useSessionExpiry } from '../features/auth/sessionGuard.ts'
 
-// Định tuyến 5 menu (design.md §7.3). P2 chưa có phiên nên trang chủ = đăng nhập;
-// route guard theo role sẽ làm ở P3-T7.
+// Định tuyến 5 menu (design.md §7.3). P3-T7: mọi route sau đăng nhập đi qua
+// RequireAuth — chưa đăng nhập → /login, must_change_password → /change-password
+// (role lấy từ profiles, design §4.1 — cả 2 role vào đủ 5 menu).
 export function AppRoutes() {
   // P3-T5: tự đăng xuất khi phiên vượt 7 ngày (login_at) — không phải guard role.
   useSessionExpiry()
@@ -23,13 +26,17 @@ export function AppRoutes() {
       {/* Khôi phục mật khẩu admin qua OTP (design §4.4) */}
       <Route path="/recovery" element={<RecoveryStage />} />
 
-      <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/login" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="products" element={<ProductsPage />} />
-        <Route path="pos" element={<PosPage />} />
-        <Route path="bills" element={<BillsPage />} />
-        <Route path="users" element={<UsersPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="pos" element={<PosPage />} />
+          <Route path="bills" element={<BillsPage />} />
+          <Route path="users" element={<UsersPage />} />
+          {/* Đổi mật khẩu bản thân — bắt buộc khi must_change_password (§4.1) */}
+          <Route path="change-password" element={<ChangePasswordPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -25,7 +25,10 @@ function headers(): Record<string, string> {
 async function request(path: string, init: RequestInit): Promise<HttpOutcome> {
   if (!supabaseUrl || !supabaseAnonKey) return { status: 0, body: null, failure: 'config' }
   try {
-    const res = await fetch(`${supabaseUrl}${path}`, { ...init, headers: headers() })
+    const res = await fetch(`${supabaseUrl}${path}`, {
+      ...init,
+      headers: { ...headers(), ...(init.headers ?? {}) },
+    })
     let body: unknown = null
     try {
       body = await res.json()
@@ -38,8 +41,12 @@ async function request(path: string, init: RequestInit): Promise<HttpOutcome> {
   }
 }
 
-export function supabasePost(path: string, body: unknown): Promise<HttpOutcome> {
-  return request(path, { method: 'POST', body: JSON.stringify(body) })
+export function supabasePost(
+  path: string,
+  body: unknown,
+  extraHeaders?: Record<string, string>,
+): Promise<HttpOutcome> {
+  return request(path, { method: 'POST', body: JSON.stringify(body), headers: extraHeaders })
 }
 
 export function supabaseGet(path: string): Promise<HttpOutcome> {

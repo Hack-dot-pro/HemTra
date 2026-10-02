@@ -401,6 +401,11 @@ verify_jwt = false
 [functions.admin-recovery]
 verify_jwt = false
 
+# P3-T7: change-password nhan user access_token tu header va tu xac thuc
+# (gui thieu/sai token van tra duoc loi tieng Viet chinh minh) -> verify_jwt = false.
+[functions.change-password]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
