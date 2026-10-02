@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './AppLayout.tsx'
 import LoginStage from '../features/auth/LoginStage.tsx'
+import RecoveryStage from '../features/auth/RecoveryStage.tsx'
 import SetupStage from '../features/setup/SetupStage.tsx'
 import DashboardPage from '../features/dashboard/DashboardPage.tsx'
 import ProductsPage from '../features/products/ProductsPage.tsx'
@@ -19,6 +20,8 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginStage />} />
       {/* Đăng ký lần đầu — chỉ dùng được khi bootstrapped=false (design §4.2) */}
       <Route path="/setup" element={<SetupStage />} />
+      {/* Khôi phục mật khẩu admin qua OTP (design §4.4) */}
+      <Route path="/recovery" element={<RecoveryStage />} />
 
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/login" replace />} />

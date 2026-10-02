@@ -36,6 +36,7 @@ function renderLogin(
           }
         />
         <Route path="/setup" element={<div>SETUP SCREEN</div>} />
+        <Route path="/recovery" element={<div>RECOVERY SCREEN</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -177,12 +178,12 @@ describe('LoginStage', () => {
     expect(button).toBeEnabled()
   })
 
-  it('link Quên mật khẩu hiện gợi ý liên hệ admin', async () => {
+  it('nút Quên mật khẩu → màn khôi phục /recovery (P3-T6)', async () => {
     const user = userEvent.setup()
     renderLogin()
 
     await user.click(screen.getByRole('button', { name: 'Quên mật khẩu' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Liên hệ admin')
+    expect(screen.getByText('RECOVERY SCREEN')).toBeInTheDocument()
   })
 })
 
@@ -303,6 +304,30 @@ describe('LoginStage — phiên hết hạn 7 ngày (P3-T5)', () => {
       'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
     )
     // form đăng nhập vẫn dùng được
+    expect(await screen.findByLabelText('Mật khẩu')).toBeInTheDocument()
+  })
+})
+
+describe('LoginStage — sau khi khôi phục mật khẩu (P3-T6)', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+  })
+
+  afterEach(cleanup)
+
+  it('đến từ /recovery thành công (state recoveryDone) → gợi ý đăng nhập mật khẩu mới', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { recoveryDone: true } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginStage bootstrapApi={BOOTSTRAPPED_API} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.',
+    )
     expect(await screen.findByLabelText('Mật khẩu')).toBeInTheDocument()
   })
 })

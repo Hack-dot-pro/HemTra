@@ -396,6 +396,11 @@ verify_jwt = false
 [functions.auth-login]
 verify_jwt = false
 
+# P3-T6: admin-recovery goi truoc khi co phien -> verify_jwt = false;
+# bao ve bang bat buoc email trung app_meta.admin_email + OTP server-side (design 4.4).
+[functions.admin-recovery]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

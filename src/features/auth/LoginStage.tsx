@@ -43,6 +43,10 @@ export default function LoginStage({
   const sessionExpired = Boolean(
     (location.state as { sessionExpired?: boolean } | null)?.sessionExpired,
   )
+  // Đặt lại mật khẩu thành công qua /recovery (P3-T6).
+  const recoveryDone = Boolean(
+    (location.state as { recoveryDone?: boolean } | null)?.recoveryDone,
+  )
   const [savedUsername, setSavedUsername] = useState<string | null>(() => getSavedUsername() || null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -51,6 +55,7 @@ export default function LoginStage({
   const [errors, setErrors] = useState<LoginFormErrors>({})
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [hint, setHint] = useState<string | null>(() => {
+    if (recoveryDone) return 'Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.'
     if (sessionExpired) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
     if (setupDone) return 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.'
     return null
@@ -73,8 +78,9 @@ export default function LoginStage({
   const { status: bootstrapStatus } = useBootstrapStatus(bootstrapApi)
 
   useEffect(() => {
-    if (setupDone || sessionExpired) navigate('/login', { replace: true, state: null })
-  }, [setupDone, sessionExpired, navigate])
+    if (setupDone || sessionExpired || recoveryDone)
+      navigate('/login', { replace: true, state: null })
+  }, [setupDone, sessionExpired, recoveryDone, navigate])
 
   useEffect(() => {
     if (!showGuide) return
@@ -364,7 +370,7 @@ export default function LoginStage({
             <button
               type="button"
               className="link"
-              onClick={() => setHint('Liên hệ admin để được cấp lại mật khẩu.')}
+              onClick={() => navigate('/recovery')}
             >
               Quên mật khẩu
             </button>

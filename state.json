@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T14:06:00+07:00",
+    "last_updated": "2026-10-02T14:27:20+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "P3-T6",
-    "step": "CODE",
-    "note": "P3-T5 DONE (session 7 ngay client: supabase client + storage route theo ghi nho, login_at, useSessionExpiry tu dang xuat ve /login sessionExpired; server session_fresh() da co tu P1 - khong migration). 133 unit + 15 e2e xanh, coverage 95.66%, build gzip 147.46KB, gitleaks 0. Luu y evidence: session_fresh() so iat JWT (refresh lam moi iat) - login_at client la lop chan 7 ngay lien tuc, session_fresh chan token cu/replay. Tiep tuc: P3-T6 EF admin-recovery (email trung app_meta.admin_email) + noi nut Quen mat khau voi luong OTP (backlog)."
+    "task": "P3-T7",
+    "step": "READ",
+    "note": "P3-T6 DONE (EF admin-recovery deployed + smoke 11/11 contract/anti-oracle; route /recovery 2 buoc, nut Quen mat khau -> /recovery, staff note \"Lien he admin\"; recoveryDone hint tren login). 152 unit + 21 e2e xanh, coverage 96.22%, gzip 148.34KB, gitleaks 0. Han che: happy path chua smoke (cloud pre-bootstrap admin_email=null, khong mailbox) - xem evidence p3t6. Tiep tuc: P3-T7 route guard theo role + doi mat khau ban than (nhap mat khau cu) + must_change_password."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -125,7 +125,6 @@
     }
   ],
   "backlog": [
-    "P3-T6: noi nut 'Quen mat khau' voi luong khoi phuc OTP email (hien chi hien goi y lien he admin)",
     "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)",
     "QC P2-001 MINOR: login-hero.png rac o root -> da dung lam source nen login (src/assets/login-stage.webp|jpg), giu root goc kieu Logo.png/background.png",
     "QC P2-002 MINOR: lech scope - repo track nhieu file ngoai app (.claude/, agent/, .opencode/ skills, PNG goc o root) -> chot tach hay ghi chu",
@@ -671,6 +670,25 @@
       "event": "p3t5_session_7ngay",
       "file": ".opencode/evidence/p3t5-session-7ngay.md",
       "result": "Client session: lib/supabase.ts getSupabase() + routedAuthStorage (ghi nho ls/ss, xoa ca 2), lib/session.ts applyAuthSession (co -> login_at -> setSession) + endAuthSession (signOut local), sessionGuard evaluateSession + useSessionExpiry (mount + 60s, qua 7 ngay -> /login sessionExpired), signIn nhan remember, LoginStage truyen remember + hint het han. Khong migration (session_fresh() P1). Checks: typecheck 0, lint 0, vitest 133/133 coverage 95.66%, build gzip 147.46KB, e2e 15/15, gitleaks 0."
+    },
+    {
+      "at": "2026-10-02T14:15:00+07:00",
+      "agent": "assistant",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/auth/skill.md",
+        ".opencode/skills/backend/skill.md",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/testing/skill.md",
+        "design.md §4.4 (recovery) + §4.5"
+      ],
+      "note": "Doc (lai toan bo trong session nay) truoc khi lam P3-T6 (EF admin-recovery + nut Quen mat khau) theo AGENT.md §12.1. Q-005 da decided (decisions.admin_transfer): recovery bat buoc email trung app_meta.admin_email; khong Google OAuth (T1)."
+    },
+    {
+      "at": "2026-10-02T14:27:20+07:00",
+      "agent": "assistant",
+      "file": ".opencode/evidence/p3t6-admin-recovery.md",
+      "event": "Evidence P3-T6: EF admin-recovery (request-otp anti-oracle luon 200, verify email==app_meta.admin_email -> updateUserById password, 401 thong diep chung) deployed + smoke 11/11; frontend recoveryApi + RecoveryStage 2 buoc + route /recovery + nut Quen mat khau. Happy path chua smoke (pre-bootstrap, khong mailbox)."
     }
   ],
   "phases": {
@@ -742,7 +760,7 @@
         "P3-T3": "done",
         "P3-T4": "done",
         "P3-T5": "done",
-        "P3-T6": "pending",
+        "P3-T6": "done",
         "P3-T7": "pending",
         "P3-T8": "pending",
         "P3-T9": "pending"
@@ -1076,6 +1094,14 @@
     {
       "ts": "2026-10-02T14:06:00+07:00",
       "event": "DONE P3-T5: quan ly session 7 ngay (ghi nho ls vs ss, login_at client + session_fresh server P1, tu dang xuat het han -> /login co goi y). 133 unit + 15 e2e xanh, coverage 95.66%, build gzip 147.46KB (supabase-js vao bundle lan dau), gitleaks 0. Ke tiep P3-T6 EF admin-recovery."
+    },
+    {
+      "ts": "2026-10-02T14:15:00+07:00",
+      "event": "START P3-T6: EF admin-recovery (request-otp generic anti-oracle + verify OTP -> dat mat khau moi, email bat buoc trung app_meta.admin_email) + route /recovery 2 buoc + noi nut Quen mat khau. Cloud dang pre-bootstrap -> admin_email null -> smoke chi contract + duong loi; happy path ghi han che trong evidence."
+    },
+    {
+      "ts": "2026-10-02T14:27:20+07:00",
+      "event": "DONE P3-T6: khôi phục mat khau admin qua OTP. EF admin-recovery deployed (contract + anti-oracle smoke 11/11; verify khoa email == app_meta.admin_email, 401 thong diep chung). Frontend: recoveryApi, RecoveryStage 2 buoc (email -> OTP + password moi, cooldown 60s, staff note), route /recovery, nut Quen mat khau -> /recovery + hint recoveryDone. 152 unit + 21 e2e xanh, coverage 96.22%, gzip 148.34KB, gitleaks 0. Ke tiep P3-T7 (route guard + doi mat khau + must_change_password)."
     }
   ],
   "tasks": {}
