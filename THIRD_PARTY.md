@@ -12,8 +12,11 @@
 | `background.png` | `src/assets/background.png` (gốc) + `background.webp` (nén 80%, dùng chính) | Nền sau đăng nhập |
 | `chart 1.png` | `src/assets/chart-line.png` | Mẫu Chart A (đường) |
 | `chart 2.png` | `src/assets/chart-radial.png` | Mẫu Chart B (vòng cung) |
-| `template.html` | (tham khảo, không ship) | Mẫu màn hình login |
-| `template.html` (data URI) | `src/assets/login-stage.jpg`, `src/assets/login-logo.png` | Nền + logo màn login (P2-T2) |
+| `login-hero.png` | `src/assets/login-stage.webp` (nén 92%, dùng chính) + `login-stage.jpg` (dự phòng) | Nền màn login (P2-T2) |
+| `template.html` (data URI) | `src/assets/login-logo.png` | Logo màn login (P2-T2) |
+
+> Ghi chú: bản nền login trích từ `template.html` (JPEG 1080×1920) bị nhòe → thay bằng ảnh gốc
+> `login-hero.png` do user upload (940×1672, PNG). `template.html` chỉ còn dùng để tham khảo + trích logo.
 
 ## 2. Font (P2-T1 — ghi khi nhúng)
 

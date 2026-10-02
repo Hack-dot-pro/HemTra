@@ -42,7 +42,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P2-T5** Nút **"Xóa cache & Tải lại"** trên màn login (logic ở P4; ở đây dựng UI + hook giả lập có test)
 - [x] **P2-T6** Layout sau đăng nhập: nền `background.png` + overlay, sidebar (desktop) / bottom-nav (mobile) 5 menu, trang trống từng menu
 - [x] **P2-T7** Test component + ảnh chụp Playwright (390×844 và 1280×800)
-- **Gate:** QC ☐ · SEC ☐
+- **Gate:** QC ☑ PASS (2026-10-02, 43/43 unit + 9/9 e2e, xem `state.json → loop.last_report`) · SEC ☑ PASS (2026-10-02, 0 lỗi, `.opencode/evidence/p2-sec-round1.md`)
 
 ## P3 — Xác thực, bootstrap admin, phiên
 📖 `backend/skill.md`, `security/skill.md §Auth`

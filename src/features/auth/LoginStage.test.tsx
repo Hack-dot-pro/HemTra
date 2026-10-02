@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -155,5 +155,51 @@ describe('LoginStage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Quên mật khẩu' }))
     expect(screen.getByRole('status')).toHaveTextContent('Liên hệ admin')
+  })
+})
+
+const ORIGINAL_UA = window.navigator.userAgent
+
+function stubUserAgent(userAgent: string) {
+  Object.defineProperty(window.navigator, 'userAgent', { value: userAgent, configurable: true })
+}
+
+describe('LoginStage — hộp hướng dẫn cài app trên iOS (bổ sung QC Q4, P2-T4)', () => {
+  const IPHONE_UA =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.sessionStorage.clear()
+    stubUserAgent(IPHONE_UA)
+  })
+
+  afterEach(() => {
+    stubUserAgent(ORIGINAL_UA)
+    Reflect.deleteProperty(window.navigator, 'standalone')
+    vi.restoreAllMocks()
+  })
+
+  it('hiện nút Tải App trên iPhone và mở hộp hướng dẫn 3 bước khi chưa có beforeinstallprompt', async () => {
+    const user = userEvent.setup()
+    renderLogin()
+
+    await user.click(screen.getByRole('button', { name: /tải app/i }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('Cài Hẻm Trà trên iPhone')
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(3)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Đóng' })).toHaveFocus())
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('ẩn nút Tải App khi app đang chạy standalone dù thiết bị là iPhone', () => {
+    Object.defineProperty(window.navigator, 'standalone', { value: true, configurable: true })
+
+    renderLogin()
+    expect(screen.queryByRole('button', { name: /tải app/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /xóa cache/i })).toBeInTheDocument()
   })
 })

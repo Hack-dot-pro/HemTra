@@ -21,7 +21,7 @@ export default function AppLayout() {
   return (
     <div className="relative min-h-dvh">
       <div aria-hidden="true" className="app-bg absolute inset-0" />
-      <div aria-hidden="true" className="absolute inset-0 bg-overlay backdrop-blur-lg" />
+      <div aria-hidden="true" className="absolute inset-0 bg-overlay backdrop-blur-md" />
 
       <div className="relative flex min-h-dvh">
         <aside className="hidden w-60 shrink-0 md:block">

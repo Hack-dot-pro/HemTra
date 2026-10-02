@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T08:17:56+07:00",
+    "last_updated": "2026-10-02T08:55:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
-    "phase": "P2",
-    "task": "P2-T7",
-    "step": "QC",
-    "note": "P2 code xong T1-T7 (38 unit + 9/9 e2e + build xanh). Dang goi qc-test cho P2. Gate chua tick."
+    "phase": "P3",
+    "task": "P3-T0",
+    "step": "PLAN",
+    "note": "P2 DONE (QC+SEC PASS vong 1). Q-005 da chot: user chon A+B (tach secret theo moi truong + luu email admin vao DB va cho doi tu trong app) -> can user sua design.md §4.2/§4.4 + them task P3 (agent khong tu sua). Tiep tuc: hoan tat P3-T0 (hoi BOOTSTRAP_ADMIN_EMAIL, SMTP, domain)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -23,10 +23,10 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 0,
-    "sec_round": 0,
+    "qc_round": 1,
+    "sec_round": 1,
     "failure_signatures": [],
-    "last_report": "P1 QC vong 1: VERDICT PASS. Q1 typecheck 0; Q2 lint 0; Q3 vitest 1/1; Q4/Q8 DB test ADAPTED: supabase test db khong chay duoc (B-001 local loop) -> scripts/test-p1.sh tren linked prod 28/28 PASS; Q5-Q7 UI perf N/A P1; Q9 build xanh (js 68KB gzip); Q10 plan tick day du; Q11 sach; Q12 .env khong track, scope sach. | SEC P1 vong 1: VERDICT PASS. S1 gitleaks 17 commits no leaks + git grep secret sach; S2 npm audit 0; S3 RLS matrix toan bang 28/28 (anon/fresh/expired/authed); S4 khong hardcode secret; S8 session_fresh 7 ngay test; S9 storage khong ghi de/xoa (400); S10 rate limit 10/phut test lan 11; S11 grants minimum + revoke execute public; S12 3 trigger fn SECURITY DEFINER; S14 create_bill khong tin gia client; S13/15 N/A/bo sung sau. Khong co BLOCKER/MAJOR."
+    "last_report": "P2 QC vong 1: VERDICT PASS. Q1 typecheck 0; Q2 lint 0; Q3 vitest 43/43 (38 cu + 5 test qc-test bo sung: iOS install guide x2, signIn); Q4 coverage lines 96.61%; Q9 build xanh (js 277.31KB, gzip 88.23KB < 250KB); Q10-Q11 e2e 9/9 (chromium/webkit/mobile) + axe 0 serious/critical + 0 console error; Q12 sach. 4 MINOR -> backlog (login-hero.png rac/o root, lech scope, .gitignore thieu coverage/, dead export wrongPassword). Day du: .opencode/evidence/p2-qc-round1.md\nP2 SEC vong 1: VERDICT PASS. PHAM VI hep - be mat: form dang nhap, localStorage, routing, assets/build. S1 gitleaks 20 commits 0 leak + dist 0 secret; S2 npm audit 0; S7 XSS/SQLi harness 5/5 (0 element injection, alert khong kich hoat) + khong dangerouslySetInnerHTML/eval; S13 chi luu key hemtra.username (khong mat khau/token), khong console.log; S12 khong SW/token cache. S3-S6,S8-S10,S14-S15 N/A dung pham vi P2 (backend/P3/P4); S11 N/A theo plan (P4-T1/P10-T1). 0 BLOCKER/MAJOR/MINOR. NGHI VAN (khong chan): routes chua co guard (dung ke hoach P3-T7), .env local chua service_role (da ignore, chua commit). Day du: .opencode/evidence/p2-sec-round1.md"
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -64,7 +64,9 @@
       "msw": "2.15.0",
       "@playwright/test": "1.63.0 (chromium+webkit OK)"
     },
-    "p0t6_direction": "User chon 2026-10-01: link truc tiep prod HemTra (tsnrggxczipzqvvpcbld), viet migration local + push len prod. Chap nhan rui ro; giam thieu: migration review ky + backup truoc khi push."
+    "p0t6_direction": "User chon 2026-10-01: link truc tiep prod HemTra (tsnrggxczipzqvvpcbld), viet migration local + push len prod. Chap nhan rui ro; giam thieu: migration review ky + backup truoc khi push.",
+    "admin_transfer": "User chon 2026-10-02 (Q-005) = phuong an A + B: (A) tach secret BOOTSTRAP_ADMIN_EMAIL theo moi truong - test bootstrap bang email dev, tren PROD set secret = email nguoi van hanh de ho bootstrap lan dau; (B) luc bootstrap luu email admin vao DB (app_meta) + form 'Doi email khoi phuc' trong app (bat buoc mat khau hien tai + OTP xac minh email moi) de doi key admin bat luc ma khong dung DB/secret. Kiem tra bat buoc: luong Quen mat khau PHAI trung email admin da luu (neu khong -> BLOCKER). Can user sua design.md §4.2/§4.4 + them task P3.",
+    "login_stage_bg": "User chon 2026-10-02: lay anh goc login-hero.png (940x1672) thay ban trich tu template.html; nen dashboard giu backdrop-blur-md (12px)."
   },
   "open_questions": [
     {
@@ -90,6 +92,13 @@
       "phase": "P6",
       "text": "Chốt bộ icon đồ uống và icon còn thiếu (trân châu, matcha...)",
       "status": "open"
+    },
+    {
+      "id": "Q-005",
+      "phase": "P3",
+      "text": "Bàn giao admin: ai chot email Google admin + cach doi 'key admin' sau khi bootstrap? Bao gom: (a) luong Quen mat khau hien chua ro co kiem tra Google email phai trung email admin khong (neu khong -> BLOCKER, ai cung reset duoc mat khau admin); (b) cach doi sang Google khac khi chuyen giao cho nguoi van hanh.",
+      "status": "decided",
+      "answer": "Chon phuong an A + B (2026-10-02): tach secret theo moi truong + luu email admin vao DB va cho doi tu trong app. Buoc con lai: user sua design.md §4.2/§4.4 va them task vao plan.md P3."
     }
   ],
   "blockers": [
@@ -105,7 +114,12 @@
   "backlog": [
     "P3: thay signIn() stub bang Edge Function auth-login (hien luon thanh cong) — src/features/auth/signIn.ts",
     "P3-T6: noi nut 'Quen mat khau' voi luong khoi phuc Google+OTP (hien chi hien goi y lien he admin)",
-    "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)"
+    "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)",
+    "QC P2-001 MINOR: login-hero.png rac o root -> da dung lam source nen login (src/assets/login-stage.webp|jpg), giu root goc kieu Logo.png/background.png",
+    "QC P2-002 MINOR: lech scope - repo track nhieu file ngoai app (.claude/, agent/, .opencode/ skills, PNG goc o root) -> chot tach hay ghi chu",
+    "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
+    "QC P2-004 MINOR: dead export - wrongPassword() export nhung khong dung ngoai signIn.ts (src/features/auth/signIn.ts:12)",
+    "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery"
   ],
   "off_plan_actions": [
     {
@@ -117,6 +131,16 @@
       "at": "2026-10-01T21:45:47+07:00",
       "agent": "assistant-offplan",
       "event": "Viet them 8 skill.md (.opencode/skills/frontend-stack, uiux, auth, pwa-offline, pos-bill, dashboard, testing, release) bao phu P0-P11 + cap nhat AGENT.md (§2 map, §5 skills_read, §12 Skill Compliance Protocol). Co uy quyen truc tiep tu user."
+    },
+    {
+      "at": "2026-10-02T08:55:00+07:00",
+      "agent": "main-coding",
+      "event": "User upload anh goc 'login-hero.png' (940x1672, PNG) va yeu cau thay nen login stage vi ban trich tu template.html bi nhòe. Nhan + chuyen doi (ngoai plan, yeu cau truc tiep cua user)."
+    },
+    {
+      "at": "2026-10-02T08:55:00+07:00",
+      "agent": "main-coding",
+      "event": "User hoi van de audit P3: sau khi bootstrap admin bang Google ca nhan (lay mau OTP), khi chay prod ban giao cho nguoi van hanh thi lam cach nao doi 'key admin' sang Google khac? -> ghi Q-005 (open_questions) + hoi user 2-3 phuong an truoc khi lam P3."
     }
   ],
   "evidence": [
@@ -470,6 +494,47 @@
         "template.html",
         "subagent.md §2-3"
       ]
+    },
+    {
+      "at": "2026-10-02T08:30:00+07:00",
+      "agent": "qc-test",
+      "event": "QC REPORT P2 vong 1: VERDICT PASS (chi tiet trong loop.last_report; bo sung 5 unit test -> 43/43, coverage lines 96.61%); 4 MINOR da ghi backlog."
+    },
+    {
+      "at": "2026-10-01T22:23:32+07:00",
+      "agent": "main-coding",
+      "event": "Luu tru bao cao truoc do vao evidence (truoc khi last_report bi ghi de)",
+      "note": "P1 QC vong 1: PASS. Q1 typecheck 0; Q2 lint 0; Q3 vitest 1/1; Q4/Q8 DB test ADAPTED: supabase test db khong chay duoc (B-001) -> scripts/test-p1.sh tren linked prod 28/28 PASS; Q9 build xanh (js 68KB gzip); Q10-Q12 sach. | SEC P1 vong 1: PASS. S1 gitleaks 17 commits no leaks; S2 npm audit 0; S3 RLS matrix 28/28; S4 khong hardcode secret; S8 session_fresh 7 ngay; S9 storage khong ghi de/xoa (400); S10 rate limit 10/phut; S11 grants minimum; S12 3 trigger fn SECURITY DEFINER; S14 create_bill khong tin gia client; S13/15 N/A. Khong co BLOCKER/MAJOR."
+    },
+    {
+      "at": "2026-10-02T08:55:00+07:00",
+      "agent": "main-coding",
+      "event": "P2 asset fix (yeu cau user)",
+      "cmd": "sharp login-hero.png -> src/assets/login-stage.webp (q92, 240KB) + login-stage.jpg (q92, 275KB); css image-set(webp, jpg); AppLayout backdrop-blur-lg -> md",
+      "output": "image-set emit ca webp + jpg trong dist; THIRD_PARTY.md cap nhat nguon = login-hero.png (khong con template.html data URI)",
+      "skills_read": [
+        "uiux/skill.md"
+      ]
+    },
+    {
+      "at": "2026-10-02T08:55:00+07:00",
+      "agent": "main-coding",
+      "event": "P2 re-verify sau asset fix",
+      "cmd": "typecheck && eslint && vitest run && build && playwright test",
+      "output": "typecheck 0; lint 0; 43/43 unit; build xanh gzip 88.23KB; 9/9 e2e (chromium/webkit/mobile) + axe 0 serious/critical; anh login moi sac net, khong nhòe"
+    },
+    {
+      "at": "2026-10-02T09:05:00+07:00",
+      "agent": "security-audit",
+      "event": "SEC REPORT P2 vong 1: VERDICT PASS (0 BLOCKER/MAJOR/MINOR; 40 chi tiet trong .opencode/evidence/p2-sec-round1.md)",
+      "cmd": "gitleaks detect -v --redact; npm audit --omit=dev; XSS/SQLi harness vitest+jsdom; grep localStorage/console/dangerouslySetInnerHTML",
+      "output": "gitleaks 0 leak 20 commits + dist 0 secret; npm audit 0; XSS 5/5 (0 element injection, alert khong kich hoat); storage chi hemtra.username; N/A dung pham vi P2 cho S3-S6,S8-S10,S14,S15 + S11 theo plan P4-T1/P10-T1"
+    },
+    {
+      "at": "2026-10-02T09:05:00+07:00",
+      "agent": "main-coding",
+      "event": "User tra loi Q-005: chon phuong an A + B cho chuyen giao/doi email admin; nen dashboard giu blur 12px",
+      "output": "ghi decisions.admin_transfer + Q-005 status=decided; can user sua design.md §4.2/§4.4 + them task P3 (agent khong tu sua design/plan noi dung)"
     }
   ],
   "phases": {
@@ -512,10 +577,10 @@
     },
     "P2": {
       "title": "UI/UX nền tảng & login",
-      "status": "in_progress",
+      "status": "done",
       "gates": {
-        "qc": null,
-        "sec": null
+        "qc": "PASS",
+        "sec": "PASS"
       },
       "tasks": {
         "P2-T1": "done",
@@ -806,6 +871,26 @@
     {
       "ts": "2026-10-02T08:17:56+07:00",
       "event": "DONE P2-T1..T7 (38 unit, coverage lines 91.52%, 9/9 e2e 3 projects, axe 0 serious/critical, build gzip 88.23KB)"
+    },
+    {
+      "ts": "2026-10-02T08:30:00+07:00",
+      "event": "QC P2 vong 1 PASS (43/43, coverage 96.61%, axe sach); tick Gate QC trong plan.md; 4 MINOR -> backlog"
+    },
+    {
+      "ts": "2026-10-02T08:55:00+07:00",
+      "event": "FIX theo yeu cau user: doi nen login = login-hero.png goc (webp q92 240KB + jpg q92 275KB), giam blur dashboard 24->12px; re-verify 43/43 + 9/9 e2e"
+    },
+    {
+      "ts": "2026-10-02T08:56:00+07:00",
+      "event": "Hoi user Q-005 (chuyen giao/doi email admin + luong Quen mat khau) truoc khi cham P3; tiep tuc: goi SEC gate P2"
+    },
+    {
+      "ts": "2026-10-02T09:05:00+07:00",
+      "event": "SEC P2 vong 1 PASS (0 loi); user chon A+B cho Q-005 + blur 12px"
+    },
+    {
+      "ts": "2026-10-02T09:06:00+07:00",
+      "event": "CLOSE P2 (QC+SEC PASS, phase=done). START P3-T0."
     }
   ],
   "tasks": {}

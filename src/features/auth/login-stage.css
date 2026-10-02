@@ -38,7 +38,13 @@
   width: var(--sw);
   height: 100%;
   left: min(0px, calc(100% - var(--sw) * 0.96));
+  /* Ảnh gốc do user cung cấp (login-hero.png) — không dùng bản trích từ template.html (bị nhòe).
+     image-set() tải webp khi hỗ trợ, jpeg chỉ là dự phòng. */
   background: url("../../assets/login-stage.jpg") center / 100% 100% no-repeat;
+  background-image: image-set(
+    url("../../assets/login-stage.webp") type("image/webp"),
+    url("../../assets/login-stage.jpg") type("image/jpeg")
+  );
 }
 
 .login-page .logo {
