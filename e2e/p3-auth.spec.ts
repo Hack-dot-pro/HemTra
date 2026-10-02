@@ -402,17 +402,27 @@ test('P3-T9: /setup — bootstrap lần 2 (409 "đã thiết lập") → thoát 
   expect(errors).toEqual([])
 })
 
-test('P3-T9: bootstrap xong → /setup tự ẩn vĩnh viễn, login hết link "Thiết lập lần đầu"',
-  async ({ page }) => {
-    const errors = collectAppErrors(page)
-    await fulfill(page, '**/rest/v1/app_meta*', 200, [{ bootstrapped: true }])
+// QC-001: mỗi test chỉ 1 lần điều hướng — goto lần 2 hủy request app_meta đang
+// bay (StrictMode ×2) → WebKit log "Fetch API cannot load ... access control".
+test('P3-T9: bootstrap xong → /setup tự chuyển sang /login', async ({ page }) => {
+  const errors = collectAppErrors(page)
+  await fulfill(page, '**/rest/v1/app_meta*', 200, [{ bootstrapped: true }])
 
-    await page.goto('/setup')
-    await expect(page).toHaveURL(/\/login$/)
+  await page.goto('/setup')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole('img', { name: 'Hẻm Trà' })).toBeVisible()
+  expect(errors).toEqual([])
+})
 
-    await page.goto('/login')
-    await expect(page.getByRole('img', { name: 'Hẻm Trà' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Thiết lập lần đầu' })).toHaveCount(0)
-    expect(errors).toEqual([])
-  },
-)
+test('P3-T9: bootstrap xong → login hết link "Thiết lập lần đầu"', async ({ page }) => {
+  const errors = collectAppErrors(page)
+  await fulfill(page, '**/rest/v1/app_meta*', 200, [{ bootstrapped: true }])
+
+  await page.goto('/login')
+  // chờ fetch app_meta của chính trang login xong (loading cũng ẩn link —
+  // phải chắc status đã resolved mới kết luận "hết link")
+  await page.waitForLoadState('networkidle')
+  await expect(page.getByRole('img', { name: 'Hẻm Trà' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Thiết lập lần đầu' })).toHaveCount(0)
+  expect(errors).toEqual([])
+})

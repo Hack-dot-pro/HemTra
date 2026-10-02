@@ -5,7 +5,7 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T16:45:30+07:00",
+    "last_updated": "2026-10-02T17:56:02+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
@@ -24,9 +24,16 @@
   },
   "loop": {
     "qc_round": 1,
-    "sec_round": 1,
-    "failure_signatures": [],
-    "last_report": "P2 QC vong 1: VERDICT PASS. Q1 typecheck 0; Q2 lint 0; Q3 vitest 43/43 (38 cu + 5 test qc-test bo sung: iOS install guide x2, signIn); Q4 coverage lines 96.61%; Q9 build xanh (js 277.31KB, gzip 88.23KB < 250KB); Q10-Q11 e2e 9/9 (chromium/webkit/mobile) + axe 0 serious/critical + 0 console error; Q12 sach. 4 MINOR -> backlog (login-hero.png rac/o root, lech scope, .gitignore thieu coverage/, dead export wrongPassword). Day du: .opencode/evidence/p2-qc-round1.md\nP2 SEC vong 1: VERDICT PASS. PHAM VI hep - be mat: form dang nhap, localStorage, routing, assets/build. S1 gitleaks 20 commits 0 leak + dist 0 secret; S2 npm audit 0; S7 XSS/SQLi harness 5/5 (0 element injection, alert khong kich hoat) + khong dangerouslySetInnerHTML/eval; S13 chi luu key hemtra.username (khong mat khau/token), khong console.log; S12 khong SW/token cache. S3-S6,S8-S10,S14-S15 N/A dung pham vi P2 (backend/P3/P4); S11 N/A theo plan (P4-T1/P10-T1). 0 BLOCKER/MAJOR/MINOR. NGHI VAN (khong chan): routes chua co guard (dung ke hoach P3-T7), .env local chua service_role (da ignore, chua commit). Day du: .opencode/evidence/p2-sec-round1.md"
+    "sec_round": 0,
+    "failure_signatures": [
+      {
+        "id": "QC-001",
+        "sig": "a5af527d58db9fa392425563eb629aa762b7fc24",
+        "desc": "e2e p3-auth:405 WebKit CORS error do goto lan 2 huy request app_meta dang bay",
+        "status": "fixed"
+      }
+    ],
+    "last_report": "P3 QC vong 1: VERDICT FAIL. Q1-Q9,Q11,Q12 xanh (typecheck/lint 0, 214 unit, coverage lines 96.17%, build gzip 151.47KB, DB linked 28/28, axe 0 serious). Q10 FAIL: npm run test:e2e loi 3/5 lan — p3-auth.spec.ts:405 (webkit) log 'Fetch API cannot load ... access control checks' x2. Nguyen nhan: test goto /login lan 2 huy 2 request app_meta cua trang login (StrictMode effect x2) dang bay -> WebKit log CORS. 3 MINOR: QC-002 smoke script T2/T4/T6/T7 khong co trong repo; QC-003 .env.example thieu newline cuoi. CHI TIET: .opencode/evidence/p3t9-test-auth.md (se ghi them phan sua QC)."
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -133,7 +140,8 @@
     "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
     "GoTrue security_update_password_require_current_password=true (design §4.1 hardening) — PATCH /auth/v1/admin/config tra 404 tren hosted (project key khong du quyen): can Dashboard (Authentication -> Settings) hoac management API PAT. EF change-password da chan doi mat khau khong qua mat khau cu o tang app (P3-T7) — flag chi la hardening them.",
     "Advisors security WARN pre-existing (khong lien quan migration T2): set_updated_at search_path mutable; leaked password protection disabled (PATCH auth config de bat); rls_auto_enable/create_bill/is_admin SECURITY DEFINER executable — xem lai o security audit gate P3.",
-    "Moi truong dev nay khong chay duoc supabase start local (Docker nested iptables legacy/nft conflict -> container-to-container drop). Neu sau nay can local stack (test db reset/RLS), sua iptables hoac dung remote dev."
+    "Moi truong dev nay khong chay duoc supabase start local (Docker nested iptables legacy/nft conflict -> container-to-container drop). Neu sau nay can local stack (test db reset/RLS), sua iptables hoac dung remote dev.",
+    "QC-002 MINOR (P3): smoke EF bootstrap-admin/auth-login/admin-recovery/change-password chua co script trong repo (lan truoc o /tmp bi mat) -> tach scripts/smoke-<ef>.sh (env-only, co RESET cloud) tai P11; hien chi co .opencode/evidence/p3t8-smoke.sh"
   ],
   "off_plan_actions": [
     {
@@ -1190,6 +1198,10 @@
     {
       "ts": "2026-10-02T16:45:30+07:00",
       "event": "DONE P3-T9: test phase P3. Them e2e/p3-auth.spec.ts (33 test) + mo rong helpers (loginAtMsAgo, expiredToken, CORS). Tong e2e 69/69, unit 214/214, typecheck 0, lint 0. Ghi 3 bay vao evidence (JWT base64url, WebKit CORS, getByLabel exact). Ke tiep Gate QC P3."
+    },
+    {
+      "ts": "2026-10-02T17:56:02+07:00",
+      "event": "QC P3 vong 1: FAIL (1 MAJOR QC-001 e2e flaky WebKit + 2 MINOR). Sua QC-001: tach test p3-auth:405 thanh 2 test moi test 1 lan dieu huong (nguyen nhan: goto lan 2 huy request dang bay); sua QC-003: them newline .env.example; QC-002 -> backlog. Chuan bi goi QC vong 2."
     }
   ],
   "tasks": {}
