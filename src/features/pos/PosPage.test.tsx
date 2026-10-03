@@ -10,6 +10,7 @@ import PosPage from './PosPage'
 import { HemTraDB, setDbForTest, type HemTraDB as DBType } from '../../lib/db'
 import { listPending } from '../../lib/outbox'
 import { syncMenu, writeCachedMenu } from '../../lib/menuSync'
+import { downloadBlob } from './exportBillPng'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 
 const { rpcMock, uploadMock } = vi.hoisted(() => ({
@@ -76,6 +77,8 @@ afterEach(() => {
   cleanup()
   setDbForTest(null)
   Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+  Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
+  Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true })
 })
 
 async function renderPos() {
@@ -256,6 +259,60 @@ describe('P6-T7 — thanh toán offline', () => {
 
     // quay lại online → event sync sẽ bắn (đây: gọi thẳng sync qua onOnline không test — outbox đã có đủ dữ liệu)
     expect(await testDb.outbox.count()).toBe(1)
+  })
+})
+
+describe('P6-T8 — chia sẻ / lưu PNG', () => {
+  function stubWebShare(share: unknown, canShare: unknown) {
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    Object.defineProperty(navigator, 'canShare', { value: canShare, configurable: true })
+  }
+
+  async function checkoutOne(user: Awaited<ReturnType<typeof renderPos>>) {
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 35000, price_drift: false, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+    await screen.findByTestId('last-sale')
+  }
+
+  it('Web Share hỗ trợ → nút Chia sẻ share file PNG đúng tên', async () => {
+    const share = vi.fn(async () => undefined)
+    const canShare = vi.fn(() => true)
+    stubWebShare(share, canShare)
+    const user = await renderPos()
+    await checkoutOne(user)
+
+    await user.click(screen.getByTestId('share-btn'))
+    expect(share).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Bill HT-261003-0001 — Hẻm Trà',
+        files: [expect.objectContaining({ name: 'HT-261003-0001.png' })],
+      }),
+    )
+  })
+
+  it('không hỗ trợ Web Share → ẩn nút Chia sẻ, Lưu về máy vẫn dùng được', async () => {
+    stubWebShare(undefined, undefined)
+    const user = await renderPos()
+    await checkoutOne(user)
+
+    expect(screen.queryByTestId('share-btn')).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('save-btn'))
+    expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'HT-261003-0001.png')
+    expect(screen.getByTestId('checkout-msg')).toHaveTextContent('Đã lưu HT-261003-0001.png')
+  })
+
+  it('người dùng đóng bảng chia sẻ (AbortError) → im lặng, không hiện lỗi', async () => {
+    const abort = new DOMException('canceled', 'AbortError')
+    stubWebShare(vi.fn(async () => Promise.reject(abort)), vi.fn(() => true))
+    const user = await renderPos()
+    await checkoutOne(user)
+
+    await user.click(screen.getByTestId('share-btn'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
 

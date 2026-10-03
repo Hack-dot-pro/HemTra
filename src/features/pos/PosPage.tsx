@@ -16,7 +16,7 @@ import { useOutboxSync } from '../../lib/useOutbox'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 import BillSheet, { type BillSheetProps } from './BillSheet'
 import { generateQrDataUrl } from './qr'
-import { billNodeToBlob } from './exportBillPng'
+import { billNodeToBlob, downloadBlob } from './exportBillPng'
 import {
   CheckoutRateLimitedError,
   MenuVersionChangedError,
@@ -173,6 +173,35 @@ export default function PosPage() {
       setSheet(null)
       setPaying(false)
     }
+  }
+
+  /** Web Share API với file PNG (Zalo/Messenger) — P6-T8 (pos-bill/skill.md §5). */
+  async function handleShare(): Promise<void> {
+    const png = lastSale?.png
+    if (!lastSale || !png) return
+    const file = new File([png], `${lastSale.code}.png`, { type: 'image/png' })
+    if (typeof navigator.share !== 'function' || !navigator.canShare?.({ files: [file] })) {
+      setCheckoutMsg({ tone: 'warn', text: 'Thiết bị không chia sẻ được ảnh — dùng Lưu về máy.' })
+      return
+    }
+    try {
+      await navigator.share({ files: [file], title: `Bill ${lastSale.code} — Hẻm Trà` })
+    } catch (error) {
+      // Người dùng đóng bảng chia sẻ → im lặng, không phải lỗi.
+      if (!(error instanceof DOMException) || error.name !== 'AbortError') {
+        setCheckoutMsg({
+          tone: 'error',
+          text: `Chia sẻ thất bại: ${error instanceof Error ? error.message : 'không rõ'}`,
+        })
+      }
+    }
+  }
+
+  /** Fallback: tải PNG về máy (đã có trong T6). */
+  function handleSave(): void {
+    if (!lastSale?.png) return
+    downloadBlob(lastSale.png, `${lastSale.code}.png`)
+    setCheckoutMsg({ tone: 'ok', text: `Đã lưu ${lastSale.code}.png về máy.` })
   }
 
   return (
@@ -405,9 +434,37 @@ export default function PosPage() {
           </p>
         ) : null}
         {lastSale ? (
-          <p className="mt-2 text-xs text-white/60" data-testid="last-sale">
-            Bill gần nhất: {lastSale.code}
-          </p>
+          <div className="mt-2">
+            <p className="text-xs text-white/60" data-testid="last-sale">
+              Bill gần nhất: {lastSale.code}
+            </p>
+            {lastSale.png ? (
+              <div className="mt-2 flex gap-2">
+                {typeof navigator.share === 'function' ? (
+                  <button
+                    type="button"
+                    data-testid="share-btn"
+                    onClick={() => void handleShare()}
+                    className="glass-btn flex-1 !py-1.5 text-sm"
+                  >
+                    Chia sẻ
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  data-testid="save-btn"
+                  onClick={handleSave}
+                  className="glass-btn flex-1 !py-1.5 text-sm"
+                >
+                  Lưu về máy
+                </button>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-amber-200/90">
+                Ảnh bill chưa xuất được — bill vẫn đã ghi nhận.
+              </p>
+            )}
+          </div>
         ) : null}
       </aside>
 

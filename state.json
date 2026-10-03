@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T21:40:00+07:00",
+    "last_updated": "2026-10-03T22:00:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P6",
-    "task": "P6-T8",
+    "task": "P6-T9",
     "step": "READ",
-    "note": "T7 xong: RPC create_bill (menu_version/rate-limit/idempotent), upload PNG Storage path policy, offline outbox+useOutboxSync, banner offline/stale, phone_note 50. 362 unit/105 e2e xanh, bundle 222.82KB. Tiep P6-T8: Web Share API + Luu ve may + fallback."
+    "note": "T8 xong (Web Share + Luu ve may + fallback, 365 unit). Tiep P6-T9 (gate cuoi P6): e2e ban 1 don -> PNG -> luu duoc; offline -> ban -> online -> dong bo (nop P4-T9); unit tong tien/VND/ma bill + snapshot da co."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -1083,6 +1083,16 @@
         "design.md §8"
       ],
       "output": "checkout.ts (RPC 7 tham so, MenuVersionChanged/RateLimited, OFF code regex, enqueueOfflineBill, toSheetItems) + billUpload (path UTC+7 + regex policy, 300KB guard) + useOutboxSync (mount/online/sau ban) + PosPage Thanh toan (DOM an -> PNG -> upload/ outbox; banner offline + stale; phone_note 50). Unit +39 (362/362), e2e 105/105, build gzip 222.82KB (lazy chunks qrcode/html-to-image). P4-T5 dong."
+    },
+    {
+      "at": "2026-10-03T22:00:00+07:00",
+      "agent": "main-coding",
+      "event": "P6-T8 done",
+      "file": "src/features/pos/PosPage.tsx",
+      "skills_read": [
+        ".opencode/skills/pos-bill/skill.md §5"
+      ],
+      "output": "Web Share files + canShare fallback + Luu ve may downloadBlob + AbortError im lang; unit +3 (365/365), TC 0, lint 0, build gzip 223.23KB."
     }
   ],
   "phases": {
@@ -1211,7 +1221,7 @@
         "P6-T5": "done",
         "P6-T6": "done",
         "P6-T7": "done",
-        "P6-T8": "pending",
+        "P6-T8": "done",
         "P6-T9": "pending"
       }
     },
@@ -1637,6 +1647,11 @@
       "at": "2026-10-03T21:40:00+07:00",
       "agent": "main-coding",
       "event": "DONE P6-T7: thanh toan RPC + upload PNG + offline outbox (dong P4-T5). 362 unit, 105 e2e. Ke tiep P6-T8 chia se Web Share."
+    },
+    {
+      "at": "2026-10-03T22:00:00+07:00",
+      "agent": "main-coding",
+      "event": "DONE P6-T8: chia se Web Share + luu PNG. 365 unit xanh. Ke tiep P6-T9 e2e ban hang."
     }
   ],
   "tasks": {}
