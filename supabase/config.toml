@@ -411,6 +411,12 @@ verify_jwt = false
 [functions.change-recovery-email]
 verify_jwt = false
 
+# P7-T3: cleanup-bills duoc pg_cron goi qua net.http_post (P7-T4) -> khong co
+# user JWT -> verify_jwt = false; bao ve bang secret CRON_SECRET tren header
+# Authorization (fail-closed neu chua set), service_role chi trong file EF.
+[functions.cleanup-bills]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -5,7 +5,7 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T21:40:00+07:00",
+    "last_updated": "2026-10-03T22:10:00+07:00",
     "last_agent": "main-coding",
     "agent": "main-coding"
   },
@@ -1249,6 +1249,19 @@
         "e2e": "p7-bills.spec.ts 4 test x 3 project = 12/12 pass; full suite 129/129; axe moi trang + modal open = 0 serious/critical; anh p7-bill-modal-* 390x844 da chup",
         "scope": "chi src/features/bills + e2e/p7-bills.spec.ts + plan/state"
       }
+    },
+    {
+      "at": "2026-10-03T22:10:00+07:00",
+      "agent": "main-coding",
+      "event": "task_done",
+      "task": "P7-T3",
+      "output": "EF cleanup-bills: supabase/functions/cleanup-bills/index.ts + [functions.cleanup-bills] verify_jwt=false trong config.toml. Bao ve bang CRON_SECRET (Authorization Bearer, safeEqual, fail-closed khi thieu env); thu tu xoa file Storage truoc -> xoa bills sau (bill_items cascade), loi xoa file thi giu dong de lan sau thu lai; chi doc 200 bill/lần, khong dung stats_*. Secret set qua `supabase secrets set --env-file` (gia tri trong /tmp, khong log).",
+      "checks": {
+        "deploy": "npx supabase@2.119.0 functions deploy cleanup-bills --use-api --project-ref $SUPABASE_PROJECT_REF -> Deployed",
+        "smoke": "khong header 401 / sai secret 401 / dung secret 200 {scanned:0,filesRemoved:0,rowsDeleted:0,hasMore:false} x2 (idempotent) / GET 405; message tieng Viet",
+        "typecheck_lint": "repo gates van xanh (EF bi eslint ignores, khong co deno trong moi truong)",
+        "con_lai": "duong dan xoa that (bill het han + file) do P7-T5 test"
+      }
     }
   ],
   "phases": {
@@ -1391,7 +1404,7 @@
       "tasks": {
         "P7-T1": "done",
         "P7-T2": "done",
-        "P7-T3": "pending",
+        "P7-T3": "done",
         "P7-T4": "pending",
         "P7-T5": "pending"
       }
