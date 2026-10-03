@@ -1,0 +1,187 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`P6-T4 — BillSheet đúng 7 khối (design §6.1) > snapshot: layout khóa theo thứ tự logo → mã/SĐT → bảng → tổng → QR → lời chúc → địa chỉ 1`] = `
+<div>
+  <div
+    class="mx-auto flex flex-col items-center px-10 py-8 text-center"
+    data-testid="bill-sheet"
+    style="width: 720px; background-color: rgb(255, 255, 255); color: rgb(17, 17, 17); font-family: Calibri, Carlito, sans-serif;"
+  >
+    <img
+      alt="Hẻm Trà"
+      class="h-16 w-auto object-contain"
+      src="/src/assets/logo.png"
+    />
+    <p
+      class="mt-4 text-lg font-bold"
+    >
+      Mã đơn 
+      HT-261003-0001
+    </p>
+    <p
+      class="text-sm"
+    >
+      Thời gian: 
+      14:15 03/10/2026
+    </p>
+    <p
+      class="text-sm"
+    >
+      0338525677 (Vi) - 0362335733 (Linh)
+    </p>
+    <table
+      class="mt-4 w-full border-collapse text-sm"
+    >
+      <thead>
+        <tr
+          class="border-b border-black/40 text-left"
+        >
+          <th
+            class="py-1 pr-2 font-semibold"
+          >
+            Sản phẩm
+          </th>
+          <th
+            class="py-1 pr-2 text-center font-semibold"
+          >
+            SL
+          </th>
+          <th
+            class="py-1 pr-2 text-right font-semibold"
+          >
+            Đơn giá
+          </th>
+          <th
+            class="py-1 text-right font-semibold"
+          >
+            Thành tiền
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          class="align-top"
+        >
+          <td
+            class="py-1 pr-2"
+          >
+            <span
+              class="font-medium"
+            >
+              Trà sữa đào
+            </span>
+            <span
+              class="block text-xs italic text-black/70"
+            >
+              ít đá
+            </span>
+          </td>
+          <td
+            class="py-1 pr-2 text-center tabular-nums"
+          >
+            2
+          </td>
+          <td
+            class="py-1 pr-2 text-right tabular-nums"
+          >
+            35.000
+          </td>
+          <td
+            class="py-1 text-right tabular-nums"
+          >
+            70.000
+          </td>
+        </tr>
+        <tr>
+          <td
+            class="py-0.5 pl-5 pr-2 text-left"
+          >
+            + 
+            Trân châu
+          </td>
+          <td
+            class="py-0.5 pr-2 text-center tabular-nums"
+          >
+            2
+          </td>
+          <td
+            class="py-0.5 pr-2 text-right tabular-nums"
+          >
+            5.000
+          </td>
+          <td
+            class="py-0.5 text-right tabular-nums"
+          >
+            10.000
+          </td>
+        </tr>
+        <tr
+          class="align-top"
+        >
+          <td
+            class="py-1 pr-2"
+          >
+            <span
+              class="font-medium"
+            >
+              Trà đào
+            </span>
+          </td>
+          <td
+            class="py-1 pr-2 text-center tabular-nums"
+          >
+            1
+          </td>
+          <td
+            class="py-1 pr-2 text-right tabular-nums"
+          >
+            30.000
+          </td>
+          <td
+            class="py-1 text-right tabular-nums"
+          >
+            30.000
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div
+      class="mt-2 flex w-full items-center justify-between border-t border-black/40 pt-2 text-base font-bold"
+    >
+      <span>
+        Tổng cộng
+      </span>
+      <span
+        class="tabular-nums"
+      >
+        110.000 ₫
+      </span>
+    </div>
+    <div
+      class="mt-4 flex flex-col items-center gap-1"
+    >
+      <div
+        class="grid h-28 w-28 place-items-center border border-dashed border-black/30 text-xs text-black/50"
+        data-testid="bill-qr-placeholder"
+      >
+        QR
+      </div>
+      <span
+        class="text-xs"
+      >
+        Facebook Hẻm Trà
+      </span>
+    </div>
+    <p
+      class="mt-4 text-sm"
+    >
+      Cảm ơn khách hàng thân yêu của Hẻm
+    </p>
+    <p
+      class="mt-1 text-sm"
+    >
+      Phường Long Nguyên, Thành Phố Hồ Chí Minh
+    </p>
+  </div>
+</div>
+`;
