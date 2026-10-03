@@ -21,6 +21,16 @@ vi.mock('../features/auth/accessGuard', async (importOriginal) => {
   return { ...actual, loadAccessProfile: vi.fn(async () => null) }
 })
 
+// P4: AppLayout chạy useMenuSync() (query REST app_meta + kênh realtime) —
+// dùng fake client (src/test/fakeSupabase.ts) đúng tinh thần testing/skill §2:
+// unit test KHÔNG gọi mạng thật (REST/WS tới cloud).
+vi.mock('../lib/supabase', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/supabase')>()
+  const { createFakeSupabase } = await import('../test/fakeSupabase')
+  const { client } = createFakeSupabase({ tables: { app_meta: [{ id: 1, menu_version: 7 }] } })
+  return { ...actual, getSupabase: () => client }
+})
+
 beforeEach(() => {
   vi.mocked(loadAccessProfile).mockReset()
   vi.mocked(loadAccessProfile).mockResolvedValue(null)

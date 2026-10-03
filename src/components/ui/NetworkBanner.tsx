@@ -2,7 +2,7 @@
 // 3 trạng thái người dùng cần biết khi bán: offline, giá cập nhật lúc mấy giờ,
 // cache quá 24 giờ (vẫn cho bán — chỉ cảnh báo).
 
-import { Wifi, WifiOff, AlertTriangle } from 'lucide-react'
+import { WifiOff, AlertTriangle } from 'lucide-react'
 import { formatClockTime } from '../../lib/format'
 import { isMenuStale, useMenuSnapshot, useOnlineStatus } from '../../lib/useMenu'
 
@@ -33,19 +33,10 @@ export default function NetworkBanner() {
     )
   }
 
-  if (stale) {
-    return (
-      <div role="status" className={bannerClass('stale')}>
-        <AlertTriangle size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-        <span>Menu cache quá 24 giờ (cập nhật lúc {formatClockTime(fetchedAt)}) — nên tải lại để lấy giá mới.</span>
-      </div>
-    )
-  }
-
   return (
-    <div role="status" className="sr-only">
-      <Wifi size={16} aria-hidden="true" />
-      Đã kết nối
+    <div role="status" className={bannerClass('stale')}>
+      <AlertTriangle size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+      <span>Menu cache quá 24 giờ (cập nhật lúc {formatClockTime(fetchedAt)}) — nên tải lại để lấy giá mới.</span>
     </div>
   )
 }

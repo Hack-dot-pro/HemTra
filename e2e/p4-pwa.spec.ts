@@ -4,6 +4,12 @@ import { injectAuth } from './helpers'
 // P4-T9 — PWA/offline: đồng bộ menu khi mở app, banner offline, hardRefresh
 // (P4-T3/T4/T7/T8). Case "offline → bán → online → đồng bộ" viết ở P6-T9 khi POS có.
 
+// Chuẩn viewport theo testing/skill.md §3: 390×844 (mobile) và 1280×800 (desktop)
+const VIEWPORTS = [
+  { name: '390x844', width: 390, height: 844 },
+  { name: '1280x800', width: 1280, height: 800 },
+]
+
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info, range',
@@ -117,7 +123,7 @@ test('P4-T3: mở app sau đăng nhập → đồng bộ menu ghi vào IndexedDB
     })
 })
 
-test('P4-T4: offline → banner cảnh báo; có mạng lại → hết banner', async ({ context, page }) => {
+test('P4-T4: offline → banner cảnh báo; có mạng lại → hết banner', async ({ context, page }, testInfo) => {
   await injectAuth(page)
   await mockMenuRest(page)
   await page.goto('/dashboard')
@@ -125,9 +131,51 @@ test('P4-T4: offline → banner cảnh báo; có mạng lại → hết banner',
 
   await context.setOffline(true)
   await expect(page.getByText(/Đang offline — giá cập nhật lúc/)).toBeVisible()
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await expect(page.getByText(/Đang offline — giá cập nhật lúc/)).toBeVisible()
+    await page.screenshot({
+      path: `e2e/screenshots/pwa-offline-${testInfo.project.name}-${viewport.name}.png`,
+    })
+  }
 
   await context.setOffline(false)
   await expect(page.getByText(/Đang offline — giá cập nhật lúc/)).toBeHidden({ timeout: 10_000 })
+})
+
+test('P4-T6: version.json lệch → thanh "Có phiên bản mới" chờ xác nhận, không tự reload', async ({
+  page,
+}, testInfo) => {
+  await injectAuth(page)
+  await mockMenuRest(page)
+  await page.route('**/version.json', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ version: 'ban-tren-may-chu-khac', builtAt: '2026-10-03T00:00:00.000Z' }),
+    }),
+  )
+
+  await page.goto('/dashboard')
+  const bar = page.getByRole('alert')
+  await expect(bar).toContainText('Có phiên bản mới — Cập nhật?', { timeout: 10_000 })
+
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await expect(bar).toBeVisible()
+    await page.screenshot({
+      path: `e2e/screenshots/pwa-update-bar-${testInfo.project.name}-${viewport.name}.png`,
+    })
+  }
+
+  // Không tự reload: vẫn ở trang cũ, thanh vẫn chờ người dùng quyết định
+  await expect(page).toHaveURL(/\/dashboard/)
+  await expect(bar).toBeVisible()
+
+  await bar.getByRole('button', { name: 'Để sau' }).click()
+  await expect(bar).toHaveCount(0)
+  await expect(page).toHaveURL(/\/dashboard/)
 })
 
 test('P4-T7/T8: hardRefresh hỏi khi còn bill chưa sync, xóa menu cache nhưng GIỮ outbox + username', async ({

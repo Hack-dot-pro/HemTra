@@ -5,7 +5,7 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T11:05:00+07:00",
+    "last_updated": "2026-10-03T12:40:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
@@ -23,7 +23,7 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 0,
+    "qc_round": 1,
     "sec_round": 0,
     "failure_signatures": [
       {
@@ -878,6 +878,19 @@
       "event": "P4: nop registerServiceWorker + version poll + PwaUpdateBar",
       "file": ".opencode/evidence/p4-t6-wiring.md",
       "note": "main.tsx goi registerServiceWorker() + startDeployVersionPolling(); AppLayout render PwaUpdateBar (cho phep nguoi dung xac nhan, khong tu reload). Dev: devOptions.enabled=false -> registerSW noop (e2e khong loi console). Build that + preview smoke: SW active/controlled, version.json=murqt4bb = build id, manifest OK, 0 console error; typecheck/lint 0, vitest 252, e2e 81/81. Tick plan P4-T1/T2/T3/T4/T6/T7/T8; T5/T9 pending ly do ghi ro trong plan.md."
+    },
+    {
+      "at": "2026-10-03T12:20:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P4 vong 1 FAIL",
+      "file": ".opencode/evidence/p4-qc-round1.md",
+      "note": "3 MAJOR + 4 MINOR. QC-001: pwaClient (P4-T6) khong co test -> lib coverage 79.59% < 80. QC-002: App.test goi REST/WS THAT (useMenuSync) -> vitest isolated/coverage exit 1, vi pham testing skill §2. QC-003: thieu apple-touch-icon (design §8.9). MINOR: QC-004 range diff chua commit P3 (6dc40c6 tron P3+P4), QC-005 dead code NetworkBanner, QC-006 thieu anh 2 viewport cho UI P4, QC-007 simulateClearCache khong con dung. So lieu: typecheck/lint 0, unit 252/252, e2e 81/81, build OK, gitleaks 0. T5/T9 ghi chu plan TRUNG THIEC theo QC."
+    },
+    {
+      "at": "2026-10-03T12:40:00+07:00",
+      "agent": "main-coding",
+      "event": "fix QC P4 vong 1 (QC-001..QC-007)",
+      "note": "QC-001: them src/lib/pwaClient.test.ts (9 test: register 1 lan, needRefresh/offlineReady, applyPwaUpdate 2 ly do, checkDeployVersion 4 truong hop, polling + cleanup) -> lib 87.07% line, tong 262 unit. QC-002: App.test mock ../lib/supabase bang createFakeSupabase (fake REST + channel) -> chay rieng 6/6 xanh, khong goi mang that. QC-003: index.html + <link rel=apple-touch-icon> (dist co link, precache 21 entries). QC-005: xoa nhanh sr-only dead code + import Wifi thua NetworkBanner. QC-006: anh pwa-offline-* va pwa-update-bar-* (2 viewport x 3 project = 12 anh) + test moi P4-T6 (version.json lech -> thanh cho xac nhan, khong tu reload, Để sau tat). QC-007: xoa simulateClearCache + sua ghi chu plan T8. QC-004: giai thich scope cho vong 2 (6dc40c6 = commit tron P3+P4). Checks: typecheck/lint 0, unit+coverage exit 0 (262/262, lib 87.07%), build OK, e2e 84/84."
     }
   ],
   "phases": {
@@ -1347,6 +1360,10 @@
     {
       "ts": "2026-10-03T11:05:00+07:00",
       "event": "Nop PWA (registerServiceWorker + poll version.json + PwaUpdateBar) va tick P4-T1..T4/T6..T8 voi bang chung (build preview smoke SW active, 252 unit, 81/81 e2e). T5/T9 con pending (noi POS + 2 case e2e thuoc P6/P5). Ke tiep: qc-test P4."
+    },
+    {
+      "ts": "2026-10-03T12:40:00+07:00",
+      "event": "QC P4 vong 1 FAIL (3 MAJOR) -> sua het: test pwaClient, fake supabase cho App.test, apple-touch-icon, xoa dead code, xoa simulateClearCache, +test P4-T6 + 12 anh P4. 262 unit (lib 87.07%), e2e 84/84. Ke tiep: QC vong 2."
     }
   ],
   "tasks": {}

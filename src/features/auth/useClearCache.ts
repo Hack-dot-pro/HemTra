@@ -11,11 +11,6 @@ export async function clearCacheAndReload(): Promise<void> {
   await hardRefresh()
 }
 
-// Runner giả lập — chỉ dùng cho test không muốn đụng IndexedDB/điều hướng.
-export async function simulateClearCache(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-}
-
 export function useClearCache(runner: ClearCacheRunner = clearCacheAndReload) {
   const [status, setStatus] = useState<ClearCacheStatus>('idle')
 
