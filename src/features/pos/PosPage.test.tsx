@@ -10,7 +10,7 @@ import PosPage from './PosPage'
 import { HemTraDB, setDbForTest, type HemTraDB as DBType } from '../../lib/db'
 import { listPending } from '../../lib/outbox'
 import { syncMenu, writeCachedMenu } from '../../lib/menuSync'
-import { downloadBlob } from './exportBillPng'
+import { billNodeToPngDataUrl, downloadBlob } from './exportBillPng'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 
 const { rpcMock, uploadMock } = vi.hoisted(() => ({
@@ -88,6 +88,36 @@ async function renderPos() {
   render(<PosPage />)
   await screen.findByRole('button', { name: 'Thêm Trà sữa đào' })
   return user
+}
+
+// QC-017 (qc-test round 3): đọc Σ cột "Thành tiền" của MỌI dòng tbody (gồm dòng
+// topping con) và ô "Tổng cộng" ngay lúc chụp PNG — dùng cho cả nhánh online
+// lẫn offline để không còn đường in bill Σ ≠ Tổng cộng.
+type Captured = { lineSum: number; total: number }
+let captured: Captured | null = null
+
+beforeEach(() => {
+  captured = null
+})
+
+function captureSheetOnce(): void {
+  vi.mocked(billNodeToPngDataUrl).mockImplementationOnce(async () => {
+    const sheetEl = document.querySelector('[data-testid="bill-sheet"]')
+    if (sheetEl) {
+      const rows = Array.from(sheetEl.querySelectorAll('tbody tr'))
+      const lineSum = rows.reduce((sum, tr) => {
+        const tds = tr.querySelectorAll('td')
+        const last = tds[tds.length - 1]
+        return sum + Number((last?.textContent ?? '0').replace(/[^0-9]/g, ''))
+      }, 0)
+      const totalBox = Array.from(sheetEl.querySelectorAll('div')).find((d) =>
+        (d.textContent ?? '').trim().startsWith('Tổng cộng'),
+      )
+      const totalText = totalBox?.querySelectorAll('span')[1]?.textContent ?? '0'
+      captured = { lineSum, total: Number(totalText.replace(/[^0-9]/g, '')) }
+    }
+    return 'data:image/png;base64,UE5H'
+  })
 }
 
 describe('P6-T2 — lưới sản phẩm theo nhóm', () => {
@@ -258,6 +288,119 @@ describe('P6-T7 — thanh toán online', () => {
   })
 })
 
+describe('QC-013 (b)/(c) — bill in ra đúng tiền + cờ price_drift khi online', () => {
+  async function addTwoMilkTeaWithTopping(user: Awaited<ReturnType<typeof renderPos>>) {
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    await user.click(screen.getByRole('button', { name: 'Tăng Trà sữa đào' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn topping cho Trà sữa đào' }))
+    await user.click(screen.getByRole('button', { name: 'Topping Trân châu' }))
+    await user.click(screen.getByRole('button', { name: 'Đóng' }))
+    expect(screen.getByTestId('bill-total')).toHaveTextContent('80.000 ₫')
+  }
+
+  it('QC-013(b): thanh toán online không lệch → bill in Σ dòng tiền = tổng cộng', async () => {
+    const user = await renderPos()
+    await addTwoMilkTeaWithTopping(user)
+
+    captureSheetOnce()
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 80000, price_drift: false, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+    await screen.findByText('Đã tạo bill HT-261003-0001.')
+
+    expect(captured).not.toBeNull()
+    expect(captured?.lineSum).toBe(80000)
+    expect(captured?.total).toBe(80000)
+    expect(captured?.lineSum).toBe(captured?.total)
+  })
+
+  it('QC-013(c): RPC trả price_drift=true → cảnh báo "giá tại quầy khác", vẫn ghi nhận bill', async () => {
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+
+    captureSheetOnce()
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 35000, price_drift: true, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+
+    const msg = await screen.findByText(
+      'Đã tạo bill HT-261003-0001 — giá tại quầy khác giá hiển thị (đã ghi nhận).',
+    )
+    expect(msg).toHaveClass('border-amber-300/40')
+    expect(msg).toHaveAttribute('role', 'status')
+    expect(rpcMock).toHaveBeenCalledTimes(1)
+    expect(captured).not.toBeNull() // không được "pass im lặng" khi bill không in
+    expect(captured?.lineSum).toBe(35000)
+    expect(captured?.total).toBe(35000)
+    expect(captured?.lineSum).toBe(captured?.total)
+  })
+
+  it('QC-017: RPC trả tổng khác giỏ mà menu không tải lại được → KHÔNG chụp PNG, vẫn ghi nhận bill', async () => {
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+
+    captureSheetOnce()
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 40000, price_drift: false, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+
+    // syncMenu là mock không đổi cache → giá vẫn 35.000 ≠ 40.000 → không in
+    await screen.findByText(
+      'Đã tạo bill HT-261003-0001 — tổng server 40.000 ₫ khác giỏ: chưa xuất ảnh bill, kiểm tra giỏ rồi bán lại.',
+    )
+    expect(rpcMock).toHaveBeenCalledWith(
+      'create_bill',
+      expect.objectContaining({ p_menu_version: 7, p_is_offline: false }),
+    )
+    expect(rpcMock).toHaveBeenCalledTimes(1)
+    expect(captured).toBeNull() // không render BillSheet để chụp
+    expect(billNodeToPngDataUrl).not.toHaveBeenCalled()
+    expect(uploadMock).not.toHaveBeenCalled()
+    expect(screen.getByText('Ảnh bill chưa xuất được — bill vẫn đã ghi nhận.')).toBeInTheDocument()
+    expect(screen.getByTestId('bill-count')).toHaveTextContent('0 món') // bill đã tạo → dọn giỏ
+  })
+
+  it('QC-017: menu tải lại được giá mới → định lại giá dòng, in Σ dòng = tổng server', async () => {
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+
+    vi.mocked(syncMenu).mockImplementationOnce(async () => {
+      await writeCachedMenu(
+        {
+          ...menuFixture(),
+          menu_version: 8,
+          products: menuFixture().products.map((p) =>
+            p.id === 'p1' ? { ...p, price: 40000 } : p,
+          ),
+        },
+        testDb,
+      )
+      return { status: 'ok', refreshed: true, menuVersion: 8, fetchedAt: Date.now() }
+    })
+    captureSheetOnce()
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 40000, price_drift: false, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+
+    await screen.findByText(
+      'Đã tạo bill HT-261003-0001 — giá vừa đổi, ảnh in theo tổng server 40.000 ₫.',
+    )
+    expect(captured).not.toBeNull()
+    expect(captured?.lineSum).toBe(40000)
+    expect(captured?.total).toBe(40000)
+    expect(captured?.lineSum).toBe(captured?.total)
+    expect(uploadMock).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('P6-T7 — thanh toán offline', () => {
   it('mất mạng → mã OFF + PNG vào outbox pending, thông báo chờ đồng bộ', async () => {
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
@@ -278,6 +421,27 @@ describe('P6-T7 — thanh toán offline', () => {
 
     // quay lại online → event sync sẽ bắn (đây: gọi thẳng sync qua onOnline không test — outbox đã có đủ dữ liệu)
     expect(await testDb.outbox.count()).toBe(1)
+  })
+
+  it('QC-017 (regression): offline in bill Σ dòng tiền = Tổng cộng (giá snapshot, không lệch)', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    await user.click(screen.getByRole('button', { name: 'Tăng Trà sữa đào' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn topping cho Trà sữa đào' }))
+    await user.click(screen.getByRole('button', { name: 'Topping Trân châu' }))
+    await user.click(screen.getByRole('button', { name: 'Đóng' }))
+    expect(screen.getByTestId('bill-total')).toHaveTextContent('80.000 ₫')
+
+    captureSheetOnce()
+    await user.click(screen.getByTestId('checkout-btn'))
+    await screen.findByText(/Offline — bill HT-\d{6}-OFF-[A-Za-z0-9]{4} đã lưu/)
+
+    expect(captured).not.toBeNull()
+    expect(captured?.lineSum).toBe(80000)
+    expect(captured?.total).toBe(80000)
+    expect(captured?.lineSum).toBe(captured?.total)
+    expect(rpcMock).not.toHaveBeenCalled()
   })
 })
 

@@ -178,6 +178,43 @@ export function billItemCount(state: BillState): number {
   return state.lines.reduce((sum, line) => sum + line.qty, 0)
 }
 
+export type RepriceResult = { bill: BillState; missing: string[] }
+
+/**
+ * Định lại giá + tên dòng theo menu máy chủ mới nhất — RPC online luôn lấy
+ * `products.price`/`name` phía server (create_bill PASS 1), nên snapshot của
+ * máy bán chỉ in đúng khi khớp menu vừa tải. Dòng không còn trong menu
+ * (SP/topping bị xóa hoặc ngừng bán) đưa vào `missing` để người gọi tự quyết —
+ * không bao giờ in bill cộng ra sai tiền (QC-017). Giữ nguyên qty/note/line_id.
+ */
+export function repriceBill(
+  state: BillState,
+  menu: Pick<MenuSnapshot, 'products' | 'toppings'>,
+): RepriceResult {
+  const productById = new Map(menu.products.map((p) => [p.id, p]))
+  const toppingById = new Map(menu.toppings.map((t) => [t.id, t]))
+  const missing: string[] = []
+  const lines = state.lines.map((line) => {
+    const product = productById.get(line.product_id)
+    if (!product) missing.push(line.name)
+    const toppings = line.toppings.map((topping) => {
+      const fresh = toppingById.get(topping.topping_id)
+      if (!fresh) {
+        missing.push(topping.name)
+        return topping
+      }
+      return { ...topping, name: fresh.name, unit_price: fresh.price }
+    })
+    return {
+      ...line,
+      name: product ? product.name : line.name,
+      unit_price: product ? product.price : line.unit_price,
+      toppings,
+    }
+  })
+  return { bill: { ...state, lines }, missing }
+}
+
 /** Topping được áp dụng cho SP (theo product_toppings; cache cũ thiếu → []). */
 export function toppingsForProduct(
   snapshot: Pick<MenuSnapshot, 'toppings' | 'product_toppings'>,

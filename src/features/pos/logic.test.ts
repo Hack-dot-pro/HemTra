@@ -15,6 +15,7 @@ import {
   lineTotal,
   productsOfCategory,
   removeLine,
+  repriceBill,
   setNote,
   setPhoneNote,
   toggleTopping,
@@ -231,5 +232,61 @@ describe('toppingsForProduct / activeCategories / productsOfCategory', () => {
     expect(activeCategories(menu).map((c) => c.id)).toEqual(['c1', 'c2'])
     expect(productsOfCategory(menu, 'c1').map((p) => p.id)).toEqual(['p1', 'p2'])
     expect(productsOfCategory(menu, 'c9')).toEqual([])
+  })
+})
+
+describe('repriceBill — QC-017: định lại giá/tên dòng theo menu máy chủ', () => {
+  const menuWith = (price: number, toppingPrice: number) => ({
+    products: [
+      { id: 'p1', category_id: 'c1', name: 'Trà đào mới', price, icon: '🍑', is_active: true },
+    ],
+    toppings: [{ id: 't1', name: 'Trân châu', price: toppingPrice, icon: '', is_active: true }],
+  })
+
+  function billWithToppingAndNote(): BillState {
+    const added = addOne()
+    const lineId = added.lines[0].line_id
+    return setNote(toggleTopping(added, lineId, tranChau), lineId, 'ít đá')
+  }
+
+  it('happy: giá + tên SP/topping lấy theo menu máy chủ, qty/note/line_id giữ nguyên', () => {
+    const state = billWithToppingAndNote()
+    const lineId = state.lines[0].line_id
+    const { bill, missing } = repriceBill(state, menuWith(40000, 7000))
+
+    expect(missing).toEqual([])
+    expect(bill.lines[0]).toMatchObject({
+      line_id: lineId,
+      name: 'Trà đào mới',
+      unit_price: 40000,
+      qty: 1,
+      note: 'ít đá',
+    })
+    expect(bill.lines[0].toppings[0]).toMatchObject({
+      topping_id: 't1',
+      name: 'Trân châu',
+      unit_price: 7000,
+    })
+    expect(billTotal(bill)).toBe(47000)
+    // state cũ không bị biến đổi (hàm thuần, trả state mới)
+    expect(state.lines[0].unit_price).toBe(35000)
+    expect(state.lines[0].name).toBe('Trà đào')
+  })
+
+  it('biên: menu mới giá y hệt snapshot → bill không đổi, missing rỗng', () => {
+    const state = billWithToppingAndNote()
+    const { bill, missing } = repriceBill(state, menuWith(35000, 5000))
+    expect(missing).toEqual([])
+    expect(billTotal(bill)).toBe(billTotal(state))
+    expect(bill.lines[0].name).toBe('Trà đào mới') // tên cũng lấy theo server (RPC online)
+  })
+
+  it('lỗi: SP/topping biến mất khỏi menu → missing liệt kê tên, giá giữ nguyên, không ném', () => {
+    const state = billWithToppingAndNote()
+    const { bill, missing } = repriceBill(state, { products: [], toppings: [] })
+    expect(missing).toEqual(['Trà đào', 'Trân châu'])
+    expect(bill.lines[0].unit_price).toBe(35000)
+    expect(bill.lines[0].toppings[0].unit_price).toBe(5000)
+    expect(billTotal(bill)).toBe(billTotal(state))
   })
 })

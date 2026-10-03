@@ -6,8 +6,9 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { OutboxItem, OutboxPayload } from '../../lib/db'
+import { readCachedMenu, syncMenu } from '../../lib/menuSync'
 import { enqueueBill, newClientUuid } from '../../lib/outbox'
-import { billTotal, type BillState } from './logic'
+import { billTotal, repriceBill, type BillState } from './logic'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 import type { BillSheetItem, BillSheetProps } from './BillSheet'
 
@@ -193,6 +194,30 @@ export function toSheetItems(bill: BillState): BillSheetItem[] {
 /** Tổng tiền sheet: online đã chốt server, offline theo snapshot. */
 export function sheetTotal(bill: BillState, online: CheckoutOnlineResult | null): number {
   return online ? online.total : billTotal(bill)
+}
+
+/**
+ * QC-017: RPC trả `total` ≠ tổng giỏ (giá đổi giữa lúc đang mở POS — menu cache
+ * cũ không bắt được) → tải menu mới, định lại giá/tên dòng theo máy chủ rồi mới
+ * chụp PNG. Trả `bill` khi Σ dòng sau định lại == tổng server (= bill in đúng
+ * số với DB); trả `null` khi không đồng nhất được (menu chưa tải, SP/topping biến
+ * mất) → người gọi PHẢI bỏ qua việc in ấn, bill vẫn đã ghi nhận phía server.
+ */
+export async function resolvePrintableBill(args: {
+  client: SupabaseClient
+  bill: BillState
+  serverTotal: number
+}): Promise<BillState | null> {
+  try {
+    await syncMenu({ client: args.client })
+    const fresh = await readCachedMenu()
+    if (!fresh) return null
+    const { bill: repriced, missing } = repriceBill(args.bill, fresh)
+    if (missing.length > 0) return null
+    return billTotal(repriced) === args.serverTotal ? repriced : null
+  } catch {
+    return null
+  }
 }
 
 export type BillSheetData = Omit<BillSheetProps, 'qrDataUrl'> & { qrDataUrl?: string }

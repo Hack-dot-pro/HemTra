@@ -26,6 +26,7 @@ const PRUNE_AFTER_H = 24;
 
 const MSG = {
   bad: "Dữ liệu không hợp lệ",
+  countFail: "Không kiểm tra được lượt đăng nhập. Hãy thử lại sau.",
   generic: "Lỗi máy chủ, thử lại sau",
   invalid: "Tài khoản hoặc mật khẩu không đúng.",
   locked: "Sai mật khẩu quá 5 lần. Hãy khôi phục bằng OTP hoặc thử lại sau 15 phút.",
@@ -100,7 +101,13 @@ function getClientIp(req: Request): string {
   return "127.0.0.1";
 }
 
-async function getFailedCount(admin: SupabaseClient, username: string, ip: string): Promise<number> {
+// SEC-004: trả `null` khi không đếm được (DB lỗi / WAF chặn query nội bộ) —
+// người gọi bắt buộc phải chặn đăng nhập (fail-closed), không được ném lỗi 500.
+async function getFailedCount(
+  admin: SupabaseClient,
+  username: string,
+  ip: string,
+): Promise<number | null> {
   const since = new Date(Date.now() - LOCKOUT_WINDOW_MIN * 60_000).toISOString();
   const { count, error } = await admin
     .from("login_attempts")
@@ -109,7 +116,10 @@ async function getFailedCount(admin: SupabaseClient, username: string, ip: strin
     .eq("ip", ip)
     .eq("success", false)
     .gt("at", since);
-  if (error) throw new Error(`login_attempts count: ${error.message}`);
+  if (error) {
+    console.error("auth-login: getFailedCount:", error.message);
+    return null;
+  }
   return count ?? 0;
 }
 
@@ -153,7 +163,12 @@ async function handleLogin(req: Request, admin: SupabaseClient, anon: SupabaseCl
   const ip = getClientIp(req);
 
   try {
-    if ((await getFailedCount(admin, username, ip)) >= LOCKOUT_LIMIT) {
+    const failed = await getFailedCount(admin, username, ip);
+    // SEC-004: không đếm được lượt sai → fail-closed, chặn đăng nhập (không 500).
+    if (failed === null) {
+      return json(req, { error: MSG.countFail, locked: true }, 429);
+    }
+    if (failed >= LOCKOUT_LIMIT) {
       return json(req, { error: MSG.locked, locked: true }, 429);
     }
 

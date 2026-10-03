@@ -26,6 +26,7 @@ import {
   findPriceDriftLines,
   enqueueOfflineBill,
   makeOfflineCode,
+  resolvePrintableBill,
   sheetTotal,
   toSheetItems,
 } from './checkout'
@@ -132,33 +133,42 @@ export default function PosPage() {
           return
         }
         const result = await createBillOnline({ client, bill, menuVersion: menu.menu_version })
+        const serverMismatch = result.total !== billTotal(bill)
+        // QC-017: tổng server lệch giỏ (menu cache cũ không bắt được) → tải menu +
+        // định lại giá dòng rồi mới chụp PNG; không đồng nhất được thì KHÔNG in
+        // (in ra Σ dòng ≠ Tổng cộng = sai tiền trên chứng từ — bill vẫn đã ghi nhận).
+        const sheetBill = serverMismatch
+          ? await resolvePrintableBill({ client, bill, serverTotal: result.total })
+          : bill
         let png: string | null = null
-        try {
-          png = await renderBillPng({
-            code: result.code,
-            createdAt,
-            items: toSheetItems(bill),
-            total: sheetTotal(bill, result),
-            qrDataUrl,
-          })
-          await createBillUploader(client)({
-            code: result.code,
-            blob: dataUrlToBlob(png),
-            createdAtIso: new Date(createdAt).toISOString(),
-            clientUuid: result.client_uuid,
-          })
-        } catch {
-          png = null // bill đã tạo — thiếu ảnh không được bán lại
+        if (sheetBill) {
+          try {
+            png = await renderBillPng({
+              code: result.code,
+              createdAt,
+              items: toSheetItems(sheetBill),
+              total: sheetTotal(sheetBill, result),
+              qrDataUrl,
+            })
+            await createBillUploader(client)({
+              code: result.code,
+              blob: dataUrlToBlob(png),
+              createdAtIso: new Date(createdAt).toISOString(),
+              clientUuid: result.client_uuid,
+            })
+          } catch {
+            png = null // bill đã tạo — thiếu ảnh không được bán lại
+          }
         }
         setLastSale({ code: result.code, png })
-        const clientTotal = billTotal(bill)
-        const serverMismatch = result.total !== clientTotal
         setCheckoutMsg({
           tone: result.price_drift || serverMismatch ? 'warn' : 'ok',
           text: result.price_drift
             ? `Đã tạo bill ${result.code} — giá tại quầy khác giá hiển thị (đã ghi nhận).`
             : serverMismatch
-              ? `Đã tạo bill ${result.code} — tổng server ${formatVnd(result.total)} khác giỏ (giá vừa đổi, ảnh in theo tổng server).`
+              ? sheetBill
+                ? `Đã tạo bill ${result.code} — giá vừa đổi, ảnh in theo tổng server ${formatVnd(result.total)}.`
+                : `Đã tạo bill ${result.code} — tổng server ${formatVnd(result.total)} khác giỏ: chưa xuất ảnh bill, kiểm tra giỏ rồi bán lại.`
               : `Đã tạo bill ${result.code}.`,
         })
         setBill(createBill())

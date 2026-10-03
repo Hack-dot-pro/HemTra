@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { HemTraDB, setDbForTest, type OutboxPayload } from '../../lib/db'
 import { listPending } from '../../lib/outbox'
+import { syncMenu, writeCachedMenu } from '../../lib/menuSync'
+import type { MenuSnapshot } from '../../lib/menuTypes'
 import {
   CheckoutRateLimitedError,
   MenuVersionChangedError,
@@ -13,11 +15,26 @@ import {
   enqueueOfflineBill,
   findPriceDriftLines,
   makeOfflineCode,
+  resolvePrintableBill,
   sheetTotal,
   toSheetItems,
 } from './checkout'
-import { createBill, addProduct, setPhoneNote, toggleTopping, MAX_PHONE_NOTE_LENGTH } from './logic'
+import {
+  MAX_PHONE_NOTE_LENGTH,
+  addProduct,
+  billTotal,
+  createBill,
+  setPhoneNote,
+  toggleTopping,
+} from './logic'
 import type { BillState } from './logic'
+
+// QC-017: resolvePrintableBill gọi syncMenu — mock để test tự quyết "menu có tải
+// lại được giá mới không"; readCachedMenu/writeCachedMenu giữ nguyên (Dexie thật).
+vi.mock('../../lib/menuSync', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../lib/menuSync')>()
+  return { ...mod, syncMenu: vi.fn(async () => ({ status: 'ok', refreshed: false, menuVersion: 0, fetchedAt: 0 })) }
+})
 
 function sampleBill(): BillState {
   const base = createBill()
@@ -193,5 +210,66 @@ describe('P6-T7 — toSheetItems + sheetTotal', () => {
     const state = setPhoneNote(createBill(), '9'.repeat(80))
     expect(state.phone_note).toHaveLength(MAX_PHONE_NOTE_LENGTH)
     expect(MAX_PHONE_NOTE_LENGTH).toBe(50)
+  })
+})
+
+describe('QC-017 — resolvePrintableBill (chỉ in khi Σ dòng == tổng server)', () => {
+  function menuWith(price: number): MenuSnapshot {
+    return {
+      id: 'menu',
+      menu_version: 8,
+      fetched_at: Date.now(),
+      categories: [{ id: 'c1', name: 'Trà sữa', icon: '🧋', sort_order: 1, is_active: true }],
+      products: [
+        { id: 'p1', category_id: 'c1', name: 'Trà sữa đào', price, icon: '', is_active: true },
+      ],
+      toppings: [{ id: 't1', name: 'Trân châu', price: 5000, icon: '', is_active: true }],
+      product_toppings: [{ product_id: 'p1', topping_id: 't1' }],
+    }
+  }
+
+  const client = () => stubClient(vi.fn())
+
+  beforeEach(() => {
+    vi.mocked(syncMenu).mockClear()
+    vi.mocked(syncMenu).mockResolvedValue({
+      status: 'ok',
+      refreshed: false,
+      menuVersion: 0,
+      fetchedAt: 0,
+    })
+  })
+
+  it('happy: menu tải lại được giá mới → định lại giá dòng, Σ dòng == serverTotal', async () => {
+    await writeCachedMenu(menuWith(40000))
+    const bill = await resolvePrintableBill({ client: client(), bill: sampleBill(), serverTotal: 90000 })
+    expect(bill).not.toBeNull()
+    expect(billTotal(bill as BillState)).toBe(90000)
+    expect((bill as BillState).lines[0].unit_price).toBe(40000)
+    expect(syncMenu).toHaveBeenCalledTimes(1)
+  })
+
+  it('menu vẫn là giá cũ (không tải được) → null: không in bill lệch', async () => {
+    await writeCachedMenu(menuWith(35000))
+    const bill = await resolvePrintableBill({ client: client(), bill: sampleBill(), serverTotal: 90000 })
+    expect(bill).toBeNull()
+  })
+
+  it('SP/topping biến mất khỏi menu → null (missing), không in', async () => {
+    const stale = { ...menuWith(40000), products: [], toppings: [] }
+    await writeCachedMenu(stale)
+    const bill = await resolvePrintableBill({ client: client(), bill: sampleBill(), serverTotal: 90000 })
+    expect(bill).toBeNull()
+  })
+
+  it('chưa từng có cache menu → null; syncMenu ném lỗi → null (không lan lỗi ra UI)', async () => {
+    await expect(
+      resolvePrintableBill({ client: client(), bill: sampleBill(), serverTotal: 80000 }),
+    ).resolves.toBeNull()
+
+    vi.mocked(syncMenu).mockRejectedValueOnce(new Error('boom'))
+    await expect(
+      resolvePrintableBill({ client: client(), bill: sampleBill(), serverTotal: 80000 }),
+    ).resolves.toBeNull()
   })
 })
