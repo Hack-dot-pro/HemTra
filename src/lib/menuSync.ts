@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getDb, type HemTraDB } from './db'
-import type { MenuCategory, MenuProduct, MenuSnapshot, MenuTopping } from './menuTypes'
+import type { MenuCategory, MenuProduct, MenuSnapshot, MenuTopping, ProductToppingLink } from './menuTypes'
 
 /** Cache menu quá 24 giờ khi offline → cảnh báo (design §8.5). */
 export const CACHE_STALE_MS = 24 * 60 * 60 * 1000
@@ -26,6 +26,7 @@ const EMPTY_SNAPSHOT = (menuVersion: number, fetchedAt: number): MenuSnapshot =>
   categories: [],
   products: [],
   toppings: [],
+  product_toppings: [],
 })
 
 /** Server đổi version so với cache → phải tải lại (chỉ số lệch mới tải). */
@@ -70,13 +71,14 @@ export async function fetchServerMenuVersion(client: SupabaseClient): Promise<nu
 
 /** Tải toàn bộ menu bán hàng (chỉ mục tiêu đang bật bán — P5 giữ danh sách đầy đủ riêng). */
 export async function fetchMenu(client: SupabaseClient, now: number = Date.now()): Promise<MenuSnapshot> {
-  const [meta, categories, products, toppings] = await Promise.all([
+  const [meta, categories, products, toppings, links] = await Promise.all([
     client.from('app_meta').select('menu_version').eq('id', 1).maybeSingle(),
     client.from('categories').select('id,name,icon,sort_order,is_active').eq('is_active', true).order('sort_order'),
     client.from('products').select('id,category_id,name,price,icon,is_active').eq('is_active', true).order('name'),
     client.from('toppings').select('id,name,price,icon,is_active').eq('is_active', true).order('name'),
+    client.from('product_toppings').select('product_id,topping_id'),
   ])
-  if (meta.error || categories.error || products.error || toppings.error) {
+  if (meta.error || categories.error || products.error || toppings.error || links.error) {
     throw new Error('menu_fetch_failed')
   }
   return {
@@ -86,6 +88,7 @@ export async function fetchMenu(client: SupabaseClient, now: number = Date.now()
     categories: (categories.data ?? []) as MenuCategory[],
     products: (products.data ?? []) as MenuProduct[],
     toppings: (toppings.data ?? []) as MenuTopping[],
+    product_toppings: (links.data ?? []) as ProductToppingLink[],
   }
 }
 

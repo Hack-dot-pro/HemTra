@@ -27,6 +27,13 @@ export type MenuTopping = {
 }
 
 // Một dòng trong IndexedDB: toàn bộ menu bán hàng + mốc đồng bộ (design §8.1–8.2).
+export type ProductToppingLink = {
+  product_id: string
+  topping_id: string
+}
+
+// product_toppings optional: dòng cache ghi trước P6 (khi chưa query bảng này)
+// vẫn đọc được — POS phải fallback về [] (design §5, P6-T3 chọn topping theo SP).
 export type MenuSnapshot = {
   id: 'menu'
   menu_version: number
@@ -34,4 +41,5 @@ export type MenuSnapshot = {
   categories: MenuCategory[]
   products: MenuProduct[]
   toppings: MenuTopping[]
+  product_toppings?: ProductToppingLink[]
 }

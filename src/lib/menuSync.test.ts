@@ -23,6 +23,7 @@ function menuTables(menuVersion = 7) {
       { id: 'p2', category_id: 'c1', name: 'Ẩn', price: 1000, icon: '', is_active: false },
     ],
     toppings: [{ id: 't1', name: 'Trân châu', price: 5000, icon: '', is_active: true }],
+    product_toppings: [{ product_id: 'p1', topping_id: 't1' }],
   }
 }
 
@@ -69,6 +70,7 @@ describe('fetchMenu', () => {
     expect(menu.products).toHaveLength(1)
     expect(menu.products[0].price).toBe(35000)
     expect(menu.toppings).toHaveLength(1)
+    expect(menu.product_toppings).toEqual([{ product_id: 'p1', topping_id: 't1' }])
   })
 
   it('một bảng lỗi → ném menu_fetch_failed', async () => {

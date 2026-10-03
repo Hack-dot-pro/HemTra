@@ -86,8 +86,8 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 📖 `uiux/skill.md`, `design.md §6`
 - [x] **P6-T0** Chốt bộ icon đồ uống (đề xuất Fluent Emoji Flat/Noto); hỏi user nếu thiếu icon → xong 2026-10-03 (Q-004: **emoji Unicode** lưu trong cột `icon`, không file assets; `design.md §7.4` đã cập nhật)
 - [x] **P6-T1** Nạp bộ icon vào `public/icons/drinks/`, map theo nhóm; ghi giấy phép → **HỦ theo Q-004** (emoji Unicode — không nạp PNG/SVG; nếu sau này muốn ảnh thật mới quay lại, xem `design.md §7.4`)
-- [ ] **P6-T2** Lưới sản phẩm theo nhóm (tab/lọc), nút "+" thêm vào bill
-- [ ] **P6-T3** Panel bill realtime: tăng/giảm số lượng, ghi chú món, topping dòng con, tổng tiền
+- [x] **P6-T2** Lưới sản phẩm theo nhóm (tab/lọc), nút "+" thêm vào bill → xong 2026-10-03 (`src/features/pos/PosPage.tsx`: tab nhóm aria-pressed theo `activeCategories`+`productsOfCategory`, thẻ SP icon emoji/giá VND, nút Thêm aria-label; menu cache IndexedDB qua `useMenuSnapshot` — bán được offline; unit `PosPage.test.tsx` 2 test lưới + e2e `p6-pos.spec.ts`)
+- [x] **P6-T3** Panel bill realtime: tăng/giảm số lượng, ghi chú món, topping dòng con, tổng tiền → xong 2026-10-03 (`src/features/pos/logic.ts` thuần: `addProduct` gộp dòng đơn giản/merge, `changeQty` kẹp 99/về 0 xóa, `setNote` ≤100, `toggleTopping`, `lineTotal`=(giá+topping)×qty, `toppingsForProduct` theo link; panel + Modal topping + SĐT/ghi chú đơn (`phone_note` cho T7); unit logic 22 + PosPage 8; menu cache mở rộng `product_toppings` (optional, fetchMenu +5 query — offline cũng chọn đúng topping); e2e p6-pos: thêm bill → topping dòng con → tổng 40.000 ₫, 0 tràn ngang, axe 0 serious, 6 ảnh)
 - [ ] **P6-T4** Component `BillSheet` đúng layout (logo → mã+SĐT → bảng → tổng → QR FB → lời chúc → địa chỉ)
 - [ ] **P6-T5** Sinh QR (`qrcode`) cho `https://www.facebook.com/linh.kh.142`
 - [ ] **P6-T6** Xuất PNG (`html-to-image`, 720px, ×2), xử lý font/ảnh Safari

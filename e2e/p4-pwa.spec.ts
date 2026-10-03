@@ -42,6 +42,9 @@ async function mockMenuRest(page: Page): Promise<void> {
   await page.route('**/rest/v1/toppings*', (route) =>
     route.fulfill(json([{ id: 't1', name: 'Trân châu', price: 5000, icon: '', is_active: true }])),
   )
+  await page.route('**/rest/v1/product_toppings*', (route) =>
+    route.fulfill(json([{ product_id: 'p1', topping_id: 't1' }])),
+  )
 }
 
 type StoresSnapshot = {

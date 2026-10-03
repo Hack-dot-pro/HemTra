@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T18:00:00+07:00",
-    "last_agent": "security-audit"
+    "last_updated": "2026-10-03T19:40:00+07:00",
+    "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P6",
-    "task": "P6-T2",
+    "task": "P6-T4",
     "step": "READ",
-    "note": "P5 DONE (QC vong 2 + SEC vong 1 PASS). P6-T0/T1 da xong tu truoc (emoji icon Q-004). Bat dau P6-T2: luoi san pham theo nhom + nut '+' them vao bill. Doc skills theo ma tran AGENT.md 12.1 (uiux + pos-bill), design §6 (POS/bill), §7.4; e2e pattern p5. Backlog moi: P10-T2 (revoke DELETE categories), QC-010 (coverage.include api.ts, sua o P6)."
+    "note": "P6-T2/T3 xong (luoi + panel bill, 329 unit/105 e2e, axe /pos 0 serious). Tiep P6-T4 BillSheet 7 khoi (pos-bill skill §3 + design §6.1) — snapshot test khoa layout; T5 QR, T6 xuat PNG (lazy html-to-image + qrcode, bundle < 250KB gzip)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -177,8 +177,7 @@
     "QC-008 MINOR (P4): WebKit khong render backdrop-filter -> o anh 390x844, link header lo qua PwaUpdateBar (nen 0.62) va chong chu \"De sau\" (e2e/screenshots/pwa-update-bar-*-390x844.png, nhat webkit/mobile). CSS da co -webkit-backdrop-filter; lech tu P2 (PwaUpdateBar dung thieu backdrop-blur) -> xem lai khi lam UI o P10/P11.",
     "SEC-001 MINOR (P4): public/_headers moi chi cau hinh Cache-Control (index/sw no-cache, version.json no-store, /assets immutable) — thieu CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-Frame-Options (docs CF Pages khong cong bo header mac dinh). Chu ky P10-T1 (security skill §Headers); kem cu phap trong evidence p4-sec-round1.md.",
     "N-002 (P4, ghi nhan SEC): public/_redirects \"/*  /index.html 200\" (file P2) co the nuot /sw.js va /version.json tren Cloudflare Pages that (\"redirects always followed\") -> smoke curl -I https://hemtra.pages.dev/sw.js + /version.json tai P11-T4 truoc khi ban giao; neu bi nuot thi them exception rule.",
-    "SEC-005 MINOR (P5): server van grant/policy cho DELETE categories (rule 'khong xoa nhom - chi an/hien' chi o client ProductsPage) -> staff xoa nhom thi SP con TRONG GROUP mat do FK ON DELETE CASCADE (test tren prod da rollback); revoke DELETE on categories + xem lai FK/cho phep xoa nhom co dieu kien o P10-T2.",
-    "QC-010 MINOR (P5): vitest.config.ts coverage.include thieu src/features/*/api.ts (do rieng van 91.22%) -> sua 1 dong trong P6."
+    "SEC-005 MINOR (P5): server van grant/policy cho DELETE categories (rule 'khong xoa nhom - chi an/hien' chi o client ProductsPage) -> staff xoa nhom thi SP con TRONG GROUP mat do FK ON DELETE CASCADE (test tren prod da rollback); revoke DELETE on categories + xem lai FK/cho phep xoa nhom co dieu kien o P10-T2."
   ],
   "off_plan_actions": [
     {
@@ -1020,6 +1019,35 @@
         ".opencode/evidence/p4-sec-round1.md"
       ],
       "output": "S1 45 commits 0 leak; S2 audit 0; S3/S4 live prod 13/13 RLS + *_staff_all giu nguyen (diff 0); S7 XSS/SQLi 4 payload sach; S14 CHECK/server logic on dinh; S5/S6/S8/S9/S10/S15 N/A co ly do; 2 MINOR: SEC-005 DELETE categories server-side (backlog P10-T2), SEC-001 headers ke thua (P10-T1)."
+    },
+    {
+      "at": "2026-10-03T18:30:00+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/pos-bill/skill.md (toan bo)",
+        ".opencode/skills/uiux/skill.md (toan bo)",
+        ".opencode/skills/backend/skill.md (toan bo)",
+        "design.md §6 (Quy tac bill)",
+        "design.md §7.3-7.4 (POS, icon emoji)",
+        "design.md §8 (PWA/offline)",
+        "AGENT.md §12.1/§12.2"
+      ],
+      "note": "P6-T2/T3 truoc khi code — ma tran bat buoc: pos-bill + uiux + backend (create_bill). Da doc ca design §6.1 layout 7 khoi, §6.2 ma bill, §7.3 luoi POS + panel ben phai, §8.2 menu cache."
+    },
+    {
+      "at": "2026-10-03T19:40:00+07:00",
+      "agent": "main-coding",
+      "event": "P6-T2/T3 done",
+      "file": "src/features/pos/logic.ts, src/features/pos/PosPage.tsx, e2e/p6-pos.spec.ts",
+      "skills_read": [
+        ".opencode/skills/pos-bill/skill.md",
+        ".opencode/skills/uiux/skill.md",
+        ".opencode/skills/backend/skill.md",
+        "design.md §6",
+        "design.md §7.3-7.4"
+      ],
+      "output": "logic.ts (22 unit: merge/qty/note/topping/total/bien/loi) + PosPage (8 unit qua fake-indexeddb doc menu cache that) + menu cache mo rong product_toppings (optional; fetchMenu 5 query; mock helpers/p4). QC-010 dong: coverage.include +features/*/api.ts. Checks: typecheck 0, lint 0, vitest 329/329, build gzip 219.25KB, e2e 105/105 exit 0 (8.1m, +9 test p6-pos: happy+anh 2 viewport, Q10 0 tran, Q11 axe 0 serious)."
     }
   ],
   "phases": {
@@ -1142,8 +1170,8 @@
       "tasks": {
         "P6-T0": "pending",
         "P6-T1": "pending",
-        "P6-T2": "pending",
-        "P6-T3": "pending",
+        "P6-T2": "done",
+        "P6-T3": "done",
         "P6-T4": "pending",
         "P6-T5": "pending",
         "P6-T6": "pending",
@@ -1549,6 +1577,16 @@
       "at": "2026-10-03T18:00:00+07:00",
       "agent": "main-coding",
       "event": "CLOSE P5: QC vong 2 + SEC vong 1 PASS -> tick Gate, status=done, reset rounds, pointer sang P6. Ke tiep: P6-T2 (luoi SP + panel bill)."
+    },
+    {
+      "at": "2026-10-03T18:30:00+07:00",
+      "agent": "main-coding",
+      "event": "START P6-T2/T3 (luoi SP theo nhom + panel bill). Skills da doc: pos-bill, uiux, backend + design §6/§7.3/§8."
+    },
+    {
+      "at": "2026-10-03T19:40:00+07:00",
+      "agent": "main-coding",
+      "event": "DONE P6-T2/T3: POS luoi + panel bill realtime. Menu cache +product_toppings. 329 unit, 105 e2e, anh p6-pos x6. Backlog QC-010 dong (coverage.include). Ke tiep: P6-T4 BillSheet."
     }
   ],
   "tasks": {}
