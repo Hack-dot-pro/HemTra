@@ -7,6 +7,16 @@ import { SIGN_IN_ERROR, USERNAME_KEY } from './loginForm'
 import type { InstallPromptEvent } from './install'
 import type { SetupApi } from '../setup/api'
 
+// P4-T8: nút "Xóa cache & Tải lại" gọi hardRefresh() thật — test chỉ kiểm
+// trạng thái UI, logic hardRefresh có unit test riêng (src/lib/hardRefresh.test.ts)
+vi.mock('../../lib/hardRefresh', () => ({
+  hardRefresh: vi.fn(
+    async () =>
+      // đủ chậm để test thấy trạng thái "Đang xóa…" như người dùng thật
+      new Promise((resolve) => setTimeout(resolve, 80)),
+  ),
+}))
+
 // API bootstrap giả lập — mặc định "đã bootstrap" để test P2 không phụ thuộc mạng (P3-T3)
 function fakeBootstrapApi(
   fetchBootstrapped: SetupApi['fetchBootstrapped'],

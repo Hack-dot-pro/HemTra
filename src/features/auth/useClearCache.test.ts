@@ -1,6 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { simulateClearCache, useClearCache } from './useClearCache'
+import { hardRefresh } from '../../lib/hardRefresh'
+import { useClearCache } from './useClearCache'
+
+vi.mock('../../lib/hardRefresh', () => ({ hardRefresh: vi.fn(async () => 'done') }))
 
 describe('useClearCache', () => {
   it('chạy idle → running → done với runner do test cung cấp', async () => {
@@ -39,14 +42,13 @@ describe('useClearCache', () => {
     expect(result.current.status).toBe('error')
   })
 
-  it('runner mặc định giả lập là xong (P4 sẽ thay bằng hardRefresh thật)', async () => {
+  it('mặc định gọi hardRefresh() thật (P4-T7/P4-T8)', async () => {
+    vi.mocked(hardRefresh).mockClear()
     const { result } = renderHook(() => useClearCache())
-    await act(async () => {
-      await simulateClearCache()
-    })
     await act(async () => {
       await result.current.clear()
     })
     expect(result.current.status).toBe('done')
+    expect(hardRefresh).toHaveBeenCalledTimes(1)
   })
 })

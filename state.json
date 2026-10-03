@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T17:56:02+07:00",
+    "last_updated": "2026-10-02T22:35:16+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P3",
-    "task": "Gate QC",
+    "task": "Gate SEC vòng 2",
     "step": "READ",
-    "note": "DONE P3-T9: e2e/p3-auth.spec.ts 11 test x 3 project = 33 (login dung/sai, lockout 5 lan + OTP unlock, het han 7 ngay, token het han/token bi sua, khôi phục admin 2 buoc, doi email khôi phục 3 buoc + staff bi chan, setup 409/403 + bootstrap xong thi /setup an). helpers injectAuth +loginAtMsAgo/+expiredToken + CORS cho mock. 69 e2e + 214 unit xanh, typecheck/lint 0. Ke tiep: Gate QC P3 (qc-test) roi Gate SEC (security-audit)."
+    "note": "QC vong 3 PASS (Q1-Q12, e2e 72/72 x1 lan, test-p1 33/33, coverage 96.17%, build gzip 151.47KB). Ke tiep: security-audit vong 2 de xac minh SEC-001/SEC-002 da fix + quet lai; neu PASS -> tick Gate plan.md + commit phase."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -23,17 +23,29 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 1,
-    "sec_round": 0,
+    "qc_round": 3,
+    "sec_round": 1,
     "failure_signatures": [
       {
         "id": "QC-001",
         "sig": "a5af527d58db9fa392425563eb629aa762b7fc24",
         "desc": "e2e p3-auth:405 WebKit CORS error do goto lan 2 huy request app_meta dang bay",
         "status": "fixed"
+      },
+      {
+        "id": "SEC-001",
+        "sig": "77dbf23e6a65f5a1d34f21922c3c2fab533ced97",
+        "desc": "session_fresh() so iat bi refresh reset -> phien server khong het han 7 ngay",
+        "status": "fixed"
+      },
+      {
+        "id": "SEC-002",
+        "sig": "f6e459c3e3129b4cf40791aae0a809c7ef4dfa80",
+        "desc": "GoTrue cho PUT /auth/v1/user doi mat khau khong can mat khau cu",
+        "status": "fixed"
       }
     ],
-    "last_report": "P3 QC vong 1: VERDICT FAIL. Q1-Q9,Q11,Q12 xanh (typecheck/lint 0, 214 unit, coverage lines 96.17%, build gzip 151.47KB, DB linked 28/28, axe 0 serious). Q10 FAIL: npm run test:e2e loi 3/5 lan — p3-auth.spec.ts:405 (webkit) log 'Fetch API cannot load ... access control checks' x2. Nguyen nhan: test goto /login lan 2 huy 2 request app_meta cua trang login (StrictMode effect x2) dang bay -> WebKit log CORS. 3 MINOR: QC-002 smoke script T2/T4/T6/T7 khong co trong repo; QC-003 .env.example thieu newline cuoi. CHI TIET: .opencode/evidence/p3t9-test-auth.md (se ghi them phan sua QC)."
+    "last_report": "QC P3 vong 3: VERDICT PASS - Q1-Q12 xanh (QC lai toan bo sau 2 fix SEC, loop.md 4.1). Q1 typecheck exit 0; Q2 lint exit 0; Q3 vitest 22 files/214 tests exit 0, khong .skip/.only moi; Q4 logic moi = migration session_fresh -> 5 assertion test-p1.sh:87-91, chay 33/33 exit 0 (truoc 28); session.ts chi doi comment -> khong can unit test moi; Q5 coverage lines 96.17%, per-file json-summary: lib thap nhat 85.71% (supabase.ts), features/auth 91.3%, features/setup/logic 100% (>=80%); Q6 test moi assert true/false + RLS + co dune fixture, khong mock; Q7 design.md 4.3 van ghi 'so iat' lech co the -> khong block, giu nguyen yeu cau 7 ngay/server chan cuoi, da ghi state Q-006 open cho user (de nghi main-coding dua vao vong hoi user); Q8 supabase test db N/A (B-001) -> test-p1 tren DB linked 33/33, migration list --linked local=remote co 20261002144826; Q9 build exit 0 gzip 151.47kB<250; Q10 e2e 1 lan exit 0 - 72 passed/4.3m, 0 loi console, 0 'access control checks', 30 anh 2 viewport; Q11 axe 4 spec 0 serious/critical; Q12 diff 75 file + 3 M + 4 ?? = scope, gitleaks no leaks, npm audit 0 vuln, khong file rac (da xoa coverage/ do minh tao). Xac minh fix SEC chi doc: pg_proc private.session_fresh prosecdef=true / public=false, 12 policy, anon khong execute; config auth GET -> security_update_password_require_current_password=true. Khong tao/xoa user, cloud van pre-bootstrap. Chi tiet: .opencode/evidence/p3-qc-round3.md."
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -119,6 +131,12 @@
       "text": "Bàn giao admin: ai chot email Google admin + cach doi 'key admin' sau khi bootstrap? Bao gom: (a) luong Quen mat khau hien chua ro co kiem tra Google email phai trung email admin khong (neu khong -> BLOCKER, ai cung reset duoc mat khau admin); (b) cach doi sang Google khac khi chuyen giao cho nguoi van hanh.",
       "status": "decided",
       "answer": "Chon phuong an A + B (2026-10-02), doi key admin bat luc can DUNG 2 dieu kien theo thu tu: (1) OTP email hien tai + mat khau admin hien tai; (2) OTP email moi -> doi mat khau moi + ghi de app_meta.admin_email. Da ghi vao design.md §4.2/§4.4/§5 + plan.md P3-T8 (user phep sau khi chot)."
+    },
+    {
+      "id": "Q-006",
+      "phase": "P3",
+      "text": "design.md §4.3 ghi \"RLS them ham session_fresh() so iat cua JWT voi 7 ngay\" — sau SEC-001 co the da doi sang auth.sessions.created_at (refresh khong reset duoc). Yeu cau 7 ngay/server chan cuoi giu nguyen, chi doi co the. Cho phep sua design.md §4.3 (1 cau) hay giu nguyen va ghi chu rieng?",
+      "status": "open"
     }
   ],
   "blockers": [
@@ -138,10 +156,12 @@
     "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
     "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery",
     "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
-    "GoTrue security_update_password_require_current_password=true (design §4.1 hardening) — PATCH /auth/v1/admin/config tra 404 tren hosted (project key khong du quyen): can Dashboard (Authentication -> Settings) hoac management API PAT. EF change-password da chan doi mat khau khong qua mat khau cu o tang app (P3-T7) — flag chi la hardening them.",
     "Advisors security WARN pre-existing (khong lien quan migration T2): set_updated_at search_path mutable; leaked password protection disabled (PATCH auth config de bat); rls_auto_enable/create_bill/is_admin SECURITY DEFINER executable — xem lai o security audit gate P3.",
     "Moi truong dev nay khong chay duoc supabase start local (Docker nested iptables legacy/nft conflict -> container-to-container drop). Neu sau nay can local stack (test db reset/RLS), sua iptables hoac dung remote dev.",
-    "QC-002 MINOR (P3): smoke EF bootstrap-admin/auth-login/admin-recovery/change-password chua co script trong repo (lan truoc o /tmp bi mat) -> tach scripts/smoke-<ef>.sh (env-only, co RESET cloud) tai P11; hien chi co .opencode/evidence/p3t8-smoke.sh"
+    "QC-002 MINOR (P3): smoke EF bootstrap-admin/auth-login/admin-recovery/change-password chua co script trong repo (lan truoc o /tmp bi mat) -> tach scripts/smoke-<ef>.sh (env-only, co RESET cloud) tai P11; hien chi co .opencode/evidence/p3t8-smoke.sh",
+    "SEC-003 MINOR (P3): signup con mo khi pre-bootstrap + policy chi can session_fresh() -> ke thu xac nhan hop thu minh doc duoc profiles/bills của người khác; han che = bootstrap ngay, xem lai policy phu (P9/P10).",
+    "SEC-004 MINOR (P3): auth-login bi CF WAF chan query noi bo khi username co chuoi SQL -> EF tra 500 (fail-closed, khong bypass lockout) -> boc getFailedCount, \"khong dem duoc -> chan dang nhap\" thay vi 500 (supabase/functions/auth-login/index.ts:103-114).",
+    "Advisors 6 WARN da danh gia o SEC vong 1: set_updated_at thieu set search_path; create_bill/is_admin/rls_auto_enable SECURITY DEFINER (khong khai thac duoc); password_hibp_enabled=false -> bat o Dashboard Authentication -> Settings (SEC-002 da bat xong require_current_password)."
   ],
   "off_plan_actions": [
     {
@@ -761,6 +781,52 @@
         "uiux/skill.md"
       ],
       "note": "Playwright mock tang mang theo hop dong EF (khong mock code app): 11 test x 3 project. Bui JWT base64url length + WebKit CORS + getByLabel exact da ghi evidence. 69 e2e/214 unit/typecheck/lint xanh."
+    },
+    {
+      "at": "2026-10-02T20:15:29+07:00",
+      "agent": "main-coding",
+      "event": "QC P3 vong 2 PASS",
+      "file": ".opencode/evidence/p3-qc-round2.md",
+      "skills_read": [
+        ".opencode/skills/testing/skill.md",
+        "subagent.md §2"
+      ],
+      "note": "qc-test vong 2: e2e 3/3 xanh 72/72 dong QC-001; 214 unit, coverage 96.17%, build gzip 151.47KB, DB 28/28, axe 0. Goi SEC vong 1."
+    },
+    {
+      "at": "2026-10-02T22:09:40+07:00",
+      "agent": "main-coding",
+      "event": "SEC P3 vong 1 FAIL",
+      "file": ".opencode/evidence/p3-sec-round1.md",
+      "skills_read": [
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/auth/skill.md"
+      ],
+      "note": "security-audit vong 1: 2 MAJOR (SEC-001 session_fresh, SEC-002 require_current_password), 2 MINOR -> backlog; S1-S14 xanh/N-A dung pham vi; advisors danh gia lao khong phai loi P3."
+    },
+    {
+      "at": "2026-10-02T22:09:40+07:00",
+      "agent": "main-coding",
+      "event": "fix SEC-001 + SEC-002",
+      "file": ".opencode/evidence/p3-sec-round1-fix.md",
+      "skills_read": [
+        ".opencode/skills/auth/skill.md",
+        ".opencode/skills/backend/skill.md",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/testing/skill.md"
+      ],
+      "note": "migration 20261002144826 session_fresh doc auth.sessions.created_at (DEFINER trong schema private, boc public invoker - khong sinh advisor WARN moi); PATCH GoTrue require_current_password=true. Bang chung: phien 8 ngay bi RLS loc, refresh giu session_id, logout xoa session; PUT /auth/v1/user -> 400; test-p1.sh 33/33; advisors 6 WARN; gitleaks 0; npm audit 0."
+    },
+    {
+      "at": "2026-10-02T15:45:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P3 vong 3 PASS",
+      "file": ".opencode/evidence/p3-qc-round3.md",
+      "skills_read": [
+        "supabase (skill)",
+        "subagent.md §2"
+      ],
+      "note": "qc-test vong 3 (QC lai toan bo sau 2 fix SEC): Q1-Q12 xanh; typecheck/lint 0; 214 unit; coverage lines 96.17% (lib 85.71% thap nhat); test-p1 33/33 (them 5 assertion SEC-001); migration list local=remote + pg_proc private DEFINER/public INVOKER + 12 policy; config auth require_current_password=true (doc); build gzip 151.47KB; e2e 1 lan 72/72 exit 0 (4.3m) + axe 0 serious; gitleaks 0, npm audit 0. Deviation design 4.3 ghi Q-006 (open)."
     }
   ],
   "phases": {
@@ -822,8 +888,8 @@
       "title": "Xác thực, bootstrap admin, phiên",
       "status": "in_progress",
       "gates": {
-        "qc": null,
-        "sec": null
+        "qc": "PASS",
+        "sec": "FAIL"
       },
       "tasks": {
         "P3-T0": "done",
@@ -1202,6 +1268,22 @@
     {
       "ts": "2026-10-02T17:56:02+07:00",
       "event": "QC P3 vong 1: FAIL (1 MAJOR QC-001 e2e flaky WebKit + 2 MINOR). Sua QC-001: tach test p3-auth:405 thanh 2 test moi test 1 lan dieu huong (nguyen nhan: goto lan 2 huy request dang bay); sua QC-003: them newline .env.example; QC-002 -> backlog. Chuan bi goi QC vong 2."
+    },
+    {
+      "ts": "2026-10-02T20:15:29+07:00",
+      "event": "QC P3 vong 2: PASS (Q1-Q12 xanh). Dong QC-001 (e2e 3 lan lien tiep 72/72, 0 CORS), QC-003 fix. Ke tiep: security-audit vong 1 cho P3."
+    },
+    {
+      "ts": "2026-10-02T22:09:40+07:00",
+      "event": "SEC P3 vong 1: FAIL (2 MAJOR SEC-001/SEC-002, 2 MINOR). SEC-001: session_fresh() so iat -> refresh reset iat, phien 7 ngay khong co o server. SEC-002: GoTrue doi mat khau khong can mat khau cu (backlog ghi \"chi hardening\" la sai)."
+    },
+    {
+      "ts": "2026-10-02T22:09:40+07:00",
+      "event": "Sua SEC-001/SEC-002: migration 20261002144826 (session-based, schema private + boc invoker), PATCH config auth require_current_password=true; test-p1.sh +5 = 33/33, advisors 6 WARN, cloud sach. Ke tiep QC vong 3."
+    },
+    {
+      "ts": "2026-10-02T22:35:16+07:00",
+      "event": "QC P3 vong 3: PASS (Q1-Q12). Ke tiep security-audit vong 2."
     }
   ],
   "tasks": {}

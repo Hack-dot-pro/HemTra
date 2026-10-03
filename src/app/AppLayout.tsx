@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { KeyRound, Mail } from 'lucide-react'
 import { NAV_ITEMS } from './nav'
 import { useAuthProfile } from './authProfileContext'
+import NetworkBanner from '../components/ui/NetworkBanner.tsx'
+import { useMenuSync } from '../lib/useMenu'
 
 function navLinkClass(isActive: boolean): string {
   return [
@@ -24,6 +26,8 @@ export default function AppLayout() {
   // Role lấy từ RequireAuth đã kiểm tra (không đọc lại profiles, không tin claim).
   const profile = useAuthProfile()
   const isAdmin = profile?.role === 'admin'
+  // P4-T3: 4 điểm chạm đồng bộ menu sống trong suốt thời gian người dùng ở layout.
+  useMenuSync()
 
   return (
     <div className="relative min-h-dvh">
@@ -89,6 +93,8 @@ export default function AppLayout() {
                 </NavLink>
               )}
             </div>
+            {/* P4-T4: offline / giá cập nhật lúc … / cache quá 24 giờ */}
+            <NetworkBanner />
             <Outlet />
           </div>
         </main>

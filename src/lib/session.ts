@@ -1,7 +1,8 @@
 // Phiên đăng nhập 7 ngày — P3-T5 (auth/skill.md §3, design §4.3).
 // Client: "ghi nhớ" chọn nơi lưu token, lưu login_at, hết hạn → tự đăng xuất.
-// Server: session_fresh() (JWT iat ≤ 7 ngày) đã có trong mọi policy RLS từ P1 —
-//         lớp này chỉ là lớp client, server vẫn là nơi chặn cuối.
+// Server: session_fresh() (mốc 7 ngày lấy từ auth.sessions.created_at của phiên
+//         trong claim session_id — refresh không reset được, SEC-001) đã có trong
+//         mọi policy RLS từ P1 — lớp này chỉ là lớp client, server vẫn là chặn cuối.
 
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import { LOGIN_AT_KEY, REMEMBER_KEY, authTargetStore, getSupabase } from './supabase'

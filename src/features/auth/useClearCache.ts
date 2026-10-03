@@ -1,17 +1,22 @@
 import { useCallback, useState } from 'react'
+import { hardRefresh } from '../../lib/hardRefresh'
 
 export type ClearCacheStatus = 'idle' | 'running' | 'done' | 'error'
 
 export type ClearCacheRunner = () => Promise<void>
 
-// P2-T5: mới chỉ giả lập để có UI + test. P4-T7 thay bằng hardRefresh() thật
-// (design.md §8.7: unregister SW, xóa caches, xóa menu cache trong IndexedDB,
-// giữ localStorage username, rồi location.replace).
+// P4-T7/P4-T8: runner mặc định là hardRefresh() thật (design §8.7) —
+// unregister SW, xóa cache, xóa menu cache (giữ outbox), tải lại.
+export async function clearCacheAndReload(): Promise<void> {
+  await hardRefresh()
+}
+
+// Runner giả lập — chỉ dùng cho test không muốn đụng IndexedDB/điều hướng.
 export async function simulateClearCache(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 300))
 }
 
-export function useClearCache(runner: ClearCacheRunner = simulateClearCache) {
+export function useClearCache(runner: ClearCacheRunner = clearCacheAndReload) {
   const [status, setStatus] = useState<ClearCacheStatus>('idle')
 
   const clear = useCallback(async (): Promise<ClearCacheStatus> => {

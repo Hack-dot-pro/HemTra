@@ -33,6 +33,13 @@ chk_err() { # chk_err <label> <sql> <err-pattern>
 }
 fresh_claims="set request.jwt.claims = '{\"sub\":\"$SUB\",\"iat\":${NOW_IAT}}';"
 old_claims="set request.jwt.claims = '{\"sub\":\"$SUB\",\"iat\":${OLD_IAT}}';"
+# SEC-001: session_fresh doc auth.sessions.created_at khi JWT co session_id
+SESS_NEW="aaaaaaaa-0000-4000-8000-0000000000a1"   # phien moi tao (het han sau 7 ngay)
+SESS_OLD="aaaaaaaa-0000-4000-8000-0000000000a2"   # phien da 8 ngay
+SESS_GONE="aaaaaaaa-0000-4000-8000-0000000000a3"  # session_id khong ton tai
+sess_new_claims="set request.jwt.claims = '{\"sub\":\"$SUB\",\"session_id\":\"$SESS_NEW\",\"iat\":${NOW_IAT}}';"
+sess_old_claims="set request.jwt.claims = '{\"sub\":\"$SUB\",\"session_id\":\"$SESS_OLD\",\"iat\":${NOW_IAT}}';"
+sess_gone_claims="set request.jwt.claims = '{\"sub\":\"$SUB\",\"session_id\":\"$SESS_GONE\",\"iat\":${NOW_IAT}}';"
 
 echo "== 0. Don du lieu test cu + fixture =="
 q "delete from public.bills;
@@ -73,6 +80,16 @@ q "update public.profiles set role='admin' where id='$SUB';" >/dev/null
 chk "is_admin: admin = true" "set role authenticated; $fresh_claims select case when public.is_admin() = true then 'OK:admin' else 'BAD' end as r; reset request.jwt.claims; reset role;" 'OK:admin'
 q "update public.profiles set role='staff' where id='$SUB';" >/dev/null
 chk "session_fresh: het han = false" "set role authenticated; $old_claims select case when public.session_fresh() = false then 'OK:sf' else 'BAD' end as r; reset request.jwt.claims; reset role;" 'OK:sf'
+# --- SEC-001: mốc 7 ngày lấy từ auth.sessions.created_at (không còn là iat vì refresh cấp iat mới) ---
+q "insert into auth.sessions (id, user_id, created_at)
+   values ('$SESS_NEW', '$SUB', now()),
+          ('$SESS_OLD', '$SUB', now() - interval '8 days');" >/dev/null
+chk "session_fresh: phien moi = true" "set role authenticated; $sess_new_claims select case when public.session_fresh() = true then 'OK:sfnew' else 'BAD' end as r; reset request.jwt.claims; reset role;" 'OK:sfnew'
+chk "session_fresh: phien 8 ngay = false" "set role authenticated; $sess_old_claims select case when public.session_fresh() = false then 'OK:sfold' else 'BAD' end as r; reset request.jwt.claims; reset role;" 'OK:sfold'
+chk "session_fresh: session_id khong ton tai = false" "set role authenticated; $sess_gone_claims select case when public.session_fresh() = false then 'OK:sfgone' else 'BAD' end as r; reset request.jwt.claims; reset role;" 'OK:sfgone'
+chk "het han phien doc menu = 0" "set role authenticated; $sess_old_claims select case when count(*)=0 then 'OK:expired' else 'BAD' end as r from public.categories; reset request.jwt.claims; reset role;" 'OK:expired'
+chk "het han phien doc profiles = 0" "set role authenticated; $sess_old_claims select case when count(*)=0 then 'OK:p0' else 'BAD' end as r from public.profiles; reset request.jwt.claims; reset role;" 'OK:p0'
+q "delete from auth.sessions where id in ('$SESS_NEW', '$SESS_OLD');" >/dev/null
 
 echo "== 4. Menu CRUD (fresh) + menu_version tang =="
 chk "tao san pham" "set role authenticated; $fresh_claims insert into public.products (category_id, name, price) values ('$FIX_CAT', 'T10New', 11000); select 'OK:ins'; reset request.jwt.claims; reset role;" 'OK:ins'
@@ -104,6 +121,7 @@ echo "== 7. Don du lieu test =="
 q "delete from public.bills;
 truncate public.stats_daily, public.stats_product_monthly, public.stats_product_alltime;
 delete from public.product_toppings where product_id = '$FIX_PROD';
+delete from auth.sessions where id in ('$SESS_NEW', '$SESS_OLD');
 delete from public.products where category_id = '$FIX_CAT';
 delete from public.categories where id = '$FIX_CAT';
 delete from public.toppings where id = '$FIX_TOP';
