@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-02T22:35:16+07:00",
+    "last_updated": "2026-10-03T09:20:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
-    "phase": "P3",
-    "task": "Gate SEC vòng 2",
+    "phase": "P4",
+    "task": "P4-T1",
     "step": "READ",
-    "note": "QC vong 3 PASS (Q1-Q12, e2e 72/72 x1 lan, test-p1 33/33, coverage 96.17%, build gzip 151.47KB). Ke tiep: security-audit vong 2 de xac minh SEC-001/SEC-002 da fix + quet lai; neu PASS -> tick Gate plan.md + commit phase."
+    "note": "Dong P3 (QC vong 3 PASS + SEC vong 2 PASS, tick Gate plan.md, commit phase). Bat dau P4: doc skills pwa-offline + uiux + security(§Headers) truoc khi code. Code P4 da commit (6dc40c6) nhung chua doi chieu tick plan P4-T1..T9; con thieu: registerServiceWorker()/startDeployVersionPolling() (src/lib/pwaClient.ts) chua goi o main/App, PwaUpdateBar chua render, e2e co 3 test fail (helpers.ts chua mock rest/v1/app_meta)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -23,8 +23,8 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 3,
-    "sec_round": 1,
+    "qc_round": 0,
+    "sec_round": 0,
     "failure_signatures": [
       {
         "id": "QC-001",
@@ -45,7 +45,7 @@
         "status": "fixed"
       }
     ],
-    "last_report": "QC P3 vong 3: VERDICT PASS - Q1-Q12 xanh (QC lai toan bo sau 2 fix SEC, loop.md 4.1). Q1 typecheck exit 0; Q2 lint exit 0; Q3 vitest 22 files/214 tests exit 0, khong .skip/.only moi; Q4 logic moi = migration session_fresh -> 5 assertion test-p1.sh:87-91, chay 33/33 exit 0 (truoc 28); session.ts chi doi comment -> khong can unit test moi; Q5 coverage lines 96.17%, per-file json-summary: lib thap nhat 85.71% (supabase.ts), features/auth 91.3%, features/setup/logic 100% (>=80%); Q6 test moi assert true/false + RLS + co dune fixture, khong mock; Q7 design.md 4.3 van ghi 'so iat' lech co the -> khong block, giu nguyen yeu cau 7 ngay/server chan cuoi, da ghi state Q-006 open cho user (de nghi main-coding dua vao vong hoi user); Q8 supabase test db N/A (B-001) -> test-p1 tren DB linked 33/33, migration list --linked local=remote co 20261002144826; Q9 build exit 0 gzip 151.47kB<250; Q10 e2e 1 lan exit 0 - 72 passed/4.3m, 0 loi console, 0 'access control checks', 30 anh 2 viewport; Q11 axe 4 spec 0 serious/critical; Q12 diff 75 file + 3 M + 4 ?? = scope, gitleaks no leaks, npm audit 0 vuln, khong file rac (da xoa coverage/ do minh tao). Xac minh fix SEC chi doc: pg_proc private.session_fresh prosecdef=true / public=false, 12 policy, anon khong execute; config auth GET -> security_update_password_require_current_password=true. Khong tao/xoa user, cloud van pre-bootstrap. Chi tiet: .opencode/evidence/p3-qc-round3.md."
+    "last_report": "SEC P3 vong 2: VERDICT PASS - xac minh 2 fix vong 1 + chay lai S1-S15. S1 gitleaks 8.30.1, 36 commits, no leaks (exit 0); S2 npm audit 0 vuln; S3 RLS 12 policy + scripts/test-p1.sh 33/33 exit 0; S4/S5 (SEC-002): config security_update_password_require_current_password=true, PUT /auth/v1/user chi co password -> 400 current_password_required (mat khau cu van 200); S15 (SEC-001): pg_proc private.session_fresh secdef + search_path=\"\", public invoker, live 11/11 (phien 8 ngay -> 200 [], refresh giu session_id, restore -> 200 co du lieu), rpc private.session_fresh -> 404 PGRST202; S6/S7/S10/S13 giu evidence vong 1 (code P3 khong doi); S8/S9/S14 N-A (pham vi hep P3); S11/S12 N-A (P4/P10 - _headers/sw chua deploy). Khong co loi BLOCKER/MAJOR/MOI; SEC-003/SEC-004 van MINOR da o backlog. Advisors 6 WARN/0 ERROR (bang truoc fix). Cloud van pre-bootstrap, user tam da don sach (n_temp=0, bootstrapped=false, admin_email=null). Chi tiet: .opencode/evidence/p3-sec-round2.md"
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -827,6 +827,25 @@
         "subagent.md §2"
       ],
       "note": "qc-test vong 3 (QC lai toan bo sau 2 fix SEC): Q1-Q12 xanh; typecheck/lint 0; 214 unit; coverage lines 96.17% (lib 85.71% thap nhat); test-p1 33/33 (them 5 assertion SEC-001); migration list local=remote + pg_proc private DEFINER/public INVOKER + 12 policy; config auth require_current_password=true (doc); build gzip 151.47KB; e2e 1 lan 72/72 exit 0 (4.3m) + axe 0 serious; gitleaks 0, npm audit 0. Deviation design 4.3 ghi Q-006 (open)."
+    },
+    {
+      "at": "2026-10-03T09:20:00+07:00",
+      "agent": "security-audit",
+      "event": "SEC P3 vong 2 PASS",
+      "file": ".opencode/evidence/p3-sec-round2.md",
+      "skills_read": [
+        "AGENT.md",
+        "subagent.md (§1, §3)",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/auth/skill.md",
+        "plan.md [P3]",
+        "design.md §4/§5",
+        "loop.md §4.1/§4.3",
+        ".opencode/evidence/p3-sec-round1.md",
+        ".opencode/evidence/p3-sec-round1-fix.md",
+        ".opencode/evidence/p3-qc-round3.md"
+      ],
+      "result": "VERDICT PASS - S1-S15 xanh/N-A dung ly do; xac minh fix SEC-001 (session theo auth.sessions.created_at, live 11/11) + SEC-002 (require_current_password=true -> PUT /auth/v1/user 400); khong loi moi; cloud pre-bootstrap sach."
     }
   ],
   "phases": {
@@ -886,10 +905,10 @@
     },
     "P3": {
       "title": "Xác thực, bootstrap admin, phiên",
-      "status": "in_progress",
+      "status": "done",
       "gates": {
         "qc": "PASS",
-        "sec": "FAIL"
+        "sec": "PASS"
       },
       "tasks": {
         "P3-T0": "done",
@@ -1284,6 +1303,10 @@
     {
       "ts": "2026-10-02T22:35:16+07:00",
       "event": "QC P3 vong 3: PASS (Q1-Q12). Ke tiep security-audit vong 2."
+    },
+    {
+      "ts": "2026-10-03T09:20:00+07:00",
+      "event": "Dong phase P3: SEC vong 2 PASS -> tick Gate QC+SEC trong plan.md, trang thai done, pointer sang P4 (P4-T1/READ)."
     }
   ],
   "tasks": {}
