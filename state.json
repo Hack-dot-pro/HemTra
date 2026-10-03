@@ -5,7 +5,7 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T12:40:00+07:00",
+    "last_updated": "2026-10-03T13:10:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
@@ -23,7 +23,7 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 1,
+    "qc_round": 2,
     "sec_round": 0,
     "failure_signatures": [
       {
@@ -891,6 +891,13 @@
       "agent": "main-coding",
       "event": "fix QC P4 vong 1 (QC-001..QC-007)",
       "note": "QC-001: them src/lib/pwaClient.test.ts (9 test: register 1 lan, needRefresh/offlineReady, applyPwaUpdate 2 ly do, checkDeployVersion 4 truong hop, polling + cleanup) -> lib 87.07% line, tong 262 unit. QC-002: App.test mock ../lib/supabase bang createFakeSupabase (fake REST + channel) -> chay rieng 6/6 xanh, khong goi mang that. QC-003: index.html + <link rel=apple-touch-icon> (dist co link, precache 21 entries). QC-005: xoa nhanh sr-only dead code + import Wifi thua NetworkBanner. QC-006: anh pwa-offline-* va pwa-update-bar-* (2 viewport x 3 project = 12 anh) + test moi P4-T6 (version.json lech -> thanh cho xac nhan, khong tu reload, Để sau tat). QC-007: xoa simulateClearCache + sua ghi chu plan T8. QC-004: giai thich scope cho vong 2 (6dc40c6 = commit tron P3+P4). Checks: typecheck/lint 0, unit+coverage exit 0 (262/262, lib 87.07%), build OK, e2e 84/84."
+    },
+    {
+      "at": "2026-10-03T13:10:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P4 vong 2 PASS",
+      "file": ".opencode/evidence/p4-qc-round2.md",
+      "note": "VERDICT PASS - 7/7 issue vong 1 ĐÓNG (pwaClient 13 test/ lib 87.07%, App.test fake supabase 6/6, apple-touch-icon co trong dist+precache, QC-004 giai trinh commit 6dc40c6 tron P3+P4, xoa dead code, 12 anh P4, xoa simulateClearCache). Issue MOI: QC-008 MINOR - WebKit khong render backdrop-filter -> link header lo qua thanh update bar o 390x844 (lech tu P2, khong phai regression P4) -> backlog. So lieu: typecheck/lint 0, 262 unit, coverage lib 87.07%/all 91.98%, build xanh gzip 185.71KB, e2e 84/84, axe 0 serious, gitleaks 40 commits 0 leak, diff 9 file dung scope."
     }
   ],
   "phases": {
@@ -1364,6 +1371,10 @@
     {
       "ts": "2026-10-03T12:40:00+07:00",
       "event": "QC P4 vong 1 FAIL (3 MAJOR) -> sua het: test pwaClient, fake supabase cho App.test, apple-touch-icon, xoa dead code, xoa simulateClearCache, +test P4-T6 + 12 anh P4. 262 unit (lib 87.07%), e2e 84/84. Ke tiep: QC vong 2."
+    },
+    {
+      "ts": "2026-10-03T13:10:00+07:00",
+      "event": "QC P4 vong 2: PASS (dong het 7 issue vong 1; QC-008 MINOR WebKit backdrop-filter -> backlog). Ke tiep: security-audit P4 vong 1."
     }
   ],
   "tasks": {}
