@@ -217,7 +217,7 @@ describe('startMenuSync (4 điểm chạm)', () => {
 
     // Server đổi menu_version → lần so version kế phải tải lại
     tables.app_meta[0].menu_version = 8
-    realtimeCb?.()
+    ;(realtimeCb as (() => void) | null)?.()
     await vi.waitFor(async () => expect((await readCachedMenu(db))?.menu_version).toBe(8))
 
     handle.unsubscribe()

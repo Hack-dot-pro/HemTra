@@ -78,7 +78,7 @@ export default function AppLayout() {
           </div>
         </aside>
 
-        <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-8 md:pt-8">
+        <main className="min-w-0 flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-8 md:pt-8">
           <div className="mx-auto w-full max-w-5xl">
             {/* Mobile: bottom-nav chỉ có 5 menu → lối vào đổi mật khẩu ở đây (§4.1) */}
             <div className="mb-3 flex justify-end gap-4 md:hidden">

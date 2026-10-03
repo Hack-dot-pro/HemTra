@@ -8,7 +8,12 @@ import { SESSION_MAX_AGE_MS } from '../../lib/session'
 
 // Fake client: getSession luôn báo "đang có phiên", signOut là spy
 const signOut = vi.fn(async () => ({ error: null }))
-const getSession = vi.fn(async () => ({ data: { session: { access_token: 'x' } }, error: null }))
+const getSession = vi.fn(
+  async (): Promise<{ data: { session: { access_token: string } | null }; error: null }> => ({
+    data: { session: { access_token: 'x' } },
+    error: null,
+  }),
+)
 const fakeClient = { auth: { getSession, signOut } } as unknown as SupabaseClient
 
 vi.mock('../../lib/supabase', async (importOriginal) => {

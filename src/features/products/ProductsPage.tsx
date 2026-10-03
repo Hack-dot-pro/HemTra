@@ -212,12 +212,6 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     return result
   }
 
-  const categories = lists?.categories ?? []
-  const categoryName = (id: string) => categories.find((c) => c.id === id)?.name ?? '—'
-  const visibleProducts = filterProducts(lists.products, { query, categoryId: filterCategory })
-  const initialToppingIds = (row?: ProductRow) =>
-    row ? (lists?.links ?? []).filter((l) => l.product_id === row.id).map((l) => l.topping_id) : []
-
   if (!lists && loadError) {
     return (
       <section className="glass-card p-6">
@@ -242,6 +236,14 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
       </section>
     )
   }
+
+  // Derived state — chỉ tính sau khi lists đã có dữ liệu (guard ở trên);
+  // tính trước guard sẽ crash render đầu tiên khi lists còn null.
+  const categories = lists.categories
+  const categoryName = (id: string) => categories.find((c) => c.id === id)?.name ?? '—'
+  const visibleProducts = filterProducts(lists.products, { query, categoryId: filterCategory })
+  const initialToppingIds = (row?: ProductRow) =>
+    row ? lists.links.filter((l) => l.product_id === row.id).map((l) => l.topping_id) : []
 
   return (
     <section className="space-y-4">
@@ -324,7 +326,12 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
             </p>
           ) : null}
 
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Danh sách sản phẩm"
+          >
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="text-xs uppercase text-white/60">
                 <tr>

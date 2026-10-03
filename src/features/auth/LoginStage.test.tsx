@@ -23,8 +23,8 @@ function fakeBootstrapApi(
 ): SetupApi {
   return {
     fetchBootstrapped,
-    requestOtp: vi.fn(async () => ({ ok: true, data: null })),
-    complete: vi.fn(async () => ({ ok: true, data: null })),
+    requestOtp: vi.fn(async () => ({ ok: true as const, data: null })),
+    complete: vi.fn(async () => ({ ok: true as const, data: null })),
   }
 }
 

@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T14:35:00+07:00",
+    "last_updated": "2026-10-03T18:00:00+07:00",
     "last_agent": "security-audit"
   },
   "pointer": {
-    "phase": "P5",
-    "task": "P5-T1",
+    "phase": "P6",
+    "task": "P6-T2",
     "step": "READ",
-    "note": "Bat dau P5 (Menu San pham). Da doc skills bat buoc: uiux + backend + testing (ghi skills_read), design §4.1 (ca 2 role CRUD menu), §5 (categories/products/toppings/product_toppings, menu_version trigger tu tang), §7.3-7.4, migration P1 (schema + RLS *_staff_all cho authenticated session_fresh). Kien truc: CRUD qua supabase client (getSupabase, JWT user -> RLS), zod client-side (T5), emoji icon (Q-004), ProductsPage stub se thay the; e2e mock REST nhu p4-pwa. Con thieu: chua cai zod."
+    "note": "P5 DONE (QC vong 2 + SEC vong 1 PASS). P6-T0/T1 da xong tu truoc (emoji icon Q-004). Bat dau P6-T2: luoi san pham theo nhom + nut '+' them vao bill. Doc skills theo ma tran AGENT.md 12.1 (uiux + pos-bill), design §6 (POS/bill), §7.4; e2e pattern p5. Backlog moi: P10-T2 (revoke DELETE categories), QC-010 (coverage.include api.ts, sua o P6)."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -23,8 +23,8 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 2,
-    "sec_round": 1,
+    "qc_round": 0,
+    "sec_round": 0,
     "failure_signatures": [
       {
         "id": "QC-001",
@@ -43,9 +43,15 @@
         "sig": "f6e459c3e3129b4cf40791aae0a809c7ef4dfa80",
         "desc": "GoTrue cho PUT /auth/v1/user doi mat khau khong can mat khau cu",
         "status": "fixed"
+      },
+      {
+        "id": "QC-009",
+        "sig": "91408073c209d997a7a69b89366c4e63bad1be89",
+        "desc": "/products tràn ngang trang o 390x844 (document.scrollWidth=706 vs innerWidth=390) do min-w-[640px] cua bang lan qua main flex item min-width:auto",
+        "status": "open"
       }
     ],
-    "last_report": "SEC P4 vong 1: VERDICT PASS - 0 BLOCKER/MAJOR, 1 MINOR. S1 gitleaks 8.30.1: 41 commits, 0 leaks, exit 0 (dist co 1 JWT role=anon khop .env, 0 service_role; .env bi gitignore, khong track). S2 npm audit: 0 vulnerabilities (ca dev va --omit=dev, exit 0). S6 XSS: 0 dangerouslySetInnerHTML/innerHTML/eval; PwaUpdateBar + NetworkBanner chi text React. S3/S5/S8/S9/S10/S11/S12/S13/S14 N/A dung pham vi P4 (diff supabase/ chi con file P3 session_fresh tu commit tron 6dc40c6 - da giai trinh QC-004; 3 commit P4 sau do = 0 dong). S15(a): hardRefresh KHONG dot localStorage (giu token khi ghi nho + hemtra.username + login_at) NHUNG CO sessionStorage.clear() -> user khong ghi nho bi dang xuat khi bam Xoa cache hoac khi cap nhat deploy; day la hanh vi design.md §8.7 + skill §5 yeu cau, khong ro ri gi -> khong tinh lo hong, ghi N-001 open_question hoi user. S15(b): outbox IndexedDB chi payload bill (items/phone_note/offline_code/menu_version + png), 0 token/mat khau. Pham vi PWA: sw.ts chi precache 21 entry shell, 0 URL API, KHONG navigateFallback -> API khong bi cache, KHONG skipWaiting tu dong (chi qua message SKIP_WAITING, registerType=prompt), khong fetch origin ngoai; pwaClient onNeedRefresh/checkDeployVersion chi set state (khong reload/eval), version.json chi version+builtAt va khong nam trong precache (luon no-store); poll loi mang im dung thiet ke. MOI: [SEC-001] MINOR public/_headers:1 - chi co Cache-Control, thieu CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy/X-Frame-Options (CF docs khong cong bo default security header); de nghi them block /* + bat HSTS o zone, them phai chay lai e2e; plan P10-T1 da so huy -> backlog, khong chan gate P4. NGHI VAN: N-002 public/_redirects (/* /index.html 200, tu P2) co the nuot /sw.js + /version.json tren Pages that (docs: redirects always followed) -> smoke curl -I o P11-T4. Chi tiet: .opencode/evidence/p4-sec-round1.md"
+    "last_report": "SEC P5 vong 1: VERDICT PASS - 8/15 OK, 6 N/A, 2 MINOR, 0 BLOCKER/MAJOR. S1 gitleaks 45 commits 0 leak (dir 5 hit = .env x4 + dist JWT role=anon bi gitignore); S2 npm audit 0 (full + omit=dev, zod 4.6.5 sach). S3/S4 verify LIVE prod (10 query ROLLBACK): 13/13 bang RLS, 4 bang menu van *_staff_all + session_fresh, diff supabase/=0, anon 0 grant, admin_email chi service_role. S7: 0 sink HTML; 4 payload (<script>, img onerror, SQL, <b>) escape dung ca text node/aria-label; nhap DB la data, 0 chuoi SQL, khong .or()/.ilike() input. S14: CHECK price>0 + name khong rong chan -5000/'' (23514); create_bill tinh lai gia; khong DELETE bills/UPDATE app_meta. S12: sw.ts chi doi cast, precache 21 entry shell 0 URL API. S5/S6/S8/S9/S10/S15 N/A doi chieu pham vi P5. SEC-005 MINOR (CWE-640): nhan DELETE categories van cho phep server (grants + policy FOR ALL + FK CASCADE) -> staff xoa nhom mat ca SP (da rollback test) -> backlog P10-T2 revoke. SEC-001 MINOR ke thua P4: public/_headers thieu CSP/HSTS/... -> P10-T1. Khong reopen N-002/SEC-003. Chi tiet: .opencode/evidence/p5-sec-round1.md"
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -170,7 +176,9 @@
     "Advisors 6 WARN da danh gia o SEC vong 1: set_updated_at thieu set search_path; create_bill/is_admin/rls_auto_enable SECURITY DEFINER (khong khai thac duoc); password_hibp_enabled=false -> bat o Dashboard Authentication -> Settings (SEC-002 da bat xong require_current_password).",
     "QC-008 MINOR (P4): WebKit khong render backdrop-filter -> o anh 390x844, link header lo qua PwaUpdateBar (nen 0.62) va chong chu \"De sau\" (e2e/screenshots/pwa-update-bar-*-390x844.png, nhat webkit/mobile). CSS da co -webkit-backdrop-filter; lech tu P2 (PwaUpdateBar dung thieu backdrop-blur) -> xem lai khi lam UI o P10/P11.",
     "SEC-001 MINOR (P4): public/_headers moi chi cau hinh Cache-Control (index/sw no-cache, version.json no-store, /assets immutable) — thieu CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-Frame-Options (docs CF Pages khong cong bo header mac dinh). Chu ky P10-T1 (security skill §Headers); kem cu phap trong evidence p4-sec-round1.md.",
-    "N-002 (P4, ghi nhan SEC): public/_redirects \"/*  /index.html 200\" (file P2) co the nuot /sw.js va /version.json tren Cloudflare Pages that (\"redirects always followed\") -> smoke curl -I https://hemtra.pages.dev/sw.js + /version.json tai P11-T4 truoc khi ban giao; neu bi nuot thi them exception rule."
+    "N-002 (P4, ghi nhan SEC): public/_redirects \"/*  /index.html 200\" (file P2) co the nuot /sw.js va /version.json tren Cloudflare Pages that (\"redirects always followed\") -> smoke curl -I https://hemtra.pages.dev/sw.js + /version.json tai P11-T4 truoc khi ban giao; neu bi nuot thi them exception rule.",
+    "SEC-005 MINOR (P5): server van grant/policy cho DELETE categories (rule 'khong xoa nhom - chi an/hien' chi o client ProductsPage) -> staff xoa nhom thi SP con TRONG GROUP mat do FK ON DELETE CASCADE (test tren prod da rollback); revoke DELETE on categories + xem lai FK/cho phep xoa nhom co dieu kien o P10-T2.",
+    "QC-010 MINOR (P5): vitest.config.ts coverage.include thieu src/features/*/api.ts (do rieng van 91.22%) -> sua 1 dong trong P6."
   ],
   "off_plan_actions": [
     {
@@ -192,6 +200,11 @@
       "at": "2026-10-02T08:55:00+07:00",
       "agent": "main-coding",
       "event": "User hoi van de audit P3: sau khi bootstrap admin bang Google ca nhan (lay mau OTP), khi chay prod ban giao cho nguoi van hanh thi lam cach nao doi 'key admin' sang Google khac? -> ghi Q-005 (open_questions) + hoi user 2-3 phuong an truoc khi lam P3."
+    },
+    {
+      "at": "2026-10-03T17:30:00+07:00",
+      "agent": "main-coding",
+      "event": "Xoa 2 anh rac o root: image.png + image copy.png (tracked, 0 tham chieu code/docs; thuoc don rac root theo backlog QC P2-002). Bi xoa tu phien truoc ngat (Free usage) trong luc chuan bi buoc don rac; xac nhan giu lenh xoa + bo sung vao scope commit P5 theo QC-012 (khong git checkout lai)."
     }
   ],
   "evidence": [
@@ -946,6 +959,67 @@
         "supabase/migrations/20261001154825_rls_policies.sql"
       ],
       "note": "Doc truoc khi code P5 (ma tran AGENT.md §12.1: uiux + backend; testing cho T6). Xac minh RLS cho phep authenticated CRUD 4 bang menu, trigger menu_version tu tang khi doi (khong can client bump)."
+    },
+    {
+      "at": "2026-10-03T16:20:00+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        "loop.md",
+        "AGENT.md",
+        "subagent.md",
+        ".opencode/skills/testing/skill.md",
+        "e2e/helpers.ts",
+        "e2e/p4-pwa.spec.ts",
+        "design.md §4.1/§5"
+      ],
+      "note": "Doc lai truoc khi tiep P5-T6 (e2e P5) sau phien bi ngat Free usage."
+    },
+    {
+      "at": "2026-10-03T16:20:00+07:00",
+      "agent": "main-coding",
+      "event": "P5-T1..T6 done",
+      "file": "e2e/p5-products.spec.ts",
+      "skills_read": [
+        ".opencode/skills/testing/skill.md",
+        ".opencode/skills/uiux/skill.md",
+        ".opencode/skills/backend/skill.md"
+      ],
+      "output": "typecheck REAL exit 0 (truoc do: script tsc --noEmit -p solution files:[] = check 0 file -> sua package.json: -p app + -p node; va sua 23 loi type that: loginApi.ts field error, LoginStage/SetupStage/sessionGuard/hardRefresh/menuSync mocks, sw.ts cast swScope); lint 0; vitest 294/294, coverage lines 92.56%; build OK (precache 21); e2e 90/90 (81 cu + 6 p5 moi, chromium+webkit+mobile, 6.5m), anh p5-* 2 viewport x 3 project; fix ProductsPage.tsx crash TS18047 (derived state khi lists=null -> #panel-products khong render); selector toggle 2 viewport (mobile sr-only label vs desktop 'Dang ban')."
+    },
+    {
+      "at": "2026-10-03T16:55:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P5 vong 1",
+      "file": ".opencode/evidence/p5-qc-round1.md",
+      "output": "VERDICT FAIL: [QC-009] MAJOR tràn ngang /products 390x844 (scrollWidth 706/390, ca 3 project; 90 e2e cu van xanh), [QC-010] MINOR coverage.include, [QC-011] MINOR scope 9 file type-only da giai trinh. Q1-Q9,Q11,Q12 xanh; Q8 N/A. Bo sung 5 unit ProductsPage.test.tsx + 6 e2e p5-a11y.spec.ts (axe 0 serious)."
+    },
+    {
+      "at": "2026-10-03T17:05:00+07:00",
+      "agent": "main-coding",
+      "event": "fix QC-009 (MAJOR)",
+      "output": "AppLayout.tsx <main> +min-w-0; ProductsPage.tsx div overflow-x-auto +tabIndex=0 role=region aria-label='Danh sách sản phẩm'. Checks: typecheck 0, lint 0, vitest 299/299, npx playwright test 96/96 exit 0 (3 project, 7m). Anh p5-* 6 cai cap nhat sau fix (Q10/Q11 xanh)."
+    },
+    {
+      "at": "2026-10-03T17:30:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P5 vong 2 PASS",
+      "file": ".opencode/evidence/p5-qc-round2.md",
+      "output": "Q1-Q12: Q1 0 loi, Q2 0, Q3 299/299, Q4 du test (them ProductsPage.test 5 unit vong 1), Q5 lib 87.41%/all 92.74%/api 91.22%, Q7 gia int + bang 4.1, Q8 N-A, Q9 gzip 217.06<250, Q10 96/96 + anh sach, Q11 axe 0 serious, Q12 khop. QC-009 FIXED (min-w-0 + scrollable focus). Issue moi: QC-012 MINOR image.png/image copy.png root bi xoa ngoai scope (khong phai lenh qc-test, 0 tham chieu) -> khong chan gate."
+    },
+    {
+      "at": "2026-10-03T18:00:00+07:00",
+      "agent": "security-audit",
+      "event": "SEC P5 vong 1 PASS",
+      "file": ".opencode/evidence/p5-sec-round1.md",
+      "skills_read": [
+        ".opencode/skills/security/skill.md",
+        "subagent.md §3",
+        "plan.md [P5]",
+        "design.md §4.1/§5",
+        ".opencode/evidence/p4-sec-round1.md"
+      ],
+      "output": "S1 45 commits 0 leak; S2 audit 0; S3/S4 live prod 13/13 RLS + *_staff_all giu nguyen (diff 0); S7 XSS/SQLi 4 payload sach; S14 CHECK/server logic on dinh; S5/S6/S8/S9/S10/S15 N/A co ly do; 2 MINOR: SEC-005 DELETE categories server-side (backlog P10-T2), SEC-001 headers ke thua (P10-T1)."
     }
   ],
   "phases": {
@@ -1044,18 +1118,18 @@
     },
     "P5": {
       "title": "Menu Sản phẩm",
-      "status": "pending",
+      "status": "done",
       "gates": {
-        "qc": null,
-        "sec": null
+        "qc": "PASS",
+        "sec": "PASS"
       },
       "tasks": {
-        "P5-T1": "pending",
-        "P5-T2": "pending",
-        "P5-T3": "pending",
-        "P5-T4": "pending",
-        "P5-T5": "pending",
-        "P5-T6": "pending"
+        "P5-T1": "done",
+        "P5-T2": "done",
+        "P5-T3": "done",
+        "P5-T4": "done",
+        "P5-T5": "done",
+        "P5-T6": "done"
       }
     },
     "P6": {
@@ -1435,6 +1509,46 @@
     {
       "ts": "2026-10-03T14:15:00+07:00",
       "event": "Buoc 4: hoi user xong (Q-004 emoji icon, Q-006 sua design §4.3, Q-007 giu sessionStorage.clear), sua design.md, don backlog 14->10 muc, gitignore coverage/. Con lai: commit package-lock."
+    },
+    {
+      "at": "2026-10-03T16:20:00+07:00",
+      "agent": "main-coding",
+      "event": "RESUME P5: phien truoc bi ngat (Free usage) sau khi commit 893b240 feat(P5). Khoi phuc .env (gitignored), cai Playwright chromium+webkit + deps; doc loop/subagent/testing skill + e2e pattern P4."
+    },
+    {
+      "at": "2026-10-03T16:20:00+07:00",
+      "agent": "main-coding",
+      "event": "DONE P5-T1..T6 (tick plan.md): e2e p5-products 2 test x 3 project xanh; fix crash ProductsPage; sua typecheck no-op (23 loi that). 294 unit, lines 92.56%, build OK, e2e 90/90, 6 anh p5. Ke tiep: qc-test P5 vong 1."
+    },
+    {
+      "ts": "2026-10-03T16:55:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P5 vong 1: FAIL - 1 MAJOR (QC-009 tràn ngang /products 390x844), 2 MINOR. Bo sung ProductsPage.test.tsx (5 unit) + e2e/p5-a11y.spec.ts (6 test). Gui main sua QC-009 roi chay lai QC."
+    },
+    {
+      "at": "2026-10-03T17:05:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P5 vong 1: FAIL (1 MAJOR QC-009, 2 MINOR). Q1-Q9/Q11/Q12 xanh (typecheck/lint 0, 299 unit, coverage lib 87.41%, build gzip 217.04KB, Q12 diff khop scope, 9 file typefix = giai trinh chap nhan). QC-009 MAJOR: /products trang 706px vs 390 (main flex thieu min-w-0 + table min-w-640). QC-010 MINOR coverage.include thieu features/*/api.ts -> backlog. QC-011 MINOR 9 file ngoai scope -> giai trinh. QC tu bo sung ProductsPage.test.tsx (5 unit) + e2e/p5-a11y.spec.ts (Q10 overflow + Q11 axe). Bao cao: .opencode/evidence/p5-qc-round1.md"
+    },
+    {
+      "at": "2026-10-03T17:05:00+07:00",
+      "agent": "main-coding",
+      "event": "FIX QC-009: AppLayout main them min-w-0 (cho phep overflow-x-auto cuon thuc te); axe sau do phat sinh scrollable-region-focusable (serious) vi vung cuon moi khong focus duoc -> them tabIndex=0 + role=region + aria-label 'Danh sach san pham' tren div overflow-x-auto cua bang SP. Re-verify: typecheck/lint 0, vitest 299/299, e2e toan bo 96/96 exit 0 (7m, gom 6 test p5-a11y Q10/Q11 xanh 3 project). Ke tiep: QC vong 2."
+    },
+    {
+      "at": "2026-10-03T17:30:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P5 vong 2: PASS (12/12; QC-009 dong, QC-010 backlog chap nhan, QC-011 chap nhan, QC-012 MINOR 2 anh root bi xoa -> main ghi off_plan). So lieu doc lap: 299 unit, coverage lib 87.41% / all 92.74%, build gzip 217.06KB, e2e 96/96 x2 lan, anh p5 x6 sach, diff 13 file khop. Bao cao: .opencode/evidence/p5-qc-round2.md"
+    },
+    {
+      "at": "2026-10-03T18:00:00+07:00",
+      "agent": "security-audit",
+      "event": "SEC P5 vong 1: VERDICT PASS (0 BLOCKER/MAJOR, 2 MINOR -> backlog P10-T2/P10-T1). Bao cao: .opencode/evidence/p5-sec-round1.md"
+    },
+    {
+      "at": "2026-10-03T18:00:00+07:00",
+      "agent": "main-coding",
+      "event": "CLOSE P5: QC vong 2 + SEC vong 1 PASS -> tick Gate, status=done, reset rounds, pointer sang P6. Ke tiep: P6-T2 (luoi SP + panel bill)."
     }
   ],
   "tasks": {}

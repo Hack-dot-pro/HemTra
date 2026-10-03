@@ -12,6 +12,13 @@ declare global {
   }
 }
 
+// `self` theo lib DOM (tsconfig không tách worker) — cast cấu trúc sang
+// ngữ cảnh ServiceWorkerGlobalScope (không cần lib webworker).
+const swScope = self as unknown as {
+  skipWaiting(): Promise<void>
+  clients: { claim(): Promise<void> }
+}
+
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
@@ -19,9 +26,9 @@ cleanupOutdatedCaches()
 // "Có phiên bản mới — Cập nhật"). Không tự kích hoạt khi còn tab đang mở.
 self.addEventListener('message', (event) => {
   const data = (event as MessageEvent).data as { type?: string } | null
-  if (data?.type === 'SKIP_WAITING') void self.skipWaiting()
+  if (data?.type === 'SKIP_WAITING') void swScope.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
-  void (event as unknown as { waitUntil(p: Promise<unknown>): void }).waitUntil(self.clients.claim())
+  void (event as unknown as { waitUntil(p: Promise<unknown>): void }).waitUntil(swScope.clients.claim())
 })

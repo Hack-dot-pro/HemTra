@@ -4,7 +4,7 @@ import { SIGN_IN_ERROR } from './loginForm'
 import { CONFIG_ERROR, NETWORK_ERROR, SERVER_ERROR } from '../../lib/http'
 
 function stubFetch(status: number, body: unknown) {
-  const fn = vi.fn(async () => ({
+  const fn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => ({
     ok: status >= 200 && status < 300,
     status,
     json: async () => body,

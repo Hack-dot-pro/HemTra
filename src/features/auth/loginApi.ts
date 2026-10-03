@@ -27,7 +27,7 @@ export async function requestLogin(username: string, password: string): Promise<
   if (res.failure === 'config') return { ok: false, message: CONFIG_ERROR, locked: false, status: 0 }
   if (res.failure === 'network') return { ok: false, message: NETWORK_ERROR, locked: false, status: 0 }
 
-  const body = res.body as { ok?: boolean; session?: unknown; locked?: boolean } | null
+  const body = res.body as { ok?: boolean; session?: unknown; locked?: boolean; error?: string } | null
   if (isOkStatus(res.status) && body?.ok && body.session) {
     return { ok: true, session: body.session }
   }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { HemTraDB, type OutboxBill } from './db'
 import { hardRefresh, type ServiceWorkerRegistrationLike } from './hardRefresh'
 
@@ -26,12 +26,12 @@ function pendingBill(): OutboxBill {
 
 type Harness = {
   db: HemTraDB
-  unregister: ReturnType<typeof vi.fn>
-  cacheDelete: ReturnType<typeof vi.fn>
+  unregister: Mock<() => Promise<boolean>>
+  cacheDelete: Mock<() => Promise<boolean>>
   cacheKeys: string[]
-  clearSessionStorage: ReturnType<typeof vi.fn>
+  clearSessionStorage: Mock<() => void>
   replaced: string[]
-  confirm: ReturnType<typeof vi.fn>
+  confirm: Mock<(pendingCount: number) => Promise<boolean>>
 }
 
 async function harness(): Promise<Harness> {
@@ -48,12 +48,12 @@ async function harness(): Promise<Harness> {
   })
   return {
     db,
-    unregister: vi.fn(async () => true),
-    cacheDelete: vi.fn(async () => true),
+    unregister: vi.fn<() => Promise<boolean>>(async () => true),
+    cacheDelete: vi.fn<() => Promise<boolean>>(async () => true),
     cacheKeys: ['hemtra-precache-v1', 'workbox-precache'],
-    clearSessionStorage: vi.fn(),
+    clearSessionStorage: vi.fn<() => void>(),
     replaced: [],
-    confirm: vi.fn(async () => true),
+    confirm: vi.fn<(pendingCount: number) => Promise<boolean>>(async () => true),
   }
 }
 

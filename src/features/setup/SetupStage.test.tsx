@@ -71,7 +71,7 @@ describe('SetupStage — kiểm tra trạng thái bootstrap', () => {
   })
 
   it('chuyển về /login ngay nếu đã bootstrap — màn đăng ký tự ẩn', async () => {
-    const api = fakeApi({ fetchBootstrapped: vi.fn(async () => ({ ok: true, data: true })) })
+    const api = fakeApi({ fetchBootstrapped: vi.fn(async () => ({ ok: true as const, data: true })) })
     renderSetup(api)
 
     expect(await screen.findByText('ĐĂNG NHẬP')).toBeInTheDocument()
@@ -125,7 +125,7 @@ describe('SetupStage — bước 1: gửi OTP', () => {
 
   it('EF trả lỗi chung → hiện đúng thông điệp, giữ nguyên bước 1', async () => {
     const api = fakeApi({
-      requestOtp: vi.fn(async () => ({ ok: false, message: 'Lỗi máy chủ, thử lại sau' })),
+      requestOtp: vi.fn(async () => ({ ok: false as const, message: 'Lỗi máy chủ, thử lại sau' })),
     })
     renderSetup(api)
     const user = await startStep1()
@@ -140,7 +140,7 @@ describe('SetupStage — bước 1: gửi OTP', () => {
   it('409 đã bootstrap (ai đó setup trước) → thoát về đăng nhập', async () => {
     const api = fakeApi({
       requestOtp: vi.fn(async () => ({
-        ok: false,
+        ok: false as const,
         message: EF_DONE_MESSAGE,
         alreadyDone: true,
       })),
@@ -198,7 +198,7 @@ describe('SetupStage — bước 2: OTP + tài khoản + mật khẩu', () => {
 
   it('EF báo OTP sai → hiện thông điệp, vẫn ở bước 2', async () => {
     const api = fakeApi({
-      complete: vi.fn(async () => ({ ok: false, message: 'Mã OTP không đúng hoặc đã hết hạn' })),
+      complete: vi.fn(async () => ({ ok: false as const, message: 'Mã OTP không đúng hoặc đã hết hạn' })),
     })
     renderSetup(api)
     await startStep1()

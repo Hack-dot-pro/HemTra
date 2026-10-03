@@ -73,13 +73,14 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P5 — Menu Sản phẩm
 📖 `uiux/skill.md`, `backend/skill.md`
-- [ ] **P5-T1** CRUD nhóm sản phẩm (thêm/sửa/ẩn, sắp xếp, chọn icon); nhóm mặc định không khóa cứng
-- [ ] **P5-T2** Modal thêm/sửa sản phẩm: tên, nhóm, đơn giá, icon, topping áp dụng
-- [ ] **P5-T3** CRUD topping (sản phẩm phụ)
-- [ ] **P5-T4** Bảng danh sách: tìm kiếm, lọc theo nhóm, bật/tắt bán; xác nhận trước khi ẩn
-- [ ] **P5-T5** Validate zod (giá nguyên dương, tên không rỗng, không trùng trong nhóm); lỗi tiếng Việt
-- [ ] **P5-T6** Test: unit + Playwright (thêm nhóm → thêm sản phẩm → thấy ngay ở Thanh toán sau đồng bộ)
-- **Gate:** QC ☐ · SEC ☐
+- [x] **P5-T1** CRUD nhóm sản phẩm (thêm/sửa/ẩn, sắp xếp, chọn icon); nhóm mặc định không khóa cứng → xong 2026-10-03 (tab Nhóm: thêm/sửa/ẩn + ↑↓ `swapTargets`; icon emoji Q-004; không khóa nhóm mặc định — chỉ "Không hỗ trợ xóa nhóm — chỉ ẩn/hiện")
+- [x] **P5-T2** Modal thêm/sửa sản phẩm: tên, nhóm, đơn giá, icon, topping áp dụng → xong 2026-10-03 (`forms.tsx` ProductModal: select nhóm, giá, emoji, checklist topping; sửa SP ghi lại `product_toppings` — unit `api.test.ts` "xóa link cũ, chèn bộ mới")
+- [x] **P5-T3** CRUD topping (sản phẩm phụ) → xong 2026-10-03 (ToppingModal + panel; unit api.test/logic.test; e2e thêm Trân châu → "+5.000 ₫")
+- [x] **P5-T4** Bảng danh sách: tìm kiếm, lọc theo nhóm, bật/tắt bán; xác nhận trước khi ẩn → xong 2026-10-03 (`filterProducts` search+lọc nhóm; ToggleButton qua `ConfirmDialog` "Ẩn khỏi menu bán?"; xóa SP có confirm "Xóa vĩnh viễn?")
+- [x] **P5-T5** Validate zod (giá nguyên dương, tên không rỗng, không trùng trong nhóm); lỗi tiếng Việt → xong 2026-10-03 (zod 4.6.5, lỗi field + form tiếng Việt, aria-invalid; unit `logic.test.ts` happy/biên/lỗi; e2e thấy "Vui lòng nhập tên." + trùng tên "trà đào" bị chặn)
+- [x] **P5-T6** Test: unit + Playwright (thêm nhóm → thêm sản phẩm → thấy ngay ở Thanh toán sau đồng bộ) → xong 2026-10-03 (unit tổng **294/294** → **299/299** sau QC bổ sung `ProductsPage.test.tsx`; e2e `p5-products.spec.ts` 2 test × 3 project — "thấy ở Thanh toán" kiểm bằng **menuCache** (nguồn dữ liệu POS đọc): menu_version bump → sync ghi SP vào IndexedDB, ẩn SP → biến mất khỏi menuCache; case *bán hàng* chờ P6-T9; + `e2e/p5-a11y.spec.ts` 6 test Q10/Q11 từ QC; ảnh 390×844+1280×800 ×3 project; **tổng e2e 96/96**; typecheck thật 0 — xem bên dưới)
+- **Gate:** QC ☑ PASS (2026-10-03, vòng 2, `.opencode/evidence/p5-qc-round2.md`) · SEC ☑ PASS (2026-10-03, vòng 1, `.opencode/evidence/p5-sec-round1.md` — 0 BLOCKER/MAJOR; SEC-005 MINOR server vẫn cho `DELETE categories` (rule "không xóa nhóm" chỉ ở client) → backlog **P10-T2**; SEC-001 MINOR headers kế thừa → P10-T1)
+  - *Ghi chú main-coding 2026-10-03:* (1) e2e bắt **crash thật** `ProductsPage.tsx` (derived state chạy khi `lists=null` → trắng trang) — đã sửa (đưa sau guard + `tsc -p app` bắt lỗi TS18047). (2) Phát hiện `npm run typecheck` cũ (`tsc --noEmit` với tsconfig solution `files:[]`) **check 0 file** — đã sửa script (`-p tsconfig.app.json && -p tsconfig.node.json`) và vá 23 lỗi type thật lộ ra (loginApi.ts, sw.ts, 6 file test — chủ yếu typing mock vitest, không đổi hành vi). Bằng chứng: typecheck 0, lint 0, 294 unit, 90 e2e, build OK.
 
 ## P6 — Menu Thanh toán & Bill PNG
 📖 `uiux/skill.md`, `design.md §6`
