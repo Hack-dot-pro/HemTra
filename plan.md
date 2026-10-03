@@ -83,8 +83,8 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P6 — Menu Thanh toán & Bill PNG
 📖 `uiux/skill.md`, `design.md §6`
-- ❓ **P6-T0** Chốt bộ icon đồ uống (đề xuất Fluent Emoji Flat/Noto); hỏi user nếu thiếu icon
-- [ ] **P6-T1** Nạp bộ icon vào `public/icons/drinks/`, map theo nhóm; ghi giấy phép
+- [x] **P6-T0** Chốt bộ icon đồ uống (đề xuất Fluent Emoji Flat/Noto); hỏi user nếu thiếu icon → xong 2026-10-03 (Q-004: **emoji Unicode** lưu trong cột `icon`, không file assets; `design.md §7.4` đã cập nhật)
+- [x] **P6-T1** Nạp bộ icon vào `public/icons/drinks/`, map theo nhóm; ghi giấy phép → **HỦ theo Q-004** (emoji Unicode — không nạp PNG/SVG; nếu sau này muốn ảnh thật mới quay lại, xem `design.md §7.4`)
 - [ ] **P6-T2** Lưới sản phẩm theo nhóm (tab/lọc), nút "+" thêm vào bill
 - [ ] **P6-T3** Panel bill realtime: tăng/giảm số lượng, ghi chú món, topping dòng con, tổng tiền
 - [ ] **P6-T4** Component `BillSheet` đúng layout (logo → mã+SĐT → bảng → tổng → QR FB → lời chúc → địa chỉ)

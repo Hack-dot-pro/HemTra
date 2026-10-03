@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T14:15:00+07:00",
+    "last_updated": "2026-10-03T14:35:00+07:00",
     "last_agent": "security-audit"
   },
   "pointer": {
-    "phase": "P4",
-    "task": "P4-T1",
+    "phase": "P5",
+    "task": "P5-T1",
     "step": "READ",
-    "note": "Gate P4 da PASS: QC vong 2 (p4-qc-round2.md) + SEC vong 1 (p4-sec-round1.md); T1..T4/T6..T8 tick xong. T5 (noi outbox POS) + T9 (2 case e2e) hoan P6/P5 -> P4 status van pending cho den khi 2 task do xong. Thu 4 cua ke hoach da duyet: don backlog stale, hoi user Q-004/Q-006/Q-007, commit package-lock.json. Sau do sang P5 (Menu San pham) — doc skills uiux + backend + design §5 truoc khi code."
+    "note": "Bat dau P5 (Menu San pham). Da doc skills bat buoc: uiux + backend + testing (ghi skills_read), design §4.1 (ca 2 role CRUD menu), §5 (categories/products/toppings/product_toppings, menu_version trigger tu tang), §7.3-7.4, migration P1 (schema + RLS *_staff_all cho authenticated session_fresh). Kien truc: CRUD qua supabase client (getSupabase, JWT user -> RLS), zod client-side (T5), emoji icon (Q-004), ProductsPage stub se thay the; e2e mock REST nhu p4-pwa. Con thieu: chua cai zod."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -932,6 +932,20 @@
       "agent": "main-coding",
       "event": "Tra loi Q-004/Q-006/Q-007 + sua design §4.3 + don backlog + gitignore coverage/",
       "note": "Q-004: emoji Unicode cho icon nhom (decisions.drink_icon). Q-006: sua design.md §4.3 1 cau cho khop fix SEC-001 (session theo auth.sessions.created_at). Q-007: giu nguyen sessionStorage.clear() trong hardRefresh. Backlog: xoa 4 muc khong con hieu luc, +2 muc SEC P4 (headers, redirects) + QC-008; con 10 muc. .gitignore + coverage/ (dong QC P2-003). Chuan bi commit package-lock.json (npm bo truong libc, -144 dong)."
+    },
+    {
+      "at": "2026-10-03T14:35:00+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/uiux/skill.md",
+        ".opencode/skills/backend/skill.md",
+        ".opencode/skills/testing/skill.md",
+        "design.md §4.1/§5/§7.3/§7.4",
+        "supabase/migrations/20261001152827_core_menu_tables.sql",
+        "supabase/migrations/20261001154825_rls_policies.sql"
+      ],
+      "note": "Doc truoc khi code P5 (ma tran AGENT.md §12.1: uiux + backend; testing cho T6). Xac minh RLS cho phep authenticated CRUD 4 bang menu, trigger menu_version tu tang khi doi (khong can client bump)."
     }
   ],
   "phases": {

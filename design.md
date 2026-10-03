@@ -169,7 +169,7 @@ Nền `background.png` (ảnh sáng, chói) + **overlay tối** `rgba(8,30,60,.4
 5. **Quản lý user** — danh sách, thêm user, cấp lại mật khẩu, đổi mật khẩu, xóa (theo bảng quyền 4.1).
 
 ### 7.4 Bộ icon đồ uống
-Dùng bộ SVG 2D **có giấy phép cho phép nhúng** (ví dụ Fluent Emoji Flat — MIT, hoặc Noto Emoji — Apache-2.0), tải về `public/icons/drinks/` và ánh xạ theo nhóm (trà sữa, trà trái cây, matcha, cà phê, latte, sữa tươi, nước ép, sinh tố, topping…). Chỗ nào bộ icon thiếu (vd. trân châu, matcha) → agent **hỏi user**, không tự vẽ bừa. Ghi nguồn + giấy phép vào `THIRD_PARTY.md`.
+**Chốt 2026-10-03 (Q-004): icon nhóm/món dùng emoji Unicode** lưu trong cột `icon` của `categories`/`products`/`toppings` — không cần file assets, hiển thị ngay ở menu/POS, người dùng sửa được từ UI Sản phẩm (P5). UI gợi ý bộ emoji có sẵn (🧋 🍑 🥤 🧉 ☕ 🍵 🥛 …) + ô nhập tự do; chỗ nào không có emoji phù hợp thì để trống/thay bằng emoji gần nghĩa. Phương án thay thế (nếu sau này muốn ảnh 2D thật): bộ SVG có giấy phép nhúng (Fluent Emoji Flat — MIT, hoặc Noto Emoji — Apache-2.0) nạp vào `public/icons/drinks/` + ghi nguồn vào `THIRD_PARTY.md`.
 
 ## 8. PWA & Offline an toàn giá (yêu cầu then chốt)
 
