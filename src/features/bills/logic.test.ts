@@ -1,0 +1,107 @@
+// Unit test logic thuần của trang Quản lý bill — P7-T1: bộ lọc ngày theo giờ
+// VN (biên đầu/cuối ngày), escape ký tự LIKE, cộng số món, phân trang, định
+// dạng thời gian.
+
+import { describe, expect, it } from 'vitest'
+import {
+  PAGE_SIZE,
+  dateFilterIso,
+  escapeLike,
+  formatBillDateTime,
+  summarizeItemCounts,
+  totalPages,
+  validateDateRange,
+  vnDayEndIso,
+  vnDayStartIso,
+} from './logic'
+
+describe('escapeLike — người dùng gõ ký tự đặc biệt của LIKE', () => {
+  it('escape % _ \\ để tìm "100%" là chuỗi thường', () => {
+    expect(escapeLike('100%')).toBe('100\\%')
+    expect(escapeLike('a_b')).toBe('a\\_b')
+    expect(escapeLike('a\\b')).toBe('a\\\\b')
+  })
+
+  it('chuỗi thường giữ nguyên', () => {
+    expect(escapeLike('HT-261003-0001')).toBe('HT-261003-0001')
+  })
+})
+
+describe('dateFilterIso — lọc theo ngày giờ VN (+07:00)', () => {
+  it('đầu ngày → 00:00:00 giờ VN, cuối ngày → 23:59:59.999 giờ VN', () => {
+    expect(vnDayStartIso('2026-10-03')).toBe('2026-10-03T00:00:00+07:00')
+    expect(vnDayEndIso('2026-10-03')).toBe('2026-10-03T23:59:59.999+07:00')
+    expect(dateFilterIso('2026-10-01', '2026-10-03')).toEqual({
+      fromIso: '2026-10-01T00:00:00+07:00',
+      toIso: '2026-10-03T23:59:59.999+07:00',
+    })
+  })
+
+  it('chưa chọn ngày → không lọc', () => {
+    expect(dateFilterIso('', '')).toEqual({ fromIso: null, toIso: null })
+    expect(dateFilterIso('2026-10-03', '')).toEqual({
+      fromIso: '2026-10-03T00:00:00+07:00',
+      toIso: null,
+    })
+  })
+
+  it('bờ UTC lệch ngày đúng: 00:00 VN = 17:00 hôm trước (UTC)', () => {
+    expect(new Date(vnDayStartIso('2026-10-03')).toISOString()).toBe('2026-10-02T17:00:00.000Z')
+  })
+})
+
+describe('validateDateRange — bộ lọc ngày', () => {
+  it('từ ≤ đến → hợp lệ (null)', () => {
+    expect(validateDateRange('', '')).toBeNull()
+    expect(validateDateRange('2026-10-03', '')).toBeNull()
+    expect(validateDateRange('', '2026-10-03')).toBeNull()
+    expect(validateDateRange('2026-10-03', '2026-10-03')).toBeNull()
+    expect(validateDateRange('2026-10-01', '2026-10-03')).toBeNull()
+  })
+
+  it('từ > đến → thông báo tiếng Việt', () => {
+    expect(validateDateRange('2026-10-03', '2026-10-01')).toBe(
+      'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
+    )
+  })
+})
+
+describe('summarizeItemCounts — số món của bảng bill', () => {
+  it('cộng qty dòng cha, bỏ qua topping (parent_item_id khác null)', () => {
+    const counts = summarizeItemCounts([
+      { bill_id: 'b1', qty: 2, parent_item_id: null },
+      { bill_id: 'b1', qty: 1, parent_item_id: 'item-1' },
+      { bill_id: 'b2', qty: 3, parent_item_id: null },
+    ])
+    expect(counts).toEqual({ b1: 2, b2: 3 })
+  })
+
+  it('bill không có item nào → không xuất hiện trong map', () => {
+    expect(summarizeItemCounts([])).toEqual({})
+  })
+})
+
+describe('totalPages — phân trang', () => {
+  it('0 bill vẫn là 1 trang (UI không hiện "0 trang")', () => {
+    expect(totalPages(0)).toBe(1)
+  })
+
+  it('dính bờ trang: 20 dòng = 1 trang, 21 dòng = 2 trang', () => {
+    expect(totalPages(PAGE_SIZE)).toBe(1)
+    expect(totalPages(PAGE_SIZE + 1)).toBe(2)
+    expect(totalPages(45, 20)).toBe(3)
+  })
+})
+
+describe('formatBillDateTime — hiển thị giờ quán', () => {
+  it('ISO UTC → giờ Asia/Ho_Chi_Minh, không lệch sang UTC', () => {
+    // 17:00Z = 00:00 ngày hôm sau ở VN (+07:00)
+    expect(formatBillDateTime('2026-10-02T17:00:00.000Z')).toContain('03/10/2026')
+    expect(formatBillDateTime('2026-10-02T17:00:00.000Z')).toContain('00:00')
+  })
+
+  it('chuỗi ngày hỏng → "—" thay vì ném lỗi làm trắng màn hình', () => {
+    expect(formatBillDateTime('')).toBe('—')
+    expect(formatBillDateTime('2026-10-001T07:05:00.000Z')).toBe('—')
+  })
+})

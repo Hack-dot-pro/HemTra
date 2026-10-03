@@ -1,0 +1,109 @@
+// Truy vấn danh sách bill — P7-T1. Bảng bills chỉ ĐỌC được từ client
+// (RLS "bills_read" + không có policy ghi — design §6: xóa chỉ qua cleanup-bills
+// P7-T4); số món lấy từ bill_items của đúng trang đang xem (2 query thay vì
+// aggregate phía server, tránh view/RPC mới). design §4.1: cả 2 role xem được.
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { CONFIG_ERROR, NETWORK_ERROR, SERVER_ERROR } from '../../lib/http'
+import { getSupabase } from '../../lib/supabase'
+import {
+  PAGE_SIZE,
+  dateFilterIso,
+  escapeLike,
+  summarizeItemCounts,
+  type BillListParams,
+  type BillPage,
+  type BillRow,
+} from './logic'
+
+export type BillsApi = {
+  list(params: BillListParams): Promise<BillPage>
+}
+
+class ApiError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+function toVietnamese(error: unknown): string {
+  const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : String(error ?? '')
+  if (/Failed to fetch|fetch failed|NetworkError|network/i.test(raw)) return NETWORK_ERROR
+  if (/row-level security|permission denied/i.test(raw)) return 'Bạn không có quyền thao tác này.'
+  return SERVER_ERROR
+}
+
+function throwOnError(result: { error: unknown }): void {
+  if (result.error) {
+    const message = toVietnamese(result.error)
+    console.error('[bills api]', result.error)
+    throw new ApiError(message)
+  }
+}
+
+async function withClient<T>(fn: (client: SupabaseClient) => Promise<T>): Promise<T> {
+  const client = getSupabase()
+  if (!client) throw new ApiError(CONFIG_ERROR)
+  try {
+    return await fn(client)
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    console.error('[bills api]', error)
+    throw new ApiError(toVietnamese(error))
+  }
+}
+
+type BillDbRow = {
+  id: string
+  code: string
+  total: number
+  created_at: string
+  profiles: { username: string } | { username: string }[] | null
+}
+
+export const defaultBillsApi: BillsApi = {
+  async list(params) {
+    return withClient(async (client) => {
+      const { fromIso, toIso } = dateFilterIso(params.from ?? '', params.to ?? '')
+      const offset = params.page * PAGE_SIZE
+      const code = (params.code ?? '').trim()
+
+      let query = client
+        .from('bills')
+        .select('id,code,total,created_at,profiles(username)', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1)
+      if (code) query = query.ilike('code', `%${escapeLike(code)}%`)
+      if (fromIso) query = query.gte('created_at', fromIso)
+      if (toIso) query = query.lte('created_at', toIso)
+
+      const { data, error, count } = await query
+      throwOnError({ error })
+
+      const rows = (data ?? []) as unknown as BillDbRow[]
+      let counts: Record<string, number> = {}
+      if (rows.length > 0) {
+        const { data: items, error: itemsError } = await client
+          .from('bill_items')
+          .select('bill_id,qty,parent_item_id')
+          .in('bill_id', rows.map((row) => row.id))
+        throwOnError({ error: itemsError })
+        counts = summarizeItemCounts((items ?? []) as { bill_id: string; qty: number; parent_item_id: string | null }[])
+      }
+
+      const mapped: BillRow[] = rows.map((row) => {
+        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
+        return {
+          id: row.id,
+          code: row.code,
+          total: row.total,
+          created_at: row.created_at,
+          username: profile?.username ?? null,
+          itemCount: counts[row.id] ?? 0,
+        }
+      })
+
+      return { rows: mapped, total: count ?? 0 }
+    })
+  },
+}
