@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T13:10:00+07:00",
-    "last_agent": "main-coding"
+    "last_updated": "2026-10-03T13:40:00+07:00",
+    "last_agent": "security-audit"
   },
   "pointer": {
     "phase": "P4",
     "task": "P4-T1",
     "step": "READ",
-    "note": "P4: da nop PWA vao app (main.tsx: registerServiceWorker + startDeployVersionPolling; AppLayout render PwaUpdateBar), smoke build that (SW active + version.json = build id + 0 console error), tick plan P4-T1/T2/T3/T4/T6/T7/T8 (evidence p4-t6-wiring.md). P4-T5 (outbox chua noi POS) va P4-T9 (2 case e2e cho P6/P5) con pending - da ghi chu trong plan.md. Kiep: chay qc-test P4 (vong 1) sau do security-audit P4; sau gate: don backlog + hoi Q-004/Q-006 + commit package-lock.json."
+    "note": "Gate P4 da PASS: QC vong 2 (p4-qc-round2.md) + SEC vong 1 (p4-sec-round1.md); T1..T4/T6..T8 tick xong. T5 (noi outbox POS) + T9 (2 case e2e) hoan P6/P5 -> P4 status van pending cho den khi 2 task do xong. Thu 4 cua ke hoach da duyet: don backlog stale, hoi user Q-004/Q-006/Q-007, commit package-lock.json. Sau do sang P5 (Menu San pham) — doc skills uiux + backend + design §5 truoc khi code."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -24,7 +24,7 @@
   },
   "loop": {
     "qc_round": 2,
-    "sec_round": 0,
+    "sec_round": 1,
     "failure_signatures": [
       {
         "id": "QC-001",
@@ -45,7 +45,7 @@
         "status": "fixed"
       }
     ],
-    "last_report": "SEC P3 vong 2: VERDICT PASS - xac minh 2 fix vong 1 + chay lai S1-S15. S1 gitleaks 8.30.1, 36 commits, no leaks (exit 0); S2 npm audit 0 vuln; S3 RLS 12 policy + scripts/test-p1.sh 33/33 exit 0; S4/S5 (SEC-002): config security_update_password_require_current_password=true, PUT /auth/v1/user chi co password -> 400 current_password_required (mat khau cu van 200); S15 (SEC-001): pg_proc private.session_fresh secdef + search_path=\"\", public invoker, live 11/11 (phien 8 ngay -> 200 [], refresh giu session_id, restore -> 200 co du lieu), rpc private.session_fresh -> 404 PGRST202; S6/S7/S10/S13 giu evidence vong 1 (code P3 khong doi); S8/S9/S14 N-A (pham vi hep P3); S11/S12 N-A (P4/P10 - _headers/sw chua deploy). Khong co loi BLOCKER/MAJOR/MOI; SEC-003/SEC-004 van MINOR da o backlog. Advisors 6 WARN/0 ERROR (bang truoc fix). Cloud van pre-bootstrap, user tam da don sach (n_temp=0, bootstrapped=false, admin_email=null). Chi tiet: .opencode/evidence/p3-sec-round2.md"
+    "last_report": "SEC P4 vong 1: VERDICT PASS - 0 BLOCKER/MAJOR, 1 MINOR. S1 gitleaks 8.30.1: 41 commits, 0 leaks, exit 0 (dist co 1 JWT role=anon khop .env, 0 service_role; .env bi gitignore, khong track). S2 npm audit: 0 vulnerabilities (ca dev va --omit=dev, exit 0). S6 XSS: 0 dangerouslySetInnerHTML/innerHTML/eval; PwaUpdateBar + NetworkBanner chi text React. S3/S5/S8/S9/S10/S11/S12/S13/S14 N/A dung pham vi P4 (diff supabase/ chi con file P3 session_fresh tu commit tron 6dc40c6 - da giai trinh QC-004; 3 commit P4 sau do = 0 dong). S15(a): hardRefresh KHONG dot localStorage (giu token khi ghi nho + hemtra.username + login_at) NHUNG CO sessionStorage.clear() -> user khong ghi nho bi dang xuat khi bam Xoa cache hoac khi cap nhat deploy; day la hanh vi design.md §8.7 + skill §5 yeu cau, khong ro ri gi -> khong tinh lo hong, ghi N-001 open_question hoi user. S15(b): outbox IndexedDB chi payload bill (items/phone_note/offline_code/menu_version + png), 0 token/mat khau. Pham vi PWA: sw.ts chi precache 21 entry shell, 0 URL API, KHONG navigateFallback -> API khong bi cache, KHONG skipWaiting tu dong (chi qua message SKIP_WAITING, registerType=prompt), khong fetch origin ngoai; pwaClient onNeedRefresh/checkDeployVersion chi set state (khong reload/eval), version.json chi version+builtAt va khong nam trong precache (luon no-store); poll loi mang im dung thiet ke. MOI: [SEC-001] MINOR public/_headers:1 - chi co Cache-Control, thieu CSP/HSTS/X-Content-Type-Options/Referrer-Policy/Permissions-Policy/X-Frame-Options (CF docs khong cong bo default security header); de nghi them block /* + bat HSTS o zone, them phai chay lai e2e; plan P10-T1 da so huy -> backlog, khong chan gate P4. NGHI VAN: N-002 public/_redirects (/* /index.html 200, tu P2) co the nuot /sw.js + /version.json tren Pages that (docs: redirects always followed) -> smoke curl -I o P11-T4. Chi tiet: .opencode/evidence/p4-sec-round1.md"
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -137,6 +137,12 @@
       "phase": "P3",
       "text": "design.md §4.3 ghi \"RLS them ham session_fresh() so iat cua JWT voi 7 ngay\" — sau SEC-001 co the da doi sang auth.sessions.created_at (refresh khong reset duoc). Yeu cau 7 ngay/server chan cuoi giu nguyen, chi doi co the. Cho phep sua design.md §4.3 (1 cau) hay giu nguyen va ghi chu rieng?",
       "status": "open"
+    },
+    {
+      "id": "Q-007",
+      "phase": "P4",
+      "text": "SEC N-001: hardRefresh() (nut \"Xoa cache & Tai lai\" va luong cap nhat deploy P4-T6) co sessionStorage.clear() -> user chon \"ghi nho\" van dang nhap (localStorage), user khong chon bi dang xuat. Day la dung design §8.7/skill §5. Xac nhan giu nguyen hanh vi nay? (mac dinh: giu nguyen, khong sua)",
+      "status": "open"
     }
   ],
   "blockers": [
@@ -150,7 +156,6 @@
     }
   ],
   "backlog": [
-    "P4-T7: thay simulateClearCache() bang hardRefresh() that (src/features/auth/useClearCache.ts)",
     "QC P2-001 MINOR: login-hero.png rac o root -> da dung lam source nen login (src/assets/login-stage.webp|jpg), giu root goc kieu Logo.png/background.png",
     "QC P2-002 MINOR: lech scope - repo track nhieu file ngoai app (.claude/, agent/, .opencode/ skills, PNG goc o root) -> chot tach hay ghi chu",
     "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
@@ -161,7 +166,10 @@
     "QC-002 MINOR (P3): smoke EF bootstrap-admin/auth-login/admin-recovery/change-password chua co script trong repo (lan truoc o /tmp bi mat) -> tach scripts/smoke-<ef>.sh (env-only, co RESET cloud) tai P11; hien chi co .opencode/evidence/p3t8-smoke.sh",
     "SEC-003 MINOR (P3): signup con mo khi pre-bootstrap + policy chi can session_fresh() -> ke thu xac nhan hop thu minh doc duoc profiles/bills của người khác; han che = bootstrap ngay, xem lai policy phu (P9/P10).",
     "SEC-004 MINOR (P3): auth-login bi CF WAF chan query noi bo khi username co chuoi SQL -> EF tra 500 (fail-closed, khong bypass lockout) -> boc getFailedCount, \"khong dem duoc -> chan dang nhap\" thay vi 500 (supabase/functions/auth-login/index.ts:103-114).",
-    "Advisors 6 WARN da danh gia o SEC vong 1: set_updated_at thieu set search_path; create_bill/is_admin/rls_auto_enable SECURITY DEFINER (khong khai thac duoc); password_hibp_enabled=false -> bat o Dashboard Authentication -> Settings (SEC-002 da bat xong require_current_password)."
+    "Advisors 6 WARN da danh gia o SEC vong 1: set_updated_at thieu set search_path; create_bill/is_admin/rls_auto_enable SECURITY DEFINER (khong khai thac duoc); password_hibp_enabled=false -> bat o Dashboard Authentication -> Settings (SEC-002 da bat xong require_current_password).",
+    "QC-008 MINOR (P4): WebKit khong render backdrop-filter -> o anh 390x844, link header lo qua PwaUpdateBar (nen 0.62) va chong chu \"De sau\" (e2e/screenshots/pwa-update-bar-*-390x844.png, nhat webkit/mobile). CSS da co -webkit-backdrop-filter; lech tu P2 (PwaUpdateBar dung thieu backdrop-blur) -> xem lai khi lam UI o P10/P11.",
+    "SEC-001 MINOR (P4): public/_headers moi chi cau hinh Cache-Control (index/sw no-cache, version.json no-store, /assets immutable) — thieu CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-Frame-Options (docs CF Pages khong cong bo header mac dinh). Chu ky P10-T1 (security skill §Headers); kem cu phap trong evidence p4-sec-round1.md.",
+    "N-002 (P4, ghi nhan SEC): public/_redirects \"/*  /index.html 200\" (file P2) co the nuot /sw.js va /version.json tren Cloudflare Pages that (\"redirects always followed\") -> smoke curl -I https://hemtra.pages.dev/sw.js + /version.json tai P11-T4 truoc khi ban giao; neu bi nuot thi them exception rule."
   ],
   "off_plan_actions": [
     {
@@ -898,6 +906,19 @@
       "event": "QC P4 vong 2 PASS",
       "file": ".opencode/evidence/p4-qc-round2.md",
       "note": "VERDICT PASS - 7/7 issue vong 1 ĐÓNG (pwaClient 13 test/ lib 87.07%, App.test fake supabase 6/6, apple-touch-icon co trong dist+precache, QC-004 giai trinh commit 6dc40c6 tron P3+P4, xoa dead code, 12 anh P4, xoa simulateClearCache). Issue MOI: QC-008 MINOR - WebKit khong render backdrop-filter -> link header lo qua thanh update bar o 390x844 (lech tu P2, khong phai regression P4) -> backlog. So lieu: typecheck/lint 0, 262 unit, coverage lib 87.07%/all 91.98%, build xanh gzip 185.71KB, e2e 84/84, axe 0 serious, gitleaks 40 commits 0 leak, diff 9 file dung scope."
+    },
+    {
+      "at": "2026-10-03T13:30:00+07:00",
+      "agent": "security-audit",
+      "event": "SEC P4 vong 1 PASS",
+      "file": ".opencode/evidence/p4-sec-round1.md",
+      "skills_read": [
+        ".opencode/skills/security/skill.md (§Headers)",
+        ".opencode/skills/pwa-offline/skill.md",
+        "plan.md [P4]",
+        "design.md §8"
+      ],
+      "result": "VERDICT PASS - 5 ✔ / 9 N-A / 1 MINOR, 0 BLOCKER/MAJOR. S1 gitleaks 41 commits 0 leak; S2 npm audit 0 vuln; S6 XSS grep 0.\nS15(a): hardRefresh khong dot localStorage (giu token/username) nhung co sessionStorage.clear() -> user khong ghi nho bi dang xuat khi xoa cache/cap nhat deploy (dung design §8.7) -> hoi user (Q-007/N-001).\nS15(b): outbox chi chua payload bill, 0 token. sw.ts: precache shell 21 entry, 0 URL API, khong navigateFallback, khong fetch origin ngoai, khong tu skipWaiting (registerType=prompt).\nUpdate flow khong tu reload; version.json = version+builtAt, khong precache, luon no-store. SEC-001 MINOR: public/_headers chi co Cache-Control, thieu CSP/HSTS/XCTO/Referrer-Policy/Permissions-Policy/XFO -> P10-T1 + backlog.\nN-002: _redirects /* co the nuot /sw.js + /version.json tren Pages that -> smoke curl -I o P11-T4."
     }
   ],
   "phases": {
@@ -979,8 +1000,8 @@
       "title": "PWA, offline, chống kẹt cache",
       "status": "pending",
       "gates": {
-        "qc": null,
-        "sec": null
+        "qc": "PASS",
+        "sec": "PASS"
       },
       "tasks": {
         "P4-T1": "done",
@@ -1375,6 +1396,14 @@
     {
       "ts": "2026-10-03T13:10:00+07:00",
       "event": "QC P4 vong 2: PASS (dong het 7 issue vong 1; QC-008 MINOR WebKit backdrop-filter -> backlog). Ke tiep: security-audit P4 vong 1."
+    },
+    {
+      "ts": "2026-10-03T13:30:00+07:00",
+      "event": "SEC P4 vong 1: VERDICT PASS (0 BLOCKER/MAJOR, 1 MINOR [SEC-001] thieu security header trong public/_headers -> backlog, P10-T1 so huy). S1 gitleaks 41 commits/0 leak exit 0; S2 npm audit 0 vuln; S6 XSS 0; S15(a) hardRefresh khong dot localStorage nhung co sessionStorage.clear() (khop design 8.7) -> N-001 open_question; S15(b) outbox khong chua token. Bao cao: .opencode/evidence/p4-sec-round1.md. Ke tiep: cong gate P4 (QC+SEC) va don backlog."
+    },
+    {
+      "ts": "2026-10-03T13:40:00+07:00",
+      "event": "Dong gate P4: SEC vong 1 PASS (0 BLOCKER/MAJOR, 1 MINOR -> backlog P10-T1) -> tick Gate QC+SEC trong plan.md; P4 status van pending vi T5/T9 hoan P6/P5. Ke tiep: don backlog + hoi Q-004/Q-006/Q-007 + commit package-lock."
     }
   ],
   "tasks": {}

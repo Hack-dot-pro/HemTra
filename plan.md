@@ -69,7 +69,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P4-T7** Hàm `hardRefresh()` (design §8.7) hoạt động Safari + Chrome; bảo vệ outbox (xác nhận trước khi xóa) → xong 2026-10-03 (`src/lib/hardRefresh.ts` đúng thứ tự unregister SW → xóa caches → xóa `menuCache` **giữ outbox** → `confirmPending` khi còn bill chờ; unit `hardRefresh.test.ts` 5 case; e2e T7/T8: còn bill chưa sync → hỏi, xóa menu cache nhưng GIỮ outbox + username)
 - [x] **P4-T8** Hoàn thiện nút Tải App & Xóa cache (nối logic thật với UI từ P2) → xong 2026-10-03 (`LoginStage` dùng `useInstallPrompt()` + `useClearCache()` — runner mặc định `clearCacheAndReload()` gọi `hardRefresh()` thật, không còn runner giả lập; unit LoginStage.test + useClearCache.test)
 - [ ] **P4-T9** Test: unit (so version, outbox), Playwright (offline → bán → online → đồng bộ; đổi giá ở tab khác → tab cũ thấy giá mới; hardRefresh) — **một phần**: unit ✔ (version/outbox/hardRefresh/menuSync, tổng 252 xanh); Playwright có T3/T4/T7-T8 (81/81 xanh); case "offline → bán → online → đồng bộ" ghi ở **P6-T9** khi POS có (ghi rõ trong `e2e/p4-pwa.spec.ts` header), case "đổi giá tab khác" chờ menu UI ở **P5** rồi làm e2e chéo tab
-- **Gate:** QC ☐ · SEC ☐
+- **Gate:** QC ☑ PASS (2026-10-03, vòng 2, `.opencode/evidence/p4-qc-round2.md`) · SEC ☑ PASS (2026-10-03, vòng 1, `.opencode/evidence/p4-sec-round1.md`) — *T5 (nối outbox vào POS) và T9 (2 case e2e) hoãn sang P6-T7/P6-T9 + P5 theo ghi chú từng task; xong 2 task này mới chốt `status: done` của phase*
 
 ## P5 — Menu Sản phẩm
 📖 `uiux/skill.md`, `backend/skill.md`
