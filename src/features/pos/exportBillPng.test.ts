@@ -2,7 +2,13 @@
 // Playwright (T9) chụp PNG thật. WebKit: dùng toPng → data URL (không qua blob).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { billNodeToPngDataUrl, downloadBlob, isSafariCapture } from './exportBillPng'
+import {
+  billNodeToPngDataUrl,
+  downloadBlob,
+  isSafariCapture,
+  preloadBillPngLib,
+  warmBillImage,
+} from './exportBillPng'
 
 const toPng = vi.fn()
 
@@ -73,5 +79,98 @@ describe('P6-T6 — downloadBlob', () => {
     expect(document.querySelector('a[download="HT-261003-0001.png"]')).toBeNull() // đã remove
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock')
     vi.unstubAllGlobals()
+  })
+})
+
+// P6-T9 (QC bổ sung): warm logo + nhúng <img> + nạp chunk — logic chống "offline
+// mất logo / chunk chưa nạp" trước đây không có unit test (coverage file 53%).
+describe('P6-T9 — warmBillImage', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function stubFetch(impl: () => Promise<{ ok: boolean; blob?: () => Promise<Blob> }>) {
+    const fetchMock = vi.fn(impl)
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('happy: fetch ảnh → data URL PNG, lần 2 lấy từ cache (không fetch lại)', async () => {
+    const fetchMock = stubFetch(async () => ({
+      ok: true,
+      blob: async () => new Blob(['png-bytes'], { type: 'image/png' }),
+    }))
+    const src = 'https://cdn.example/logo-warm-a.png'
+
+    const first = await warmBillImage(src)
+    expect(first?.startsWith('data:image/png;base64,')).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    const second = await warmBillImage(src)
+    expect(second).toBe(first)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('biên: src rỗng hoặc đã là data-URL → null, không gọi fetch', async () => {
+    const fetchMock = stubFetch(async () => ({ ok: true }))
+    expect(await warmBillImage('')).toBeNull()
+    expect(await warmBillImage('data:image/png;base64,UE5H')).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('lỗi: response không ok → null (không ném để không chặn xuất PNG)', async () => {
+    stubFetch(async () => ({ ok: false }))
+    expect(await warmBillImage('https://cdn.example/missing.png')).toBeNull()
+  })
+
+  it('lỗi: fetch ném (mất mạng) → null, không ném ra ngoài', async () => {
+    stubFetch(async () => {
+      throw new Error('Failed to fetch')
+    })
+    expect(await warmBillImage('https://cdn.example/offline.png')).toBeNull()
+  })
+})
+
+describe('P6-T9 — nút nhúng ảnh vào bill trước khi chụp', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('<img> ngoài được thay bằng data-URL trước khi toPng chạy (offline không cần mạng)', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      blob: async () => new Blob(['logo'], { type: 'image/png' }),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const node = document.createElement('div')
+    const img = document.createElement('img')
+    img.setAttribute('src', 'https://cdn.example/logo-embed.png')
+    node.appendChild(img)
+    const dataImg = document.createElement('img')
+    dataImg.setAttribute('src', 'data:image/png;base64,UE5H')
+    node.appendChild(dataImg)
+
+    let captured: HTMLElement | null = null
+    toPng.mockImplementation(async (target: HTMLElement) => {
+      captured = target
+      return PNG_DATA_URL
+    })
+
+    const out = await billNodeToPngDataUrl(node)
+    expect(out).toBe(PNG_DATA_URL)
+    // ảnh thường → đã warm; ảnh data-URL → giữ nguyên, không fetch thêm
+    expect(img.getAttribute('src')?.startsWith('data:image/png;base64,')).toBe(true)
+    expect(dataImg.getAttribute('src')).toBe('data:image/png;base64,UE5H')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(captured).toBe(node)
+  })
+})
+
+describe('P6-T9 — preloadBillPngLib', () => {
+  it('nạp được module html-to-image (chunk lazy) khi mở POS', async () => {
+    const mod = (await preloadBillPngLib()) as { toPng?: unknown }
+    expect(mod).toBeTypeOf('object')
+    expect(typeof mod?.toPng).toBe('function')
   })
 })

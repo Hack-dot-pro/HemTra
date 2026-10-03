@@ -196,6 +196,9 @@ test('P4-T7/T8: hardRefresh hỏi khi còn bill chưa sync, xóa menu cache như
     else await dialog.dismiss()
   })
 
+  // Mở modal Tải App
+  await page.getByRole('button', { name: /tải app/i }).click()
+
   // Từ chối xác nhận → không xóa gì cả
   await page.getByRole('button', { name: /xóa cache/i }).click()
   await expect.poll(() => asked).toMatch(/bill chưa đồng bộ/)

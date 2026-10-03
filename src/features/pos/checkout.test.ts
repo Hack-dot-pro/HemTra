@@ -11,6 +11,7 @@ import {
   buildRpcItems,
   createBillOnline,
   enqueueOfflineBill,
+  findPriceDriftLines,
   makeOfflineCode,
   sheetTotal,
   toSheetItems,
@@ -70,6 +71,42 @@ describe('P6-T7 — makeOfflineCode', () => {
 
   it('2 lần sinh → khác nhau (4 ký tự ngẫu nhiên)', () => {
     expect(makeOfflineCode()).not.toBe(makeOfflineCode())
+  })
+})
+
+describe('P6-QC-013 — findPriceDriftLines (chặn giỏ giá cũ)', () => {
+  function menuFixture(price = 35000, toppingPrice = 5000) {
+    return {
+      id: 'menu' as const,
+      menu_version: 8,
+      fetched_at: Date.now(),
+      categories: [],
+      products: [
+        { id: 'p1', category_id: 'c1', name: 'Trà sữa đào', price, icon: '', is_active: true },
+      ],
+      toppings: [{ id: 't1', name: 'Trân châu', price: toppingPrice, icon: '', is_active: true }],
+      product_toppings: [],
+    }
+  }
+
+  it('giỏ khớp menu → không dòng nào lệch', () => {
+    expect(findPriceDriftLines(sampleBill(), menuFixture())).toEqual([])
+  })
+
+  it('giá SP đổi trong menu → liệt kê tên dòng (bill cũ bị chặn)', () => {
+    expect(findPriceDriftLines(sampleBill(), menuFixture(40000))).toEqual(['Trà sữa đào'])
+  })
+
+  it('SP biến mất khỏi menu (ngừng bán) → cũng bị chặn', () => {
+    const menu = menuFixture()
+    menu.products = []
+    expect(findPriceDriftLines(sampleBill(), menu)).toEqual(['Trà sữa đào'])
+  })
+
+  it('giá topping đổi → liệt kê dòng con', () => {
+    expect(findPriceDriftLines(sampleBill(), menuFixture(35000, 7000))).toEqual([
+      'Trà sữa đào + Trân châu',
+    ])
   })
 })
 

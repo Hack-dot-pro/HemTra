@@ -38,6 +38,8 @@ export function useInstallPrompt() {
 
   return {
     visible: canInstall({ standalone, deferred, isIos }),
+    standalone,
+    canPrompt: deferred !== null,
     needsManualGuide: !standalone && deferred === null && isIos,
     prompt,
   }

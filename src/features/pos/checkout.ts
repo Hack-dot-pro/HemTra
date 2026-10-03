@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { OutboxItem, OutboxPayload } from '../../lib/db'
 import { enqueueBill, newClientUuid } from '../../lib/outbox'
 import { billTotal, type BillState } from './logic'
+import type { MenuSnapshot } from '../../lib/menuTypes'
 import type { BillSheetItem, BillSheetProps } from './BillSheet'
 
 /** Khớp regex server: ^HT-[0-9]{6}-OFF-[A-Za-z0-9]{4}$ (create_bill RPC). */
@@ -54,6 +55,29 @@ export function makeOfflineCode(now: Date = new Date()): string {
   const raw = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)
   const rand = raw.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).padEnd(4, '0')
   return `HT-${yy}${mm}${dd}-OFF-${rand}`
+}
+
+/**
+ * Tên dòng giỏ LỆCH so với menu hiện tại (giá đổi / ngừng bán) — chặn thanh
+ * toán online khi giỏ dùng giá cũ (QC-013: bill in Σ dòng ≠ tổng server).
+ * Menu cache chỉ chứa SP/đang bật bán → thiếu = ngừng bán.
+ */
+export function findPriceDriftLines(bill: BillState, menu: MenuSnapshot): string[] {
+  const drifted = new Set<string>()
+  for (const line of bill.lines) {
+    const product = menu.products.find((p) => p.id === line.product_id)
+    if (!product || product.price !== line.unit_price) {
+      drifted.add(line.name)
+      continue
+    }
+    for (const topping of line.toppings) {
+      const menuTopping = menu.toppings.find((t) => t.id === topping.topping_id)
+      if (!menuTopping || menuTopping.price !== topping.unit_price) {
+        drifted.add(`${line.name} + ${topping.name}`)
+      }
+    }
+  }
+  return [...drifted]
 }
 
 export type CheckoutOnlineResult = {

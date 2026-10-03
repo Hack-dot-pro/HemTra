@@ -65,7 +65,7 @@ export default function LoginStage({
     if (setupDone) return 'Thiết lập hoàn tất. Đăng nhập bằng tài khoản vừa tạo.'
     return null
   })
-  const [showGuide, setShowGuide] = useState(false)
+  const [showInstallModal, setShowInstallModal] = useState(false)
   // Khôi phục lượt đăng nhập qua OTP sau 5 lần sai (P3-T4, design §4.3)
   const [locked, setLocked] = useState(false)
   const [unlockSent, setUnlockSent] = useState(false)
@@ -76,7 +76,7 @@ export default function LoginStage({
   const userFieldRef = useRef<HTMLLabelElement | null>(null)
   const passFieldRef = useRef<HTMLLabelElement | null>(null)
   const unlockFieldRef = useRef<HTMLLabelElement | null>(null)
-  const guideCloseRef = useRef<HTMLButtonElement | null>(null)
+  const modalCloseRef = useRef<HTMLButtonElement | null>(null)
 
   const install = useInstallPrompt()
   const cache = useClearCache()
@@ -88,14 +88,14 @@ export default function LoginStage({
   }, [setupDone, sessionExpired, recoveryDone, changeEmailDone, navigate])
 
   useEffect(() => {
-    if (!showGuide) return
-    guideCloseRef.current?.focus()
+    if (!showInstallModal) return
+    modalCloseRef.current?.focus()
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowGuide(false)
+      if (event.key === 'Escape') setShowInstallModal(false)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [showGuide])
+  }, [showInstallModal])
 
   // Tự focus ô OTP khôi phục sau khi gửi mã
   useEffect(() => {
@@ -221,9 +221,11 @@ export default function LoginStage({
     setHint(result.message || 'Đã khôi phục lượt đăng nhập. Hãy thử đăng nhập lại.')
   }
 
-  async function handleInstall() {
+  async function handleInstallPrompt() {
     const outcome = await install.prompt()
-    if (outcome === 'unavailable') setShowGuide(true)
+    if (outcome === 'accepted') {
+      setShowInstallModal(false)
+    }
   }
 
   return (
@@ -474,55 +476,136 @@ export default function LoginStage({
         </div>
 
         <div className="topbar">
-          {install.visible && (
-            <button type="button" className="glass-btn bg-dark-glass" onClick={() => void handleInstall()}>
+          {install.standalone ? (
+            <button
+              type="button"
+              className="glass-btn bg-dark-glass"
+              disabled={cache.busy}
+              onClick={() => void cache.clear()}
+            >
+              <RotateCcw size={15} aria-hidden="true" />
+              {cache.busy
+                ? 'Đang xóa…'
+                : cache.status === 'done'
+                  ? 'Đã xóa cache'
+                  : cache.status === 'error'
+                    ? 'Thử lại'
+                    : 'Xóa cache & Tải lại'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="glass-btn bg-dark-glass"
+              onClick={() => setShowInstallModal(true)}
+            >
               <Download size={15} aria-hidden="true" />
               Tải App
             </button>
           )}
-          <button
-            type="button"
-            className="glass-btn bg-dark-glass"
-            disabled={cache.busy}
-            onClick={() => void cache.clear()}
-          >
-            <RotateCcw size={15} aria-hidden="true" />
-            {cache.busy
-              ? 'Đang xóa…'
-              : cache.status === 'done'
-                ? 'Đã xóa cache'
-                : cache.status === 'error'
-                  ? 'Thử lại'
-                  : 'Xóa cache & Tải lại'}
-          </button>
         </div>
       </div>
 
-      {showGuide && (
+      {showInstallModal && (
         <div
-          className="fixed inset-0 z-20 grid place-items-center bg-black/60 p-4"
-          onClick={() => setShowGuide(false)}
+          className="fixed inset-0 z-20 grid place-items-center bg-black/60 p-4 overflow-y-auto"
+          onClick={() => setShowInstallModal(false)}
         >
           <div
-            className="glass-card w-full max-w-sm p-5"
+            className="glass-card w-full max-w-md p-5 text-left my-auto max-h-[90dvh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="install-guide-title"
+            aria-labelledby="install-modal-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="install-guide-title" className="text-lg font-semibold">
-              Cài Hẻm Trà trên iPhone
-            </h2>
-            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-white/90">
-              {IOS_INSTALL_GUIDE.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h2 id="install-modal-title" className="text-base font-semibold text-white">
+                Cài đặt ứng dụng & Bộ nhớ đệm
+              </h2>
+              <button
+                type="button"
+                className="text-white/60 hover:text-white p-1 text-sm font-semibold"
+                aria-label="Đóng bảng"
+                onClick={() => setShowInstallModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {/* Nút tải / Cài đặt app */}
+              <div className="rounded-lg bg-white/5 p-3.5 border border-white/10">
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-2">
+                  1. Cài đặt ứng dụng
+                </p>
+                <button
+                  type="button"
+                  className="glass-btn w-full justify-center py-2.5 font-medium"
+                  onClick={() => void handleInstallPrompt()}
+                >
+                  <Download size={16} aria-hidden="true" />
+                  Tải App
+                </button>
+                <div className="mt-3 text-xs text-white/80 space-y-1.5">
+                  <p className="font-medium text-white/90">Hướng dẫn cài đặt trên iOS (Safari):</p>
+                  <ol className="list-decimal space-y-1 pl-5 text-white/70 leading-relaxed">
+                    {IOS_INSTALL_GUIDE.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              {/* Cảnh báo / Lưu ý iOS */}
+              <div className="rounded-lg bg-amber-500/15 border border-amber-500/30 p-3 text-xs leading-relaxed text-amber-200">
+                <p className="font-semibold text-amber-300 mb-1">
+                  ⚠️ Lưu ý xử lý lỗi vào màn hình chính trên iOS:
+                </p>
+                <p>
+                  Khi bấm Tải nếu không vào được màn hình chính trên iOS (hoặc bị kẹt ở màn hình cũ), vui lòng chọn nút <strong>“Xóa cache và tải lại”</strong> bên dưới để xử lý.
+                </p>
+              </div>
+
+              {/* Nút xóa cache và tải lại */}
+              <div className="rounded-lg bg-white/5 p-3.5 border border-white/10">
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-2">
+                  2. Xóa bộ nhớ đệm
+                </p>
+                <button
+                  type="button"
+                  className="glass-btn w-full justify-center py-2.5 font-medium"
+                  disabled={cache.busy}
+                  onClick={() => void cache.clear()}
+                >
+                  <RotateCcw size={16} aria-hidden="true" />
+                  {cache.busy
+                    ? 'Đang xóa…'
+                    : cache.status === 'done'
+                      ? 'Đã xóa cache'
+                      : cache.status === 'error'
+                        ? 'Thử lại'
+                        : 'Xóa cache và tải lại'}
+                </button>
+
+                {/* Hướng dẫn xóa cache iOS thủ công */}
+                <div className="mt-3 pt-3 border-t border-white/10 text-xs text-white/80 space-y-1.5">
+                  <p className="font-medium text-white/90">
+                    Hướng dẫn xóa cache trên iOS (nếu không dùng nút trên):
+                  </p>
+                  <ol className="list-decimal space-y-1 pl-5 text-white/70 leading-relaxed">
+                    <li>Mở ứng dụng <strong>Cài đặt</strong> (Settings) trên iPhone/iPad.</li>
+                    <li>Cuộn tìm và chọn <strong>Safari</strong> (hoặc trình duyệt đang dùng).</li>
+                    <li>Chọn <strong>Xóa lịch sử và dữ liệu trang web</strong> (Clear History and Website Data).</li>
+                    <li>Mở lại đường link Hẻm Trà.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
             <button
-              ref={guideCloseRef}
+              ref={modalCloseRef}
               type="button"
-              className="glass-btn mt-4 w-full"
-              onClick={() => setShowGuide(false)}
+              className="glass-btn mt-4 w-full justify-center"
+              onClick={() => setShowInstallModal(false)}
             >
               Đóng
             </button>

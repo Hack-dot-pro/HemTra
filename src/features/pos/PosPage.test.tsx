@@ -228,6 +228,23 @@ describe('P6-T7 — thanh toán online', () => {
     expect(await listPending()).toHaveLength(0) // online không đi outbox
   })
 
+  it('QC-013: menu bump giá khi giỏ đang mở → chặn thanh toán, không gọi RPC, giữ giỏ', async () => {
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+
+    // menu v8 về : giá mới 40.000 (realtime ghi cache) — giỏ vẫn giữ 35.000
+    const bumped = menuFixture()
+    bumped.menu_version = 8
+    bumped.products[0].price = 40000
+    await writeCachedMenu(bumped, testDb)
+    await waitFor(() => expect(screen.getByText(/40\.000\s₫/)).toBeInTheDocument())
+
+    await user.click(screen.getByTestId('checkout-btn'))
+    await screen.findByText('Giá vừa cập nhật: Trà sữa đào — kiểm tra lại giỏ rồi thanh toán.')
+    expect(rpcMock).not.toHaveBeenCalled()
+    expect(screen.getByTestId('bill-count')).toHaveTextContent('1 món') // giữ giỏ cho xem lại
+  })
+
   it('lech menu_version → refresh menu + cảnh báo, KHÔNG tạo bill lần này', async () => {
     const user = await renderPos()
     await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))

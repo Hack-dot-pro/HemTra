@@ -116,6 +116,51 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
   expect(pageErrors).toEqual([])
 })
 
+test('QC-013: giá menu đổi khi giỏ đang mở → chặn thanh toán online, không gọi RPC', async ({
+  context,
+}) => {
+  const state = { menuVersion: 7, price: 35000 }
+  const page = await context.newPage()
+  await injectAuth(page)
+  // mock SAU injectAuth, đọc state động (như tab admin vừa sửa giá)
+  await page.route('**/rest/v1/app_meta*', (route) =>
+    route.fulfill(
+      json([{ id: 1, menu_version: state.menuVersion, bootstrapped: false }]),
+    ),
+  )
+  await page.route('**/rest/v1/categories*', (route) =>
+    route.fulfill(json(MENU.categories)),
+  )
+  await page.route('**/rest/v1/products*', (route) =>
+    route.fulfill(
+      json([
+        { id: 'p1', category_id: 'c1', name: 'Trà sữa đào', price: state.price, icon: '', is_active: true },
+      ]),
+    ),
+  )
+  await page.route('**/rest/v1/toppings*', (route) => route.fulfill(json(MENU.toppings)))
+  await page.route('**/rest/v1/product_toppings*', (route) => route.fulfill(json(MENU.links)))
+  const { rpcCalls } = await mockCheckout(page)
+
+  await page.goto('/pos')
+  await page.getByRole('button', { name: 'Thêm Trà sữa đào' }).click()
+  await expect(page.getByText(/35\.000\s₫/).first()).toBeVisible()
+
+  // menu bump v8 + giá mới → lưới cập nhật, giỏ vẫn snapshot 35.000
+  state.menuVersion = 8
+  state.price = 40000
+  await page.bringToFront()
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await expect(page.getByText(/40\.000\s₫/).first()).toBeVisible({ timeout: 10_000 })
+
+  await page.getByTestId('checkout-btn').click()
+  await expect(page.getByTestId('checkout-msg')).toHaveText(
+    'Giá vừa cập nhật: Trà sữa đào — kiểm tra lại giỏ rồi thanh toán.',
+  )
+  expect(rpcCalls).toHaveLength(0) // KHÔNG gọi RPC với giỏ giá cũ
+  await expect(page.getByTestId('bill-count')).toHaveText('1 món') // giữ giỏ
+})
+
 test('P6-T9/P4-T9: offline → bán (mã OFF vào outbox) → online → sync create_bill + upload', async ({
   page,
 }) => {

@@ -36,7 +36,7 @@ test('P2-T7: màn đăng nhập đúng layout ở cả hai viewport, không lỗ
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await expect(page.getByRole('img', { name: 'Hẻm Trà' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /xóa cache/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /tải app/i })).toBeVisible()
     await page.screenshot({
       path: `e2e/screenshots/login-${testInfo.project.name}-${viewport.name}.png`,
     })

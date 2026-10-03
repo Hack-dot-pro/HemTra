@@ -153,12 +153,12 @@ describe('LoginStage', () => {
     expect(window.localStorage.getItem(USERNAME_KEY)).toBeNull()
   })
 
-  it('nút Tải App ẩn khi chưa có prompt cài đặt', () => {
+  it('nút Tải App hiện diện trên màn hình khi chưa chạy standalone', () => {
     renderLogin()
-    expect(screen.queryByRole('button', { name: /tải app/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /tải app/i })).toBeInTheDocument()
   })
 
-  it('nút Tải App hiện ra khi trình duyệt phát event beforeinstallprompt', async () => {
+  it('bấm Tải App mở modal và khi có event beforeinstallprompt bấm Tải App trong modal sẽ gọi prompt()', async () => {
     const user = userEvent.setup()
     renderLogin()
 
@@ -170,16 +170,23 @@ describe('LoginStage', () => {
       window.dispatchEvent(event)
     })
 
-    const button = await screen.findByRole('button', { name: /tải app/i })
-    await user.click(button)
+    await user.click(screen.getByRole('button', { name: /tải app/i }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+
+    const modalInstallBtn = within(dialog).getByRole('button', { name: /tải app/i })
+    await user.click(modalInstallBtn)
     await waitFor(() => expect(prompt).toHaveBeenCalledTimes(1))
   })
 
-  it('nút Xóa cache & Tải lại đi qua trạng thái đang xóa rồi đã xóa', async () => {
+  it('nút Xóa cache và tải lại trong modal đi qua trạng thái đang xóa rồi đã xóa', async () => {
     const user = userEvent.setup()
     renderLogin()
 
-    const button = screen.getByRole('button', { name: /xóa cache/i })
+    await user.click(screen.getByRole('button', { name: /tải app/i }))
+    const dialog = await screen.findByRole('dialog')
+
+    const button = within(dialog).getByRole('button', { name: /xóa cache/i })
     await user.click(button)
     expect(button).toBeDisabled()
     expect(button).toHaveTextContent('Đang xóa…')
@@ -219,15 +226,17 @@ describe('LoginStage — hộp hướng dẫn cài app trên iOS (bổ sung QC Q
     vi.restoreAllMocks()
   })
 
-  it('hiện nút Tải App trên iPhone và mở hộp hướng dẫn 3 bước khi chưa có beforeinstallprompt', async () => {
+  it('hiện nút Tải App trên iPhone và mở hộp hướng dẫn đầy đủ cài đặt và xóa cache', async () => {
     const user = userEvent.setup()
     renderLogin()
 
     await user.click(screen.getByRole('button', { name: /tải app/i }))
 
     const dialog = await screen.findByRole('dialog')
-    expect(dialog).toHaveTextContent('Cài Hẻm Trà trên iPhone')
-    expect(within(dialog).getAllByRole('listitem')).toHaveLength(3)
+    expect(dialog).toHaveTextContent('Cài đặt ứng dụng & Bộ nhớ đệm')
+    expect(dialog).toHaveTextContent('Lưu ý xử lý lỗi vào màn hình chính trên iOS')
+    expect(dialog).toHaveTextContent('Xóa lịch sử và dữ liệu trang web')
+    expect(within(dialog).getByRole('button', { name: /xóa cache/i })).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Đóng' })).toHaveFocus())
 
     await user.keyboard('{Escape}')

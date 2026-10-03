@@ -23,6 +23,7 @@ import {
   CheckoutRateLimitedError,
   MenuVersionChangedError,
   createBillOnline,
+  findPriceDriftLines,
   enqueueOfflineBill,
   makeOfflineCode,
   sheetTotal,
@@ -37,6 +38,7 @@ import {
   createBill,
   lineTotal,
   productsOfCategory,
+  MAX_PHONE_NOTE_LENGTH,
   setNote,
   setPhoneNote,
   toggleTopping,
@@ -119,6 +121,16 @@ export default function PosPage() {
       const qrDataUrl = await generateQrDataUrl().catch(() => undefined)
       const createdAt = Date.now()
       if (navigator.onLine) {
+        // Chặn giỏ giá cũ (QC-013): menu bump khi đang mở POS → lưới giá mới
+        // nhưng dòng bill giữ snapshot cũ → nếu gọi RPC, tổng server ≠ Σ dòng in.
+        const drifted = findPriceDriftLines(bill, menu)
+        if (drifted.length > 0) {
+          setCheckoutMsg({
+            tone: 'warn',
+            text: `Giá vừa cập nhật: ${drifted.join(', ')} — kiểm tra lại giỏ rồi thanh toán.`,
+          })
+          return
+        }
         const result = await createBillOnline({ client, bill, menuVersion: menu.menu_version })
         let png: string | null = null
         try {
@@ -139,11 +151,15 @@ export default function PosPage() {
           png = null // bill đã tạo — thiếu ảnh không được bán lại
         }
         setLastSale({ code: result.code, png })
+        const clientTotal = billTotal(bill)
+        const serverMismatch = result.total !== clientTotal
         setCheckoutMsg({
-          tone: result.price_drift ? 'warn' : 'ok',
+          tone: result.price_drift || serverMismatch ? 'warn' : 'ok',
           text: result.price_drift
             ? `Đã tạo bill ${result.code} — giá tại quầy khác giá hiển thị (đã ghi nhận).`
-            : `Đã tạo bill ${result.code}.`,
+            : serverMismatch
+              ? `Đã tạo bill ${result.code} — tổng server ${formatVnd(result.total)} khác giỏ (giá vừa đổi, ảnh in theo tổng server).`
+              : `Đã tạo bill ${result.code}.`,
         })
         setBill(createBill())
       } else {
@@ -406,7 +422,7 @@ export default function PosPage() {
           id="bill-phone-note"
           className="glass-input mt-1 w-full !py-1.5 text-sm"
           value={bill.phone_note}
-          maxLength={100}
+          maxLength={MAX_PHONE_NOTE_LENGTH}
           placeholder="VD: 0909 123 456 — giao trước 18h"
           onChange={(event) => setBill((prev) => setPhoneNote(prev, event.target.value))}
         />

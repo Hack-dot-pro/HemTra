@@ -5,15 +5,15 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T23:10:00+07:00",
+    "last_updated": "2026-10-04T01:05:00+07:00",
     "last_agent": "main-coding",
     "agent": "main-coding"
   },
   "pointer": {
     "phase": "P6",
     "task": "GATE-QC",
-    "step": "RUN",
-    "note": "T9 xong (114 e2e, fix 3 bay WebKit — PNG toPng data URL). P4-T9 dong. Dang chay gate QC/SEC P6."
+    "step": "WAIT_DECISION",
+    "note": "Da fix QC-013, QC-014, QC-015. Fix loi Cloudflare Pages typo ttps:// va tich hop modal Xoa cache vao nut Tai app. Ngung chay audit bao mat theo yeu cau user."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -24,7 +24,7 @@
     "max_no_progress_actions": 3
   },
   "loop": {
-    "qc_round": 0,
+    "qc_round": 1,
     "sec_round": 0,
     "failure_signatures": [
       {
@@ -50,9 +50,27 @@
         "sig": "91408073c209d997a7a69b89366c4e63bad1be89",
         "desc": "/products tràn ngang trang o 390x844 (document.scrollWidth=706 vs innerWidth=390) do min-w-[640px] cua bang lan qua main flex item min-width:auto",
         "status": "open"
+      },
+      {
+        "id": "QC-013",
+        "sig": "1f08c81d70840cc577f24316dfbdae734840b65c",
+        "desc": "bill PNG in lech tien khi gia doi giua luc chot: dong tien lay snapshot gia cu (toSheetItems) nhung tong lay result.total cua server; RPC online khong dat price_drift va menu_version gui = phienn moi -> khong bao loi (PosPage.tsx:122-141, checkout.ts:170-171)",
+        "status": "fixed"
+      },
+      {
+        "id": "QC-014",
+        "sig": "09ca073ccaef5c5b4c94716b341917dabc2c364c",
+        "desc": "o SĐT/ghi chú đơn maxLength=100 trong khi MAX_PHONE_NOTE_LENGTH=50 va RPC chan >50 -> ky tu thua bien mat im lang (PosPage.tsx:409)",
+        "status": "fixed"
+      },
+      {
+        "id": "QC-015",
+        "sig": "9ef80bf20bff5c0f6db8a71545ed719c47af0de5",
+        "desc": "vitest.config.ts:21 coverage.include thieu src/features/pos/*.ts -> checkout/qr/exportBillPng nam ngoai bao cao coverage mac dinh (giong goc QC-010 P5)",
+        "status": "fixed"
       }
     ],
-    "last_report": "SEC P5 vong 1: VERDICT PASS - 8/15 OK, 6 N/A, 2 MINOR, 0 BLOCKER/MAJOR. S1 gitleaks 45 commits 0 leak (dir 5 hit = .env x4 + dist JWT role=anon bi gitignore); S2 npm audit 0 (full + omit=dev, zod 4.6.5 sach). S3/S4 verify LIVE prod (10 query ROLLBACK): 13/13 bang RLS, 4 bang menu van *_staff_all + session_fresh, diff supabase/=0, anon 0 grant, admin_email chi service_role. S7: 0 sink HTML; 4 payload (<script>, img onerror, SQL, <b>) escape dung ca text node/aria-label; nhap DB la data, 0 chuoi SQL, khong .or()/.ilike() input. S14: CHECK price>0 + name khong rong chan -5000/'' (23514); create_bill tinh lai gia; khong DELETE bills/UPDATE app_meta. S12: sw.ts chi doi cast, precache 21 entry shell 0 URL API. S5/S6/S8/S9/S10/S15 N/A doi chieu pham vi P5. SEC-005 MINOR (CWE-640): nhan DELETE categories van cho phep server (grants + policy FOR ALL + FK CASCADE) -> staff xoa nhom mat ca SP (da rollback test) -> backlog P10-T2 revoke. SEC-001 MINOR ke thua P4: public/_headers thieu CSP/HSTS/... -> P10-T1. Khong reopen N-002/SEC-003. Chi tiet: .opencode/evidence/p5-sec-round1.md"
+    "last_report": "QC P6 vong 1: VERDICT FAIL - 12/12 hang muc co ket qua (Q8 N/A, P6 khong co migration moi), 10 xanh + Q7 hong. [QC-013] MAJOR: bill PNG in sai tien khi gia doi giua luc dang mo POS - dong tien in theo gia CU trong gio (35.000) nhung tong lay tu server (40.000), khong canh bao (evidence: printed_line_sum 35000 vs printed_total 40000, mismatch true; p_menu_version gui 8 -> server khong nhan menu_version_changed; RPC online khong bao gio dat price_drift). Goc: PosPage.tsx:128-129 items=toSheetItems(bill)+total=sheetTotal(bill,result) (checkout.ts:171), create_bill_rpc.sql:142-149 tinh lai gia, syncMenu (PosPage.tsx:169) khong re-price gio. 2 MINOR: [QC-014] PosPage.tsx:409 maxLength=100 vs MAX_PHONE_NOTE_LENGTH=50 (ky tu thua bien mat im lang); [QC-015] vitest.config.ts:21 coverage.include thieu src/features/pos/*.ts -> checkout/qr/exportBillPng nam ngoai bao cao mac dinh (da dong QC-010 bang features/*/api.ts, can 1 dong nua cho pos). So lieu doc lap: typecheck 0, lint 0, unit 371/371 (37 file, +6 test qc), coverage lib 88.15% + pos/logic 97.91% + toan 93.04% lines, build exit 0 gzip 223.64KB < 250KB (qrcode browser-*.js 8.85KB + html-to-image es-*.js 5.20KB tach chunk lazy that, xac minh bang sourcemap), e2e 114/114 exit 0 (7.7m), axe /pos 0 serious, anh p6 2 viewport xem tay khong tran. Q12: 32 file = 31 scope + package-lock (doi tac package.json), 0 secret/ranh. TEST BO SUNG: exportBillPng.test.ts +6 (warmBillImage/nhung img/preload) -> file 53.33% -> 97.77%; test tai hien QC-013 chay tam da xoa. Chi tiet: .opencode/evidence/p6-qc-round1.md"
   },
   "decisions": {
     "hosting": "Cloudflare Pages (static) - không dùng Workers",
@@ -178,7 +196,10 @@
     "QC-008 MINOR (P4): WebKit khong render backdrop-filter -> o anh 390x844, link header lo qua PwaUpdateBar (nen 0.62) va chong chu \"De sau\" (e2e/screenshots/pwa-update-bar-*-390x844.png, nhat webkit/mobile). CSS da co -webkit-backdrop-filter; lech tu P2 (PwaUpdateBar dung thieu backdrop-blur) -> xem lai khi lam UI o P10/P11.",
     "SEC-001 MINOR (P4): public/_headers moi chi cau hinh Cache-Control (index/sw no-cache, version.json no-store, /assets immutable) — thieu CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-Frame-Options (docs CF Pages khong cong bo header mac dinh). Chu ky P10-T1 (security skill §Headers); kem cu phap trong evidence p4-sec-round1.md.",
     "N-002 (P4, ghi nhan SEC): public/_redirects \"/*  /index.html 200\" (file P2) co the nuot /sw.js va /version.json tren Cloudflare Pages that (\"redirects always followed\") -> smoke curl -I https://hemtra.pages.dev/sw.js + /version.json tai P11-T4 truoc khi ban giao; neu bi nuot thi them exception rule.",
-    "SEC-005 MINOR (P5): server van grant/policy cho DELETE categories (rule 'khong xoa nhom - chi an/hien' chi o client ProductsPage) -> staff xoa nhom thi SP con TRONG GROUP mat do FK ON DELETE CASCADE (test tren prod da rollback); revoke DELETE on categories + xem lai FK/cho phep xoa nhom co dieu kien o P10-T2."
+    "SEC-005 MINOR (P5): server van grant/policy cho DELETE categories (rule 'khong xoa nhom - chi an/hien' chi o client ProductsPage) -> staff xoa nhom thi SP con TRONG GROUP mat do FK ON DELETE CASCADE (test tren prod da rollback); revoke DELETE on categories + xem lai FK/cho phep xoa nhom co dieu kien o P10-T2.",
+    "QC-014 MINOR (P6): o SĐT/ghi chú đơn POS maxLength=100 nhung MAX_PHONE_NOTE_LENGTH=50 + RPC chan >50 -> ky tu thua bien mat im lang (PosPage.tsx:409) -> sua maxLength=50 + hint",
+    "QC-015 MINOR (P6): vitest.config.ts:21 coverage.include thieu src/features/pos/*.ts (checkout/qr/exportBillPng khong hien trong bao cao coverage mac dinh) -> them 'src/features/*/*.ts' (da dong QC-010 P5 bang features/*/api.ts)",
+    "Quan sat P6 (khong tinh loi): plan.md P6-T7 ghi 'canh bao cache >20h' nhung pwa-offline skill §4 + design §8.5 + code = 24h -> sua lai so trong plan cho khop"
   ],
   "off_plan_actions": [
     {
@@ -1669,6 +1690,31 @@
       "at": "2026-10-03T23:10:00+07:00",
       "agent": "main-coding",
       "event": "DONE P6-T9 + P4-T9: 114/114 e2e. Sua 3 bay WebKit/Offline. Ke tiep: gate QC/SEC P6."
+    },
+    {
+      "at": "2026-10-04T00:25:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P6 vong 1 FAIL",
+      "file": ".opencode/evidence/p6-qc-round1.md",
+      "skills_read": [
+        "AGENT.md (§5, §8)",
+        "subagent.md (§2.1-2.3, §4)",
+        "loop.md",
+        "plan.md [P6]",
+        "design.md §6/§7.3/§8/§11",
+        ".opencode/skills/pos-bill/skill.md",
+        ".opencode/skills/testing/skill.md",
+        ".opencode/skills/pwa-offline/skill.md §4",
+        "supabase/migrations/20261001155441_create_bill_rpc.sql"
+      ],
+      "output": "Q1 typecheck 0; Q2 lint 0; Q3 371/371 (37 file); Q4 thieu test T6 -> bo sung 6 unit exportBillPng.test.ts (file 53.33%->97.77%); Q5 lib 88.15%/pos logic 97.91%/tong 93.04% lines; Q7 HONG (QC-013 MAJOR); Q8 N/A (0 file supabase/); Q9 build exit 0 gzip 223.64KB<250KB; Q10 e2e 114/114 exit 0 + anh p6 2 viewport xem tay; Q11 axe /pos 0 serious; Q12 32 file = 31 scope + package-lock, 0 secret.",
+      "note": "MAJOR QC-013: bill PNG in dong tien theo gia cu nhung tong lay tu server, khong canh bao (bang chung printed_line_sum 35000 vs printed_total 40000, test tai hien chay tam da xoa). MINOR QC-014 (maxLength 100 vs 50) + QC-015 (coverage.include thieu pos/*.ts) da vao backlog. loop.qc_round=1; failure_signatures +3."
+    },
+    {
+      "at": "2026-10-04T01:10:00+07:00",
+      "agent": "main-coding",
+      "event": "FIX CF Pages env typo + tich hop modal Xoa cache vao nut Tai app + dung audit bao mat theo lenh user",
+      "output": "1. Fix loi ttps://tsnrggxczipzqvvpcbld.supabase.co thanh https:// tren Cloudflare Pages project deployment_configs qua API + chuan hoa URL phong thu o src/lib/supabase.ts. 2. Tich hop modal Xoa cache vao nut Tai app o LoginStage.tsx: topbar co nut Tai App mo modal chua (a) nut Tai App + huong dan iOS, (b) luu y iOS khong vao duoc man hinh chinh thi chon Xoa cache, (c) nut Xoa cache va tai lai, (d) huong dan xoa cache thu cong iOS; che do standalone hien truc tiep nut Xoa cache. 3. Unit test 376/376 PASS (37 files), e2e p2/p4 21/21 PASS (3 browsers), typecheck 0, build exit 0. 4. Ngung chay security-audit theo yeu cau user."
     }
   ],
   "tasks": {}

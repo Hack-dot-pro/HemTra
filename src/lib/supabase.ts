@@ -7,8 +7,19 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
-export const supabaseUrl: string | null = url ? url.replace(/\/+$/, '') : null
-export const supabaseAnonKey: string | null = anonKey || null
+function normalizeSupabaseUrl(raw: string | undefined): string | null {
+  if (!raw) return null
+  let trimmed = raw.trim().replace(/\/+$/, '')
+  if (trimmed.startsWith('ttps://')) {
+    trimmed = 'h' + trimmed
+  } else if (!/^https?:\/\//i.test(trimmed) && trimmed.includes('.')) {
+    trimmed = 'https://' + trimmed
+  }
+  return trimmed || null
+}
+
+export const supabaseUrl: string | null = normalizeSupabaseUrl(url)
+export const supabaseAnonKey: string | null = anonKey ? anonKey.trim() : null
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 // P3-T5 — nơi lưu "phiên theo ghi nhớ" (auth/skill.md §3):
