@@ -34,8 +34,9 @@ export type OutboxPayload = {
 export type OutboxBill = {
   client_uuid: string
   payload: OutboxPayload
-  /** PNG bill — blob giữ trong outbox tới khi sync thành công (§8.4). */
-  png: Blob | null
+  /** PNG bill — data URL (giữ trong outbox tới khi sync, §8.4). Dạng string vì
+   * WebKit IndexedDB không nhận blob từ canvas.toBlob (UnknownError — P6-T9). */
+  png: string | null
   /** Mã đã gán khi sync (online lấy từ RPC, offline giữ mã OFF). */
   code: string | null
   status: 'pending' | 'synced'

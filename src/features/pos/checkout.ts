@@ -114,7 +114,8 @@ export async function createBillOnline(args: {
 export async function enqueueOfflineBill(args: {
   bill: BillState
   menuVersion: number
-  png: Blob | null
+  /** PNG bill dạng data URL (P6-T9: WebKit không nhận blob canvas). */
+  png: string | null
   /** Mã OFF đã sinh trước đó (cần cho sheet in bill) — bỏ trống sẽ sinh mới. */
   offlineCode?: string
   now?: Date

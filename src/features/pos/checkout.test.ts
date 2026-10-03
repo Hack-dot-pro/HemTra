@@ -114,11 +114,10 @@ describe('P6-T7 — createBillOnline', () => {
 
 describe('P6-T7 — enqueueOfflineBill', () => {
   it('happy: ghi outbox pending kèm png + payload offline (mã OFF dùng lại nếu đã sinh)', async () => {
-    const png = new Blob(['x'], { type: 'image/png' })
     const { offline_code, client_uuid } = await enqueueOfflineBill({
       bill: sampleBill(),
       menuVersion: 7,
-      png,
+      png: 'data:image/png;base64,UE5H',
       offlineCode: 'HT-261003-OFF-ab12',
       now: new Date('2026-10-03T12:00:00+07:00'),
     })

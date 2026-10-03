@@ -16,3 +16,8 @@ export async function generateQrDataUrl(
     color: { dark: '#111111', light: '#ffffff' },
   })
 }
+
+/** Nạp sẵn chunk lúc mở POS — lần bán OFFLINE đầu tiên không cần mạng (P6-T9). */
+export function preloadQrLib(): Promise<unknown> {
+  return import('qrcode').catch(() => undefined)
+}

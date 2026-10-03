@@ -4,7 +4,7 @@
 // Nguồn data: menu cache IndexedDB qua useMenuSnapshot (design §8.2) — bán
 // được cả khi offline; app_meta sync do AppLayout lo.
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Minus, NotebookPen, Plus } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { formatVnd } from '../../lib/format'
@@ -13,10 +13,12 @@ import { getSupabase } from '../../lib/supabase'
 import { syncMenu } from '../../lib/menuSync'
 import { useMenuSnapshot, useOnlineStatus, isMenuStale } from '../../lib/useMenu'
 import { useOutboxSync } from '../../lib/useOutbox'
+import { dataUrlToBlob } from '../../lib/outbox'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 import BillSheet, { type BillSheetProps } from './BillSheet'
-import { generateQrDataUrl } from './qr'
-import { billNodeToBlob, downloadBlob } from './exportBillPng'
+import { generateQrDataUrl, preloadQrLib } from './qr'
+import { billNodeToPngDataUrl, downloadBlob, preloadBillPngLib, warmBillImage } from './exportBillPng'
+import logoUrl from '../../assets/logo.png'
 import {
   CheckoutRateLimitedError,
   MenuVersionChangedError,
@@ -63,9 +65,17 @@ export default function PosPage() {
   const [toppingLineId, setToppingLineId] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
   const [checkoutMsg, setCheckoutMsg] = useState<CheckoutMsg | null>(null)
-  const [lastSale, setLastSale] = useState<{ code: string; png: Blob | null } | null>(null)
+  const [lastSale, setLastSale] = useState<{ code: string; png: string | null } | null>(null)
   const [sheet, setSheet] = useState<BillSheetProps | null>(null)
   const hostRef = useRef<HTMLDivElement | null>(null)
+
+  // Nạp sẵn 2 chunk (qrcode + html-to-image) khi mở POS: bán offline lần đầu
+  // không bị "Failed to fetch dynamically imported module" (P6-T9 e2e).
+  useEffect(() => {
+    void preloadQrLib()
+    void preloadBillPngLib()
+    void warmBillImage(logoUrl) // warm logo thành data-URL lúc còn online
+  }, [])
 
   const menu = snapshot ?? EMPTY_MENU
   const categories = useMemo(() => activeCategories(menu), [menu])
@@ -88,12 +98,12 @@ export default function PosPage() {
   }
 
   /** Mount BillSheet vào DOM ẩn rồi chụp PNG (html-to-image cần node có layout). */
-  async function renderBillPng(sheetData: BillSheetProps): Promise<Blob> {
+  async function renderBillPng(sheetData: BillSheetProps): Promise<string> {
     setSheet(sheetData)
     await nextPaint()
     const node = hostRef.current
     if (!node) throw new Error('bill_host_missing')
-    return billNodeToBlob(node)
+    return billNodeToPngDataUrl(node)
   }
 
   async function handleCheckout(): Promise<void> {
@@ -110,7 +120,7 @@ export default function PosPage() {
       const createdAt = Date.now()
       if (navigator.onLine) {
         const result = await createBillOnline({ client, bill, menuVersion: menu.menu_version })
-        let png: Blob | null = null
+        let png: string | null = null
         try {
           png = await renderBillPng({
             code: result.code,
@@ -121,7 +131,7 @@ export default function PosPage() {
           })
           await createBillUploader(client)({
             code: result.code,
-            blob: png,
+            blob: dataUrlToBlob(png),
             createdAtIso: new Date(createdAt).toISOString(),
             clientUuid: result.client_uuid,
           })
@@ -179,7 +189,7 @@ export default function PosPage() {
   async function handleShare(): Promise<void> {
     const png = lastSale?.png
     if (!lastSale || !png) return
-    const file = new File([png], `${lastSale.code}.png`, { type: 'image/png' })
+    const file = new File([dataUrlToBlob(png)], `${lastSale.code}.png`, { type: 'image/png' })
     if (typeof navigator.share !== 'function' || !navigator.canShare?.({ files: [file] })) {
       setCheckoutMsg({ tone: 'warn', text: 'Thiết bị không chia sẻ được ảnh — dùng Lưu về máy.' })
       return
@@ -200,7 +210,7 @@ export default function PosPage() {
   /** Fallback: tải PNG về máy (đã có trong T6). */
   function handleSave(): void {
     if (!lastSale?.png) return
-    downloadBlob(lastSale.png, `${lastSale.code}.png`)
+    downloadBlob(dataUrlToBlob(lastSale.png), `${lastSale.code}.png`)
     setCheckoutMsg({ tone: 'ok', text: `Đã lưu ${lastSale.code}.png về máy.` })
   }
 

@@ -117,7 +117,7 @@ describe('syncOutbox', () => {
   })
 
   it('upload PNG lỗi → giữ pending để thử lại (create_bill idempotent nên không trùng)', async () => {
-    await enqueueBill(bill({ png: new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }) }), db)
+    await enqueueBill(bill({ png: 'data:image/png;base64,AQID' }), db) // 1,2,3
     const { client } = createFakeSupabase()
     const summary = await syncOutbox({
       client,
@@ -134,15 +134,16 @@ describe('syncOutbox', () => {
   })
 
   it('upload PNG thành công → synced, đường dẫn do P6-T7 cung cấp', async () => {
-    const png = new Blob([new Uint8Array([1])], { type: 'image/png' })
-    await enqueueBill(bill({ png }), db)
+    await enqueueBill(bill({ png: 'data:image/png;base64,AQ==' }), db) // 1
     const { client } = createFakeSupabase()
     const paths: string[] = []
     const summary = await syncOutbox({
       client,
       db,
-      uploadPng: async ({ code }) => {
+      uploadPng: async ({ code, blob }) => {
         paths.push(code)
+        expect(blob).toBeInstanceOf(Blob) // data URL đã chuyển lại Blob để upload
+        expect(blob.type).toBe('image/png')
         return `bills/2026/10/${code}.png`
       },
     })

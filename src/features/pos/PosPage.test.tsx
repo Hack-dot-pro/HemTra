@@ -31,9 +31,11 @@ vi.mock('../../lib/menuSync', async (importOriginal) => {
 })
 
 vi.mock('./exportBillPng', () => ({
-  billNodeToBlob: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
+  billNodeToPngDataUrl: vi.fn(async () => 'data:image/png;base64,UE5H'),
   downloadBlob: vi.fn(),
   isSafariCapture: () => false,
+  preloadBillPngLib: vi.fn(async () => undefined),
+  warmBillImage: vi.fn(async () => 'data:image/png;base64,AA=='),
 }))
 
 let testDb: DBType
@@ -254,7 +256,7 @@ describe('P6-T7 — thanh toán offline', () => {
     expect(pending[0].status).toBe('pending')
     expect(pending[0].payload.is_offline).toBe(true)
     expect(pending[0].payload.offline_code).toMatch(/^HT-\d{6}-OFF-[A-Za-z0-9]{4}$/)
-    expect(pending[0].png).toBeTruthy() // jsdom Blob không sống sót qua fake-indexeddb (browser thật có)
+    expect(pending[0].png).toMatch(/^data:image\/png;base64,/) // data URL (WebKit IDB không nhận blob)
     expect(screen.getByTestId('bill-count')).toHaveTextContent('0 món')
 
     // quay lại online → event sync sẽ bắn (đây: gọi thẳng sync qua onOnline không test — outbox đã có đủ dữ liệu)

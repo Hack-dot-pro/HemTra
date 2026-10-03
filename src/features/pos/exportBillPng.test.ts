@@ -1,21 +1,22 @@
-// Unit test xuất PNG — P6-T6. Mock `html-to-image` (jsdom không có canvas);
-// Playwright (T9) chụp PNG thật.
+// Unit test xuất PNG — P6-T6/T9. Mock `html-to-image` (jsdom không có canvas);
+// Playwright (T9) chụp PNG thật. WebKit: dùng toPng → data URL (không qua blob).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { billNodeToBlob, downloadBlob, isSafariCapture } from './exportBillPng'
+import { billNodeToPngDataUrl, downloadBlob, isSafariCapture } from './exportBillPng'
 
-const toBlob = vi.fn()
+const toPng = vi.fn()
 
-vi.mock('html-to-image', () => ({ toBlob: (...args: unknown[]) => toBlob(...args) }))
+vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) }))
 
 const ORIGINAL_UA = navigator.userAgent
+const PNG_DATA_URL = 'data:image/png;base64,UE5H'
 
 function setUa(ua: string) {
   Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true })
 }
 
 beforeEach(() => {
-  toBlob.mockReset().mockResolvedValue(new Blob(['png'], { type: 'image/png' }))
+  toPng.mockReset().mockResolvedValue(PNG_DATA_URL)
 })
 
 afterEach(() => {
@@ -34,28 +35,27 @@ describe('P6-T6 — isSafariCapture', () => {
   })
 })
 
-describe('P6-T6 — billNodeToBlob', () => {
-  it('happy (không Safari): chụp 1 lần, trả Blob', async () => {
+describe('P6-T6/T9 — billNodeToPngDataUrl', () => {
+  it('happy (không Safari): chụp 1 lần, trả data URL PNG', async () => {
     const node = document.createElement('div')
-    const blob = await billNodeToBlob(node)
-    expect(blob).toBeInstanceOf(Blob)
-    expect(toBlob).toHaveBeenCalledTimes(1)
-    // đúng options xuất: pixelRatio 2, rộng 720, nền trắng
-    expect(toBlob).toHaveBeenCalledWith(node, expect.objectContaining({ pixelRatio: 2, width: 720 }))
+    const dataUrl = await billNodeToPngDataUrl(node)
+    expect(dataUrl).toBe(PNG_DATA_URL)
+    expect(toPng).toHaveBeenCalledTimes(1)
+    expect(toPng).toHaveBeenCalledWith(node, expect.objectContaining({ pixelRatio: 2, width: 720 }))
   })
 
   it('Safari: chụp 2 lần — lần 1 ấm (kể cả lỗi vẫn chụp tiếp)', async () => {
     setUa('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1')
-    toBlob.mockRejectedValueOnce(new Error('font not ready')).mockResolvedValueOnce(new Blob(['x']))
-    const blob = await billNodeToBlob(document.createElement('div'))
-    expect(toBlob).toHaveBeenCalledTimes(2)
-    expect(blob).toBeInstanceOf(Blob)
+    toPng.mockRejectedValueOnce(new Error('font not ready')).mockResolvedValueOnce(PNG_DATA_URL)
+    const dataUrl = await billNodeToPngDataUrl(document.createElement('div'))
+    expect(toPng).toHaveBeenCalledTimes(2)
+    expect(dataUrl).toBe(PNG_DATA_URL)
   })
 
-  it('biên: toBlob trả null → ném PNG_EXPORT_EMPTY', async () => {
+  it('biên: trả chuỗi không phải PNG → ném PNG_EXPORT_EMPTY', async () => {
     setUa('Mozilla/5.0 (X11; Linux x86_64) jsdom/24')
-    toBlob.mockResolvedValue(null)
-    await expect(billNodeToBlob(document.createElement('div'))).rejects.toThrow('PNG_EXPORT_EMPTY')
+    toPng.mockResolvedValue('')
+    await expect(billNodeToPngDataUrl(document.createElement('div'))).rejects.toThrow('PNG_EXPORT_EMPTY')
   })
 })
 

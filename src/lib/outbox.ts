@@ -33,6 +33,26 @@ export function newClientUuid(): string {
   return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`
 }
 
+/** Blob → data URL (lưu vào outbox; WebKit IDB không nhận blob canvas — P6-T9). */
+export function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+/** Data URL → Blob (dùng lúc sync để upload Storage). */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const [head, base64] = dataUrl.split(',', 2)
+  const mime = head.match(/^data:(.*?);base64/)?.[1] ?? 'application/octet-stream'
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 /** Xếp bill vào outbox. Trùng client_uuid = đã có → ghi đè (put), không nhân đôi. */
 export async function enqueueBill(bill: OutboxBill, db: HemTraDB = getDb()): Promise<void> {
   await db.outbox.put(bill)
@@ -103,7 +123,7 @@ export async function syncOutbox(options: SyncOutboxOptions): Promise<SyncSummar
       try {
         await uploadPng({
           code,
-          blob: bill.png,
+          blob: dataUrlToBlob(bill.png),
           createdAtIso: p.created_at ?? new Date(now).toISOString(),
           clientUuid: bill.client_uuid,
         })
