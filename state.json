@@ -5,7 +5,7 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T13:40:00+07:00",
+    "last_updated": "2026-10-03T14:15:00+07:00",
     "last_agent": "security-audit"
   },
   "pointer": {
@@ -96,7 +96,9 @@
     "p3t2_admin_auth_email": "Chot 2026-10-02: admin GIU email that trong auth.users (khong doi sang <username>@hem.local nhu staff). Ly do: recovery/doi key (P3-T6/P3-T8) gui OTP den email that qua signInWithOtp — neu doi email thi GoTrue khong tim duoc user. Hau qua cho P3-T4 (auth-login EF): username->email mapping phac doan ...@hem.local dung cho staff; admin phai tra app_meta.admin_email (role=admin).",
     "turnstile": "User chon 2026-10-02: BO Turnstile khoi T4 + design (ly do: dung ca nhan, khong can phuc tap; chua co turnstile key). Lockout 5/15 phut van giu. Cap nhat design.md (§2/§4.3/§8.6), plan.md (P3-T4, P10-T5), auth/skill.md, security/skill.md.",
     "lockout_otp_unlock": "User chon 2026-10-02: sau 5 lan sai (khoa 5/15 phut username+IP) thi UI TU DONG de nghi gui OTP ve email de khoi phuc luot dang nhap (xoa bo dem) — thay cho Turnstile. GoTrue rate limit OTP + anti-oracle (response luon generic). Staff @hem.local khong nhan duoc mail -> doi 15 phut/lien he admin (nhan generic).",
-    "session_7d_note": "User nhan manh 2026-10-02: can reset session sau 7 ngay -> phai login lai — day chinh la P3-T5 (client login_at + session_fresh() server da co tu P1), lam ngay sau T4."
+    "session_7d_note": "User nhan manh 2026-10-02: can reset session sau 7 ngay -> phai login lai — day chinh la P3-T5 (client login_at + session_fresh() server da co tu P1), lam ngay sau T4.",
+    "drink_icon": "User chon 2026-10-03 (Q-004): icon nhom/mon = emoji Unicode luu trong cot icon (khong file assets). Ap dung tu P5 (CRUD nhom/chon icon) — UI cho phep nhap/chon emoji, POS/menu render truc tiep.",
+    "p4_hard_refresh_session": "User xac nhan 2026-10-03 (Q-007/SEC N-001): hardRefresh van goi sessionStorage.clear() — user \"ghi nho\" giu phien, user khong chon bi dang xuat. Dung design §8.7."
   },
   "open_questions": [
     {
@@ -123,7 +125,8 @@
       "id": "Q-004",
       "phase": "P6",
       "text": "Chốt bộ icon đồ uống và icon còn thiếu (trân châu, matcha...)",
-      "status": "open"
+      "status": "answered",
+      "answer": "User chon 2026-10-03: emoji Unicode cho icon nhom/mon (cot icon text) — hien duoc ngay o POS/menu, khong can assets, user sua icon tu UI P5. Ghi decisions.drink_icon."
     },
     {
       "id": "Q-005",
@@ -136,13 +139,15 @@
       "id": "Q-006",
       "phase": "P3",
       "text": "design.md §4.3 ghi \"RLS them ham session_fresh() so iat cua JWT voi 7 ngay\" — sau SEC-001 co the da doi sang auth.sessions.created_at (refresh khong reset duoc). Yeu cau 7 ngay/server chan cuoi giu nguyen, chi doi co the. Cho phep sua design.md §4.3 (1 cau) hay giu nguyen va ghi chu rieng?",
-      "status": "open"
+      "status": "answered",
+      "answer": "User cho phep sua design.md 2026-10-03 — da doi 1 cau §4.3: session_fresh() so thoi diem tao phien (auth.sessions.created_at) voi 7 ngay, refresh khong reset bo dem; yeu cau 7 ngay/server nguyen vong."
     },
     {
       "id": "Q-007",
       "phase": "P4",
       "text": "SEC N-001: hardRefresh() (nut \"Xoa cache & Tai lai\" va luong cap nhat deploy P4-T6) co sessionStorage.clear() -> user chon \"ghi nho\" van dang nhap (localStorage), user khong chon bi dang xuat. Day la dung design §8.7/skill §5. Xac nhan giu nguyen hanh vi nay? (mac dinh: giu nguyen, khong sua)",
-      "status": "open"
+      "status": "answered",
+      "answer": "User xac nhan 2026-10-03: GIU NGUYEN sessionStorage.clear() trong hardRefresh (dung design §8.7 + skill PWA §5). Khong sua code."
     }
   ],
   "blockers": [
@@ -156,12 +161,8 @@
     }
   ],
   "backlog": [
-    "QC P2-001 MINOR: login-hero.png rac o root -> da dung lam source nen login (src/assets/login-stage.webp|jpg), giu root goc kieu Logo.png/background.png",
     "QC P2-002 MINOR: lech scope - repo track nhieu file ngoai app (.claude/, agent/, .opencode/ skills, PNG goc o root) -> chot tach hay ghi chu",
-    "QC P2-003 MINOR: .gitignore thieu 'coverage/' (vitest --coverage sinh thu muc nay)",
-    "P3: chot luong chuyen giao/doi email admin (Q-005) truoc khi lam bootstrap-admin + recovery",
     "P3-T9: rate_limit_email_sent da nang 2 -> 30 (custom SMTP, 2026-10-02); rate_limit_otp=30 — Playwright can chu y de test khong bi chan (xem evidence p3t1)",
-    "Advisors security WARN pre-existing (khong lien quan migration T2): set_updated_at search_path mutable; leaked password protection disabled (PATCH auth config de bat); rls_auto_enable/create_bill/is_admin SECURITY DEFINER executable — xem lai o security audit gate P3.",
     "Moi truong dev nay khong chay duoc supabase start local (Docker nested iptables legacy/nft conflict -> container-to-container drop). Neu sau nay can local stack (test db reset/RLS), sua iptables hoac dung remote dev.",
     "QC-002 MINOR (P3): smoke EF bootstrap-admin/auth-login/admin-recovery/change-password chua co script trong repo (lan truoc o /tmp bi mat) -> tach scripts/smoke-<ef>.sh (env-only, co RESET cloud) tai P11; hien chi co .opencode/evidence/p3t8-smoke.sh",
     "SEC-003 MINOR (P3): signup con mo khi pre-bootstrap + policy chi can session_fresh() -> ke thu xac nhan hop thu minh doc duoc profiles/bills của người khác; han che = bootstrap ngay, xem lai policy phu (P9/P10).",
@@ -919,6 +920,18 @@
         "design.md §8"
       ],
       "result": "VERDICT PASS - 5 ✔ / 9 N-A / 1 MINOR, 0 BLOCKER/MAJOR. S1 gitleaks 41 commits 0 leak; S2 npm audit 0 vuln; S6 XSS grep 0.\nS15(a): hardRefresh khong dot localStorage (giu token/username) nhung co sessionStorage.clear() -> user khong ghi nho bi dang xuat khi xoa cache/cap nhat deploy (dung design §8.7) -> hoi user (Q-007/N-001).\nS15(b): outbox chi chua payload bill, 0 token. sw.ts: precache shell 21 entry, 0 URL API, khong navigateFallback, khong fetch origin ngoai, khong tu skipWaiting (registerType=prompt).\nUpdate flow khong tu reload; version.json = version+builtAt, khong precache, luon no-store. SEC-001 MINOR: public/_headers chi co Cache-Control, thieu CSP/HSTS/XCTO/Referrer-Policy/Permissions-Policy/XFO -> P10-T1 + backlog.\nN-002: _redirects /* co the nuot /sw.js + /version.json tren Pages that -> smoke curl -I o P11-T4."
+    },
+    {
+      "at": "2026-10-03T14:00:00+07:00",
+      "agent": "main-coding",
+      "event": "don backlog (buoc 4 cua ke hoach)",
+      "note": "Xoa 4 muc da khong con hieu luc: QC P2-001 (anh login da xu ly), \"P3: chot Q-005\" (da decided/xong P3-T8), Advisors WARN trung lap (da danh gia o SEC P3), QC P2-003 (them coverage/ vao .gitignore). Con lai 10 muc dang cong: P2-002 (nha repo), P3-T9 rate limit, env B-001, QC-002 P11 smoke EF, SEC-003/004, Advisors 6 WARN (con action password_hibp), QC-008, SEC-001 headers, N-002 redirects. Dong thoi chap nhan fix QC-003 cu: .gitignore + coverage/."
+    },
+    {
+      "at": "2026-10-03T14:15:00+07:00",
+      "agent": "main-coding",
+      "event": "Tra loi Q-004/Q-006/Q-007 + sua design §4.3 + don backlog + gitignore coverage/",
+      "note": "Q-004: emoji Unicode cho icon nhom (decisions.drink_icon). Q-006: sua design.md §4.3 1 cau cho khop fix SEC-001 (session theo auth.sessions.created_at). Q-007: giu nguyen sessionStorage.clear() trong hardRefresh. Backlog: xoa 4 muc khong con hieu luc, +2 muc SEC P4 (headers, redirects) + QC-008; con 10 muc. .gitignore + coverage/ (dong QC P2-003). Chuan bi commit package-lock.json (npm bo truong libc, -144 dong)."
     }
   ],
   "phases": {
@@ -1404,6 +1417,10 @@
     {
       "ts": "2026-10-03T13:40:00+07:00",
       "event": "Dong gate P4: SEC vong 1 PASS (0 BLOCKER/MAJOR, 1 MINOR -> backlog P10-T1) -> tick Gate QC+SEC trong plan.md; P4 status van pending vi T5/T9 hoan P6/P5. Ke tiep: don backlog + hoi Q-004/Q-006/Q-007 + commit package-lock."
+    },
+    {
+      "ts": "2026-10-03T14:15:00+07:00",
+      "event": "Buoc 4: hoi user xong (Q-004 emoji icon, Q-006 sua design §4.3, Q-007 giu sessionStorage.clear), sua design.md, don backlog 14->10 muc, gitignore coverage/. Con lai: commit package-lock."
     }
   ],
   "tasks": {}

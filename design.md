@@ -90,7 +90,7 @@ Nguyên tắc ưu tiên **ổn định & tốc độ**, không nhất thiết b�
 - Gọi Edge Function `auth-login` (kiểm tra lockout 5 lần/15 phút theo cặp username+IP → `signInWithPassword` phía server → trả session; thông báo lỗi chung chung).
 - **Khôi phục lượt đăng nhập**: sai ≥ 5 lần → EF trả `429 locked=true`, UI hiện nút "Gửi OTP khôi phục lượt đăng nhập" → EF `unlock-otp` (gửi OTP 6 số qua GoTrue, **luôn trả 200 chung chung** để không dò được username) → `unlock-verify` đúng mã → xóa lượt sai → đăng nhập lại. Nhân viên `@hem.local` không nhận mail thật → thông báo chung, chờ 15 phút hoặc liên hệ admin.
 - **Ghi nhớ đăng nhập**: bật → session ở `localStorage`; tắt → `sessionStorage`.
-- **Giới hạn 7 ngày**: (a) client kiểm tra `login_at`; (b) RLS thêm hàm `session_fresh()` so `iat` của JWT với 7 ngày → quá hạn là mất quyền truy cập dù client bị sửa.
+- **Giới hạn 7 ngày**: (a) client kiểm tra `login_at`; (b) RLS thêm hàm `session_fresh()` so thời điểm tạo phiên (`auth.sessions.created_at`) với 7 ngày — refresh token **không** reset bộ đếm (chỉ đăng xuất mới kết thúc phiên); quá hạn là mất quyền truy cập dù client bị sửa.
 
 ### 4.4 Khôi phục mật khẩu & đổi email khôi phục
 - **Admin — "Quên mật khẩu"**: nhập email admin → Edge Function `admin-recovery` **bắt buộc email trùng `app_meta.admin_email`** → OTP 6 số → đặt mật khẩu mới.
