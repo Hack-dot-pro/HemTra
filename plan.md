@@ -99,7 +99,7 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 ## P7 — Menu Quản lý bill & dọn 15 ngày
 📖 `backend/skill.md`, `security/skill.md §Storage`
 - [x] **P7-T1** Bảng bill (phân trang, lọc ngày, tìm theo mã), không có nút xóa
-- [ ] **P7-T2** Modal xem ảnh bill (signed URL ngắn hạn), chia sẻ lại / tải về
+- [x] **P7-T2** Modal xem ảnh bill (signed URL ngắn hạn), chia sẻ lại / tải về
 - [ ] **P7-T3** 🔒 Edge Function `cleanup-bills` (xóa file Storage qua API trước, rồi xóa dòng DB; không đụng `stats_*`)
 - [ ] **P7-T4** pg_cron lịch hằng ngày gọi `cleanup-bills`; hiển thị "tự xóa sau N ngày"
 - [ ] **P7-T5** Test: dựng bill giả hết hạn → job xóa đúng; thống kê còn nguyên

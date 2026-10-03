@@ -47,6 +47,8 @@ type SeedBill = {
   total: number
   created_at: string
   username: string | null
+  /** '' = bill chưa có ảnh (chưa xuất / chưa sync) — không có nút xem (P7-T2). */
+  imagePath: string
   items: { qty: number; parent_item_id: string | null }[]
 }
 
@@ -59,6 +61,7 @@ function seedBills(count: number): SeedBill[] {
       total: 35000 + index * 5000,
       created_at: `2026-10-${day}T07:05:00.000Z`,
       username: index % 2 === 0 ? 't7staff' : null,
+      imagePath: index % 5 === 4 ? '' : `2026/10/HT-2610${day}-${String(index + 1).padStart(4, '0')}.png`,
       items:
         index === 0
           ? [
@@ -110,12 +113,33 @@ async function mockBillsApi(page: Page, bills: SeedBill[]): Promise<string[]> {
           code: row.code,
           total: row.total,
           created_at: row.created_at,
+          image_path: row.imagePath,
           profiles: row.username ? { username: row.username } : null,
         })),
         200,
         { 'content-range': contentRange },
       ),
     )
+  })
+
+  // Ảnh bill: POST sign trả signedURL, GET trả PNG 1×1 (mock tầng Storage).
+  await page.route('**/storage/v1/object/sign/**', async (route) => {
+    const request = route.request()
+    if (request.method() === 'OPTIONS') return preflight(route)
+    if (request.method() === 'POST') {
+      return route.fulfill(
+        json({ signedURL: '/object/sign/bills/2026/10/HT.png?token=e2e-signed' }),
+      )
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      headers: CORS_HEADERS,
+      body: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+    })
   })
 
   await page.route('**/rest/v1/bill_items*', async (route) => {
@@ -191,4 +215,59 @@ test('Q11: axe trên /bills — không vi phạm serious/critical', async ({ pag
     .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
     .map((violation) => `${violation.id} (${violation.impact}): ${violation.help}`)
   expect(serious).toEqual([])
+})
+
+
+test('P7-T2: modal ảnh bill — signed URL ngắn hạn, ảnh hiện, Esc đóng, không lỗi a11y', async ({
+  page,
+}, testInfo) => {
+  await injectAuth(page)
+  await mockBillsApi(page, seedBills(3))
+  const signRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('/object/sign/')) signRequests.push(request.method() + ' ' + request.url())
+  })
+
+  await page.goto('/bills')
+  await page.getByRole('region', { name: 'Danh sách bill' }).getByText('HT-261001-0001').waitFor()
+
+  await page.getByRole('button', { name: 'Xem ảnh HT-261001-0001' }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Bill HT-261001-0001' })
+  await expect(dialog).toBeVisible()
+  const image = dialog.getByRole('img', { name: 'Ảnh bill HT-261001-0001' })
+  await expect(image).toBeVisible()
+  expect(signRequests.some((entry) => entry.startsWith('POST '))).toBe(true)
+  expect(
+    signRequests.some((entry) => entry.startsWith('GET ') && entry.includes('token=e2e-signed')),
+  ).toBe(true) // <img> đọc đúng signed URL có token
+
+  const { violations } = await new AxeBuilder({ page }).analyze()
+  const serious = violations
+    .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+    .map((violation) => `${violation.id} (${violation.impact}): ${violation.help}`)
+  expect(serious).toEqual([])
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({
+    path: `e2e/screenshots/p7-bill-modal-${testInfo.project.name}-390x844.png`,
+  })
+
+  await page.keyboard.press('Escape')
+  await expect(dialog).not.toBeVisible()
+})
+
+test('P7-T2: bill chưa có ảnh → hiện "Chưa có ảnh", không có nút xem', async ({ page }) => {
+  await injectAuth(page)
+  const bills = seedBills(5)
+  await mockBillsApi(page, bills)
+  await page.goto('/bills')
+
+  // index 4 → imagePath rỗng (seed % 5 === 4) — mã theo ngày sinh của seed (ngày 02)
+  const row = page
+    .getByRole('region', { name: 'Danh sách bill' })
+    .getByRole('row', { name: /HT-261002-0005/ })
+  await row.waitFor()
+  await expect(row.getByText('Chưa có ảnh')).toBeVisible()
+  await expect(row.getByRole('button')).toHaveCount(0)
 })

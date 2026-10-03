@@ -1,13 +1,19 @@
 // Unit test cho BillsPage — P7-T1: bảng 5 cột, phân trang, lọc ngày, tìm theo
 // mã, trạng thái rỗng/lỗi và KHÔNG có nút xóa (design §4.1 — AGENT.md §11.4).
-// Dùng fake BillsApi qua prop `api` (không đụng mạng).
+// Dùng fake BillsApi qua prop `api` (không đụng mạng). Modal ảnh bill (P7-T2)
+// mock luôn module `downloadBlob` của POS để không đụng DOM download thật.
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import BillsPage from './BillsPage'
+import { downloadBlob } from '../pos/exportBillPng'
 import type { BillsApi } from './api'
 import type { BillListParams, BillPage, BillRow } from './logic'
+
+vi.mock('../pos/exportBillPng', () => ({
+  downloadBlob: vi.fn(),
+}))
 
 function makeRow(overrides: Partial<BillRow> = {}): BillRow {
   return {
@@ -17,13 +23,17 @@ function makeRow(overrides: Partial<BillRow> = {}): BillRow {
     created_at: '2026-10-03T07:05:00.000Z',
     username: 't7staff',
     itemCount: 3,
+    imagePath: '2026/10/HT-261003-0001.png',
     ...overrides,
   }
 }
 
+const SIGNED_URL = 'https://tsnrggxczipzqvvpcbld.supabase.co/storage/v1/object/sign/bills/x.png?token=mock'
+
 function fakeApi(overrides: Partial<BillsApi> = {}): BillsApi {
   return {
     list: vi.fn(async () => ({ rows: [makeRow()], total: 1 }) satisfies BillPage),
+    signedImageUrl: vi.fn(async () => SIGNED_URL),
     ...overrides,
   }
 }
@@ -82,7 +92,7 @@ describe('P7-T1 — trạng thái rỗng và lỗi', () => {
       .fn()
       .mockRejectedValueOnce(new Error('Không thể kết nối máy chủ, thử lại sau.'))
       .mockResolvedValueOnce({ rows: [makeRow()], total: 1 })
-    const api: BillsApi = { list }
+    const api: BillsApi = { list, signedImageUrl: vi.fn(async () => SIGNED_URL) }
     render(<BillsPage api={api} />)
 
     const alert = await screen.findByRole('alert')
@@ -200,5 +210,104 @@ describe('P7-T1 — phân trang', () => {
     await user.type(screen.getByLabelText('Từ ngày'), '2026-10-03')
 
     await waitFor(() => expect(lastParams(api).page).toBe(0))
+  })
+})
+
+
+describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
+  it('bấm "Xem ảnh" → hiện dialog đúng mã, ảnh lấy từ signed URL', async () => {
+    const api = fakeApi()
+    const user = userEvent.setup()
+    render(<BillsPage api={api} />)
+    await screen.findByText('HT-261003-0001')
+
+    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Bill HT-261003-0001' })
+    expect(api.signedImageUrl).toHaveBeenCalledWith('2026/10/HT-261003-0001.png')
+    expect(await screen.findByRole('img', { name: 'Ảnh bill HT-261003-0001' })).toHaveAttribute(
+      'src',
+      SIGNED_URL,
+    )
+    expect(dialog).toBeInTheDocument()
+  })
+
+  it('signed URL thất bại → hiện lỗi tiếng Việt, bấm "Thử lại" gọi lại', async () => {
+    const signedImageUrl = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Lỗi máy chủ, thử lại sau.'))
+      .mockResolvedValueOnce(SIGNED_URL)
+    const api = fakeApi({ signedImageUrl })
+    const user = userEvent.setup()
+    render(<BillsPage api={api} />)
+    await screen.findByText('HT-261003-0001')
+
+    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được ảnh bill.')
+    await user.click(screen.getByRole('button', { name: 'Thử lại' }))
+    expect(await screen.findByRole('img', { name: 'Ảnh bill HT-261003-0001' })).toBeInTheDocument()
+    expect(signedImageUrl).toHaveBeenCalledTimes(2)
+  })
+
+  it('bill chưa có ảnh → không có nút xem, hiện "Chưa có ảnh"', async () => {
+    const api = fakeApi({
+      list: vi.fn(async () => ({ rows: [makeRow({ imagePath: '' })], total: 1 })),
+    })
+    render(<BillsPage api={api} />)
+    await screen.findByText('HT-261003-0001')
+
+    expect(screen.getByText('Chưa có ảnh')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xem ảnh HT-261003-0001' })).not.toBeInTheDocument()
+  })
+
+  it('Tải về → lấy blob qua signed URL mới, tải <code>.png, hiện thông báo', async () => {
+    const api = fakeApi()
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, blob: async () => new Blob(['png']) }) as unknown as Response),
+    )
+    render(<BillsPage api={api} />)
+    await screen.findByText('HT-261003-0001')
+    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+    await screen.findByRole('img', { name: 'Ảnh bill HT-261003-0001' })
+
+    await user.click(screen.getByRole('button', { name: 'Tải về' }))
+
+    await waitFor(() =>
+      expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'HT-261003-0001.png'),
+    )
+    const dialog = screen.getByRole('dialog', { name: 'Bill HT-261003-0001' })
+    expect(await within(dialog).findByRole('status')).toHaveTextContent(
+      'Đã lưu HT-261003-0001.png về máy.',
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('Web Share không hỗ trợ file → hiện hướng dẫn "dùng Tải về", không lỗi', async () => {
+    Object.defineProperty(navigator, 'share', { value: vi.fn(), configurable: true })
+    Object.defineProperty(navigator, 'canShare', { value: vi.fn(() => false), configurable: true })
+    const api = fakeApi()
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, blob: async () => new Blob(['png']) }) as unknown as Response),
+    )
+    render(<BillsPage api={api} />)
+    await screen.findByText('HT-261003-0001')
+    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+    await screen.findByRole('img', { name: 'Ảnh bill HT-261003-0001' })
+
+    await user.click(screen.getByRole('button', { name: 'Chia sẻ lại' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Bill HT-261003-0001' })
+    expect(await within(dialog).findByRole('status')).toHaveTextContent(
+      'Thiết bị không chia sẻ được ảnh — dùng Tải về.',
+    )
+    expect(navigator.share).not.toHaveBeenCalled()
+    Reflect.deleteProperty(navigator, 'share')
+    Reflect.deleteProperty(navigator, 'canShare')
+    vi.unstubAllGlobals()
   })
 })

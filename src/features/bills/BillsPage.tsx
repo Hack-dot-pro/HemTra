@@ -4,11 +4,14 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
+import Modal from '../../components/ui/Modal'
 import { SERVER_ERROR } from '../../lib/http'
 import { formatVnd } from '../../lib/format'
+import { downloadBlob } from '../pos/exportBillPng'
 import { defaultBillsApi, type BillsApi } from './api'
 import {
   PAGE_SIZE,
+  billImageFileName,
   formatBillDateTime,
   totalPages,
   validateDateRange,
@@ -16,6 +19,13 @@ import {
 } from './logic'
 
 export type BillsPageProps = { api?: BillsApi }
+
+type BillModal = {
+  row: BillRow
+  url: string
+  status: 'loading' | 'ready' | 'error'
+  notice: { tone: 'ok' | 'warn' | 'error'; text: string }
+}
 
 export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
   const [rows, setRows] = useState<BillRow[]>([])
@@ -27,6 +37,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
   const [to, setTo] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [modal, setModal] = useState<BillModal | null>(null)
 
   const rangeError = validateDateRange(from, to)
   const pages = totalPages(total)
@@ -79,6 +90,59 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
     setTo('')
     setPage(0)
   }
+
+  async function openImage(row: BillRow): Promise<void> {
+    setModal({ row, url: '', status: 'loading', notice: { tone: 'ok', text: '' } })
+    try {
+      const url = await api.signedImageUrl(row.imagePath)
+      setModal((current) => (current ? { ...current, url, status: 'ready' } : current))
+    } catch {
+      setModal((current) => (current ? { ...current, status: 'error' } : current))
+    }
+  }
+
+  function setNotice(tone: BillModal['notice']['tone'], text: string): void {
+    setModal((current) => (current ? { ...current, notice: { tone, text } } : current))
+  }
+
+  /** Signed URL mới mỗi lần chia sẻ/tải — link cũ có thể đã hết hạn (TTL 120s). */
+  async function fetchImageBlob(row: BillRow): Promise<Blob> {
+    const url = await api.signedImageUrl(row.imagePath)
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(SERVER_ERROR)
+    return response.blob()
+  }
+
+  async function handleShare(): Promise<void> {
+    const row = modal?.row
+    if (!row) return
+    try {
+      const blob = await fetchImageBlob(row)
+      const file = new File([blob], billImageFileName(row.code), { type: 'image/png' })
+      if (typeof navigator.share !== 'function' || !navigator.canShare?.({ files: [file] })) {
+        setNotice('warn', 'Thiết bị không chia sẻ được ảnh — dùng Tải về.')
+        return
+      }
+      await navigator.share({ files: [file], title: `Bill ${row.code} — Hẻm Trà` })
+    } catch (shareError) {
+      if (shareError instanceof DOMException && shareError.name === 'AbortError') return
+      setNotice('error', 'Chia sẻ thất bại, thử lại sau.')
+    }
+  }
+
+  async function handleDownload(): Promise<void> {
+    const row = modal?.row
+    if (!row) return
+    try {
+      const blob = await fetchImageBlob(row)
+      downloadBlob(blob, billImageFileName(row.code))
+      setNotice('ok', `Đã lưu ${billImageFileName(row.code)} về máy.`)
+    } catch {
+      setNotice('error', 'Không tải được ảnh bill, thử lại sau.')
+    }
+  }
+
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   return (
     <section className="glass-card p-4 sm:p-6">
@@ -154,14 +218,15 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
       ) : null}
 
       <div className="mt-4 overflow-x-auto" tabIndex={0} role="region" aria-label="Danh sách bill">
-        <table className="w-full min-w-[560px] text-left text-sm">
+        <table className="w-full min-w-[680px] text-left text-sm">
           <thead className="text-xs uppercase text-white/60">
             <tr>
               <th scope="col" className="py-2 pr-2">Mã bill</th>
               <th scope="col" className="py-2 pr-2">Thời gian</th>
               <th scope="col" className="py-2 pr-2">Người tạo</th>
               <th scope="col" className="py-2 pr-2 text-right">Tổng</th>
-              <th scope="col" className="py-2 text-right">Số món</th>
+              <th scope="col" className="py-2 pr-2 text-right">Số món</th>
+              <th scope="col" className="py-2 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -173,12 +238,26 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
                 </td>
                 <td className="py-2 pr-2 text-white/70">{row.username ?? '—'}</td>
                 <td className="py-2 pr-2 text-right whitespace-nowrap">{formatVnd(row.total)}</td>
-                <td className="py-2 text-right">{row.itemCount}</td>
+                <td className="py-2 pr-2 text-right">{row.itemCount}</td>
+                <td className="py-2 text-right">
+                  {row.imagePath ? (
+                    <button
+                      type="button"
+                      className="glass-btn !px-2 !py-1 text-xs"
+                      aria-label={`Xem ảnh ${row.code}`}
+                      onClick={() => void openImage(row)}
+                    >
+                      Xem ảnh
+                    </button>
+                  ) : (
+                    <span className="text-xs text-white/50">Chưa có ảnh</span>
+                  )}
+                </td>
               </tr>
             ))}
             {rows.length === 0 && !loading && !error && !rangeError ? (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-white/60">
+                <td colSpan={6} className="py-6 text-center text-white/60">
                   {total === 0 ? 'Chưa có bill nào.' : 'Không tìm thấy bill khớp.'}
                 </td>
               </tr>
@@ -210,6 +289,75 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
           </button>
         </div>
       </nav>
+
+      {modal ? (
+        <Modal
+          title={`Bill ${modal.row.code}`}
+          onClose={() => setModal(null)}
+          footer={
+            <>
+              {canShare ? (
+                <button type="button" className="glass-btn" onClick={() => void handleShare()}>
+                  Chia sẻ lại
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="glass-btn glass-btn-primary"
+                onClick={() => void handleDownload()}
+              >
+                Tải về
+              </button>
+              <button type="button" className="glass-btn" onClick={() => setModal(null)}>
+                Đóng
+              </button>
+            </>
+          }
+        >
+          {modal.status === 'loading' ? (
+            <p role="status" className="text-sm text-white/70">
+              Đang tải ảnh bill…
+            </p>
+          ) : null}
+
+          {modal.status === 'error' ? (
+            <div role="alert" className="text-sm text-red-200">
+              <p>Không tải được ảnh bill.</p>
+              <button
+                type="button"
+                className="glass-btn mt-2 !py-1 text-xs"
+                onClick={() => void openImage(modal.row)}
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : null}
+
+          {modal.status === 'ready' ? (
+            <img
+              src={modal.url}
+              alt={`Ảnh bill ${modal.row.code}`}
+              className="w-full rounded-lg bg-white/95"
+              onError={() =>
+                setModal((current) => (current ? { ...current, status: 'error' } : current))
+              }
+            />
+          ) : null}
+
+          {modal.notice.text ? (
+            <p
+              role={modal.notice.tone === 'error' ? 'alert' : 'status'}
+              className={
+                modal.notice.tone === 'error'
+                  ? 'mt-3 text-sm text-red-200'
+                  : 'mt-3 text-sm text-white/80'
+              }
+            >
+              {modal.notice.text}
+            </p>
+          ) : null}
+        </Modal>
+      ) : null}
     </section>
   )
 }

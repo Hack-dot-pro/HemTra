@@ -5,6 +5,12 @@
 /** Số dòng mỗi trang — vừa khít mobile, tránh kéo bill_items quá lớn. */
 export const PAGE_SIZE = 20
 
+/**
+ * Signed URL sống 2 phút — "ngắn hạn" theo security/skill §Storage; đủ thời
+ * gian tải <img> + chia sẻ/tải về, không để link đọc ảnh bill dùng mãi được.
+ */
+export const SIGNED_URL_TTL_SECONDS = 120
+
 export type BillListParams = {
   /** Chỉ số trang bắt đầu từ 0. */
   page: number
@@ -25,6 +31,8 @@ export type BillRow = {
   username: string | null
   /** Số món = tổng số ly của dòng cha (topping không tính), đồng nhất với POS. */
   itemCount: number
+  /** Đường dẫn PNG trong bucket `bills`; rỗng = bill chưa có ảnh (P7-T2). */
+  imagePath: string
 }
 
 export type BillPage = { rows: BillRow[]; total: number }
@@ -92,4 +100,9 @@ export function formatBillDateTime(iso: string): string {
     hour12: false,
     timeZone: 'Asia/Ho_Chi_Minh',
   }).format(date)
+}
+
+/** Tên file khi tải về / chia sẻ lại ảnh bill: <code>.png */
+export function billImageFileName(code: string): string {
+  return `${code}.png`
 }

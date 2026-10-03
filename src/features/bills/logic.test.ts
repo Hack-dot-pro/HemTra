@@ -5,6 +5,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   PAGE_SIZE,
+  SIGNED_URL_TTL_SECONDS,
+  billImageFileName,
   dateFilterIso,
   escapeLike,
   formatBillDateTime,
@@ -103,5 +105,18 @@ describe('formatBillDateTime — hiển thị giờ quán', () => {
   it('chuỗi ngày hỏng → "—" thay vì ném lỗi làm trắng màn hình', () => {
     expect(formatBillDateTime('')).toBe('—')
     expect(formatBillDateTime('2026-10-001T07:05:00.000Z')).toBe('—')
+  })
+})
+
+
+describe('P7-T2 — signed URL và tên file ảnh bill', () => {
+  it('signed URL sống 120 giây — "ngắn hạn", không dài bằng phiên 7 ngày', () => {
+    expect(SIGNED_URL_TTL_SECONDS).toBeGreaterThan(0)
+    expect(SIGNED_URL_TTL_SECONDS).toBeLessThanOrEqual(300)
+  })
+
+  it('tên file tải/chia sẻ = <mã bill>.png', () => {
+    expect(billImageFileName('HT-261003-0001')).toBe('HT-261003-0001.png')
+    expect(billImageFileName('HT-261003-OFF-ab12')).toBe('HT-261003-OFF-ab12.png')
   })
 })

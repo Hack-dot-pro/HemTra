@@ -4,10 +4,12 @@
 // aggregate phía server, tránh view/RPC mới). design §4.1: cả 2 role xem được.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { BILL_BUCKET } from '../../lib/billUpload'
 import { CONFIG_ERROR, NETWORK_ERROR, SERVER_ERROR } from '../../lib/http'
 import { getSupabase } from '../../lib/supabase'
 import {
   PAGE_SIZE,
+  SIGNED_URL_TTL_SECONDS,
   dateFilterIso,
   escapeLike,
   summarizeItemCounts,
@@ -18,6 +20,8 @@ import {
 
 export type BillsApi = {
   list(params: BillListParams): Promise<BillPage>
+  /** Signed URL ngắn hạn cho ảnh PNG trong bucket `bills` (P7-T2). */
+  signedImageUrl(path: string): Promise<string>
 }
 
 class ApiError extends Error {
@@ -58,6 +62,7 @@ type BillDbRow = {
   code: string
   total: number
   created_at: string
+  image_path: string
   profiles: { username: string } | { username: string }[] | null
 }
 
@@ -70,7 +75,7 @@ export const defaultBillsApi: BillsApi = {
 
       let query = client
         .from('bills')
-        .select('id,code,total,created_at,profiles(username)', { count: 'exact' })
+        .select('id,code,total,created_at,image_path,profiles(username)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1)
       if (code) query = query.ilike('code', `%${escapeLike(code)}%`)
@@ -100,10 +105,23 @@ export const defaultBillsApi: BillsApi = {
           created_at: row.created_at,
           username: profile?.username ?? null,
           itemCount: counts[row.id] ?? 0,
+          imagePath: row.image_path ?? '',
         }
       })
 
       return { rows: mapped, total: count ?? 0 }
+    })
+  },
+
+  async signedImageUrl(path) {
+    return withClient(async (client) => {
+      const { data, error } = await client.storage
+        .from(BILL_BUCKET)
+        .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+      throwOnError({ error })
+      const url = (data as { signedUrl?: string } | null)?.signedUrl
+      if (!url) throw new ApiError(SERVER_ERROR)
+      return url
     })
   },
 }
