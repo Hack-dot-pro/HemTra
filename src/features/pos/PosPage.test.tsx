@@ -1,14 +1,41 @@
-// Unit test PosPage — P6-T2/T3 (grid + panel bill). Dùng menu cache THẬT
-// trong fake-indexeddb (đúng đường data thật: useMenuSnapshot → readCachedMenu),
-// không mock network, không mock logic.
+// Unit test PosPage — P6-T2/T3/T7 (grid + panel bill + thanh toán). Menu cache
+// THẬT trong fake-indexeddb (đúng đường data: useMenuSnapshot → readCachedMenu).
+// P6-T7 mock đúng 2 biên: supabase client (không mạng) + exportBillPng (jsdom
+// không có canvas); logic thanh toán / outbox vẫn chạy THẬT.
 
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PosPage from './PosPage'
-import { HemTraDB, setDbForTest } from '../../lib/db'
-import { writeCachedMenu } from '../../lib/menuSync'
+import { HemTraDB, setDbForTest, type HemTraDB as DBType } from '../../lib/db'
+import { listPending } from '../../lib/outbox'
+import { syncMenu, writeCachedMenu } from '../../lib/menuSync'
 import type { MenuSnapshot } from '../../lib/menuTypes'
+
+const { rpcMock, uploadMock } = vi.hoisted(() => ({
+  rpcMock: vi.fn(),
+  uploadMock: vi.fn(),
+}))
+
+vi.mock('../../lib/supabase', () => ({
+  getSupabase: () => ({
+    rpc: (...args: unknown[]) => rpcMock(...args),
+    storage: { from: () => ({ upload: (...args: unknown[]) => uploadMock(...args) }) },
+  }),
+}))
+
+vi.mock('../../lib/menuSync', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../lib/menuSync')>()
+  return { ...mod, syncMenu: vi.fn(async () => null) }
+})
+
+vi.mock('./exportBillPng', () => ({
+  billNodeToBlob: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
+  downloadBlob: vi.fn(),
+  isSafariCapture: () => false,
+}))
+
+let testDb: DBType
 
 function menuFixture(): MenuSnapshot {
   return {
@@ -37,14 +64,18 @@ function menuFixture(): MenuSnapshot {
 }
 
 beforeEach(async () => {
-  const db = new HemTraDB(`pos-test-${Math.random().toString(16).slice(2)}`)
-  setDbForTest(db)
-  await writeCachedMenu(menuFixture(), db)
+  rpcMock.mockReset()
+  uploadMock.mockReset().mockResolvedValue({ error: null })
+  vi.mocked(syncMenu).mockClear()
+  testDb = new HemTraDB(`pos-test-${Math.random().toString(16).slice(2)}`)
+  setDbForTest(testDb)
+  await writeCachedMenu(menuFixture(), testDb)
 })
 
 afterEach(() => {
   cleanup()
   setDbForTest(null)
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
 })
 
 async function renderPos() {
@@ -155,6 +186,76 @@ describe('P6-T2/T3 — panel bill realtime', () => {
     const phone = screen.getByLabelText('SĐT / ghi chú đơn')
     await user.type(phone, '0909 123 456')
     expect(phone).toHaveValue('0909 123 456')
+  })
+})
+
+describe('P6-T7 — thanh toán online', () => {
+  it('bấm Thanh toán → RPC đúng menu_version/items → hiện mã, upload ảnh, reset giỏ', async () => {
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    expect(screen.getByTestId('checkout-btn')).toBeEnabled()
+
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 35000, price_drift: false, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+
+    await screen.findByText('Đã tạo bill HT-261003-0001.')
+    expect(rpcMock).toHaveBeenCalledWith(
+      'create_bill',
+      expect.objectContaining({
+        p_menu_version: 7,
+        p_is_offline: false,
+        p_items: [
+          expect.objectContaining({ product_id: 'p1', qty: 1, name: 'Trà sữa đào', unit_price: 35000 }),
+        ],
+      }),
+    )
+    // ảnh upload đúng đường dẫn YYYY/MM/<code>.png (policy Storage)
+    expect(uploadMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^\d{4}\/\d{2}\/HT-261003-0001\.png$/),
+      expect.any(Blob),
+      { contentType: 'image/png', upsert: false },
+    )
+    expect(screen.getByTestId('bill-count')).toHaveTextContent('0 món')
+    expect(screen.getByTestId('last-sale')).toHaveTextContent('HT-261003-0001')
+    expect(await listPending()).toHaveLength(0) // online không đi outbox
+  })
+
+  it('lech menu_version → refresh menu + cảnh báo, KHÔNG tạo bill lần này', async () => {
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: 'menu_version_changed' } })
+    await user.click(screen.getByTestId('checkout-btn'))
+
+    await screen.findByText('Giá vừa cập nhật — kiểm tra lại giỏ rồi thanh toán.')
+    expect(syncMenu).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('bill-count')).toHaveTextContent('1 món') // giữ giỏ cho xem lại
+    expect(uploadMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('P6-T7 — thanh toán offline', () => {
+  it('mất mạng → mã OFF + PNG vào outbox pending, thông báo chờ đồng bộ', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    const user = await renderPos()
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    await user.click(screen.getByTestId('checkout-btn'))
+
+    await screen.findByText(/Offline — bill HT-\d{6}-OFF-[A-Za-z0-9]{4} đã lưu/)
+    expect(rpcMock).not.toHaveBeenCalled() // không gọi mạng khi offline
+
+    const pending = await listPending()
+    expect(pending).toHaveLength(1)
+    expect(pending[0].status).toBe('pending')
+    expect(pending[0].payload.is_offline).toBe(true)
+    expect(pending[0].payload.offline_code).toMatch(/^HT-\d{6}-OFF-[A-Za-z0-9]{4}$/)
+    expect(pending[0].png).toBeTruthy() // jsdom Blob không sống sót qua fake-indexeddb (browser thật có)
+    expect(screen.getByTestId('bill-count')).toHaveTextContent('0 món')
+
+    // quay lại online → event sync sẽ bắn (đây: gọi thẳng sync qua onOnline không test — outbox đã có đủ dữ liệu)
+    expect(await testDb.outbox.count()).toBe(1)
   })
 })
 

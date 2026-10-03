@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T20:45:00+07:00",
+    "last_updated": "2026-10-03T21:40:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P6",
-    "task": "P6-T7",
+    "task": "P6-T8",
     "step": "READ",
-    "note": "T6 xuat PNG xong (5 unit). Tiep T7: create_bill RPC + upload PNG + menu_version + outbox P4-T5."
+    "note": "T7 xong: RPC create_bill (menu_version/rate-limit/idempotent), upload PNG Storage path policy, offline outbox+useOutboxSync, banner offline/stale, phone_note 50. 362 unit/105 e2e xanh, bundle 222.82KB. Tiep P6-T8: Web Share API + Luu ve may + fallback."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -1069,6 +1069,20 @@
         ".opencode/skills/pos-bill/skill.md §5"
       ],
       "output": "html-to-image lazy (1.11.13), Safari double-capture, downloadBlob; 5 unit mock; typecheck 0, lint 0, build gzip 219.25KB head giu nguyen (chunk lazy tach khi T7 import)."
+    },
+    {
+      "at": "2026-10-03T21:40:00+07:00",
+      "agent": "main-coding",
+      "event": "P6-T7 done (+P4-T5 nop POS)",
+      "file": "src/features/pos/checkout.ts, src/features/pos/PosPage.tsx, src/lib/billUpload.ts, src/lib/useOutbox.ts",
+      "skills_read": [
+        ".opencode/skills/pos-bill/skill.md §5",
+        ".opencode/skills/pwa-offline/skill.md §4",
+        ".opencode/skills/backend/skill.md §4",
+        "design.md §6.2",
+        "design.md §8"
+      ],
+      "output": "checkout.ts (RPC 7 tham so, MenuVersionChanged/RateLimited, OFF code regex, enqueueOfflineBill, toSheetItems) + billUpload (path UTC+7 + regex policy, 300KB guard) + useOutboxSync (mount/online/sau ban) + PosPage Thanh toan (DOM an -> PNG -> upload/ outbox; banner offline + stale; phone_note 50). Unit +39 (362/362), e2e 105/105, build gzip 222.82KB (lazy chunks qrcode/html-to-image). P4-T5 dong."
     }
   ],
   "phases": {
@@ -1158,7 +1172,7 @@
         "P4-T2": "done",
         "P4-T3": "done",
         "P4-T4": "done",
-        "P4-T5": "pending",
+        "P4-T5": "done",
         "P4-T6": "done",
         "P4-T7": "done",
         "P4-T8": "done",
@@ -1196,7 +1210,7 @@
         "P6-T4": "done",
         "P6-T5": "done",
         "P6-T6": "done",
-        "P6-T7": "pending",
+        "P6-T7": "done",
         "P6-T8": "pending",
         "P6-T9": "pending"
       }
@@ -1618,6 +1632,11 @@
       "at": "2026-10-03T20:45:00+07:00",
       "agent": "main-coding",
       "event": "DONE P6-T6: xuat PNG lazy + Safari 2 lan + fallback luu. Ke tiep P6-T7 create_bill."
+    },
+    {
+      "at": "2026-10-03T21:40:00+07:00",
+      "agent": "main-coding",
+      "event": "DONE P6-T7: thanh toan RPC + upload PNG + offline outbox (dong P4-T5). 362 unit, 105 e2e. Ke tiep P6-T8 chia se Web Share."
     }
   ],
   "tasks": {}

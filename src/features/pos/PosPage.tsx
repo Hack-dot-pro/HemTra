@@ -4,12 +4,28 @@
 // Nguồn data: menu cache IndexedDB qua useMenuSnapshot (design §8.2) — bán
 // được cả khi offline; app_meta sync do AppLayout lo.
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Minus, NotebookPen, Plus } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { formatVnd } from '../../lib/format'
-import { useMenuSnapshot } from '../../lib/useMenu'
+import { createBillUploader } from '../../lib/billUpload'
+import { getSupabase } from '../../lib/supabase'
+import { syncMenu } from '../../lib/menuSync'
+import { useMenuSnapshot, useOnlineStatus, isMenuStale } from '../../lib/useMenu'
+import { useOutboxSync } from '../../lib/useOutbox'
 import type { MenuSnapshot } from '../../lib/menuTypes'
+import BillSheet, { type BillSheetProps } from './BillSheet'
+import { generateQrDataUrl } from './qr'
+import { billNodeToBlob } from './exportBillPng'
+import {
+  CheckoutRateLimitedError,
+  MenuVersionChangedError,
+  createBillOnline,
+  enqueueOfflineBill,
+  makeOfflineCode,
+  sheetTotal,
+  toSheetItems,
+} from './checkout'
 import {
   activeCategories,
   addProduct,
@@ -35,12 +51,21 @@ const EMPTY_MENU: MenuSnapshot = {
   product_toppings: [],
 }
 
+type CheckoutMsg = { tone: 'ok' | 'warn' | 'error'; text: string }
+
 export default function PosPage() {
   const snapshot = useMenuSnapshot()
+  const online = useOnlineStatus()
+  const syncOutbox = useOutboxSync()
   const [bill, setBill] = useState(createBill)
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
   const [noteLineId, setNoteLineId] = useState<string | null>(null)
   const [toppingLineId, setToppingLineId] = useState<string | null>(null)
+  const [paying, setPaying] = useState(false)
+  const [checkoutMsg, setCheckoutMsg] = useState<CheckoutMsg | null>(null)
+  const [lastSale, setLastSale] = useState<{ code: string; png: Blob | null } | null>(null)
+  const [sheet, setSheet] = useState<BillSheetProps | null>(null)
+  const hostRef = useRef<HTMLDivElement | null>(null)
 
   const menu = snapshot ?? EMPTY_MENU
   const categories = useMemo(() => activeCategories(menu), [menu])
@@ -55,6 +80,100 @@ export default function PosPage() {
 
   const toppingLine = bill.lines.find((l) => l.line_id === toppingLineId) ?? null
   const availableToppings = toppingLine ? toppingsForProduct(menu, toppingLine.product_id) : []
+
+  function nextPaint(): Promise<void> {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+  }
+
+  /** Mount BillSheet vào DOM ẩn rồi chụp PNG (html-to-image cần node có layout). */
+  async function renderBillPng(sheetData: BillSheetProps): Promise<Blob> {
+    setSheet(sheetData)
+    await nextPaint()
+    const node = hostRef.current
+    if (!node) throw new Error('bill_host_missing')
+    return billNodeToBlob(node)
+  }
+
+  async function handleCheckout(): Promise<void> {
+    if (paying || bill.lines.length === 0) return
+    const client = getSupabase()
+    if (!client) {
+      setCheckoutMsg({ tone: 'error', text: 'Chưa kết nối máy chủ — kiểm tra lại đăng nhập.' })
+      return
+    }
+    setPaying(true)
+    setCheckoutMsg(null)
+    try {
+      const qrDataUrl = await generateQrDataUrl().catch(() => undefined)
+      const createdAt = Date.now()
+      if (navigator.onLine) {
+        const result = await createBillOnline({ client, bill, menuVersion: menu.menu_version })
+        let png: Blob | null = null
+        try {
+          png = await renderBillPng({
+            code: result.code,
+            createdAt,
+            items: toSheetItems(bill),
+            total: sheetTotal(bill, result),
+            qrDataUrl,
+          })
+          await createBillUploader(client)({
+            code: result.code,
+            blob: png,
+            createdAtIso: new Date(createdAt).toISOString(),
+            clientUuid: result.client_uuid,
+          })
+        } catch {
+          png = null // bill đã tạo — thiếu ảnh không được bán lại
+        }
+        setLastSale({ code: result.code, png })
+        setCheckoutMsg({
+          tone: result.price_drift ? 'warn' : 'ok',
+          text: result.price_drift
+            ? `Đã tạo bill ${result.code} — giá tại quầy khác giá hiển thị (đã ghi nhận).`
+            : `Đã tạo bill ${result.code}.`,
+        })
+        setBill(createBill())
+      } else {
+        const offline_code = makeOfflineCode()
+        const png = await renderBillPng({
+          code: offline_code,
+          createdAt,
+          items: toSheetItems(bill),
+          total: sheetTotal(bill, null),
+          qrDataUrl,
+        })
+        await enqueueOfflineBill({ bill, menuVersion: menu.menu_version, png, offlineCode: offline_code })
+        setLastSale({ code: offline_code, png })
+        setCheckoutMsg({
+          tone: 'ok',
+          text: `Offline — bill ${offline_code} đã lưu, sẽ tự đồng bộ khi có mạng.`,
+        })
+        setBill(createBill())
+        void syncOutbox()
+      }
+    } catch (error) {
+      if (error instanceof MenuVersionChangedError) {
+        await syncMenu({ client })
+        setCheckoutMsg({
+          tone: 'warn',
+          text: 'Giá vừa cập nhật — kiểm tra lại giỏ rồi thanh toán.',
+        })
+      } else if (error instanceof CheckoutRateLimitedError) {
+        setCheckoutMsg({ tone: 'error', text: 'Quá 10 bill trong 1 phút — thử lại sau.' })
+      } else {
+        setCheckoutMsg({
+          tone: 'error',
+          text: `Lỗi thanh toán: ${error instanceof Error ? error.message : 'không rõ'}`,
+        })
+      }
+    } finally {
+      setSheet(null)
+      setPaying(false)
+    }
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -74,6 +193,29 @@ export default function PosPage() {
           </p>
         ) : (
           <>
+            {!online ? (
+              <p
+                data-testid="offline-banner"
+                className="glass-card mb-3 border-amber-300/40 p-3 text-sm text-amber-100"
+              >
+                Đang offline — giá cập nhật lúc{' '}
+                {snapshot
+                  ? new Date(snapshot.fetched_at).toLocaleTimeString('vi-VN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : '—'}
+              </p>
+            ) : null}
+            {isMenuStale(snapshot) ? (
+              <p
+                data-testid="stale-menu-banner"
+                className="glass-card mb-3 border-amber-300/40 p-3 text-sm text-amber-100"
+              >
+                Menu đã lưu quá 24h — vẫn bán được, nên kiểm tra kết nối để cập nhật.
+              </p>
+            ) : null}
+
             <div className="mb-3 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Lọc theo nhóm">
               {categories.map((category) => {
                 const selected = category.id === selectedCategoryId
@@ -236,7 +378,49 @@ export default function PosPage() {
             {formatVnd(billTotal(bill))}
           </span>
         </div>
+
+        <button
+          type="button"
+          data-testid="checkout-btn"
+          disabled={paying || bill.lines.length === 0}
+          onClick={() => void handleCheckout()}
+          className="glass-btn glass-btn-primary mt-3 w-full !py-2.5 font-semibold"
+        >
+          {paying ? 'Đang xử lý…' : `Thanh toán ${formatVnd(billTotal(bill))}`}
+        </button>
+
+        {checkoutMsg ? (
+          <p
+            data-testid="checkout-msg"
+            role={checkoutMsg.tone === 'error' ? 'alert' : 'status'}
+            className={`glass-card mt-3 p-3 text-sm ${
+              checkoutMsg.tone === 'error'
+                ? 'border-red-300/40 text-red-100'
+                : checkoutMsg.tone === 'warn'
+                  ? 'border-amber-300/40 text-amber-100'
+                  : 'border-emerald-300/40 text-emerald-100'
+            }`}
+          >
+            {checkoutMsg.text}
+          </p>
+        ) : null}
+        {lastSale ? (
+          <p className="mt-2 text-xs text-white/60" data-testid="last-sale">
+            Bill gần nhất: {lastSale.code}
+          </p>
+        ) : null}
       </aside>
+
+      {sheet ? (
+        <div
+          ref={hostRef}
+          aria-hidden="true"
+          data-testid="bill-host"
+          className="pointer-events-none fixed -left-[10000px] top-0"
+        >
+          <BillSheet {...sheet} />
+        </div>
+      ) : null}
 
       {toppingLine ? (
         <Modal title={`Topping cho ${toppingLine.name}`} onClose={() => setToppingLineId(null)}>

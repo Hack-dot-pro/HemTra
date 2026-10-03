@@ -7,7 +7,8 @@ import type { MenuSnapshot, MenuProduct, MenuTopping, ProductToppingLink } from 
 
 export const MAX_LINE_QTY = 99
 export const MAX_NOTE_LENGTH = 100
-export const MAX_PHONE_NOTE_LENGTH = 100
+/** RPC create_bill chấp nhận tối đa 50 ký tự (phone_note_invalid). */
+export const MAX_PHONE_NOTE_LENGTH = 50
 
 /** Một topping đã chọn cho 1 dòng (giá snapshot). */
 export type BillTopping = {
