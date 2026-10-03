@@ -35,6 +35,36 @@ const CORS_HEADERS = {
   'access-control-expose-headers': 'content-range',
 }
 
+// P4-T3: sau đăng nhập, AppLayout chạy useMenuSync() (src/lib/useMenu.ts) —
+// query app_meta để so menu_version + mở kênh realtime app_meta. Phải đợi 2
+// luồng này ổn định TRƯỚC khi điều hướng bằng page.goto lần nữa: điều hướng
+// giữa chừng làm fetch bị hủy (unhandledrejection "…due to access control
+// checks") và WebSocket đóng khi đang kết nối — nhiễu tầng mạng của teardown,
+// không phải lỗi app. Bằng chứng timeline: .opencode/evidence/p4-e2e-race.md.
+// Gọi TRƯỚC page.goto để không bỏ lỡ sự kiện websocket/response.
+async function waitForMenuSyncReady(page: Page): Promise<void> {
+  const appMeta = page.waitForResponse(
+    (res) => res.url().includes('/rest/v1/app_meta') && res.status() === 200,
+  )
+  const joined = new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('realtime app_meta không gửi phx_join trong 10s')),
+      10_000,
+    )
+    page.on('websocket', (socket) => {
+      if (!socket.url().includes('/realtime/v1/websocket')) return
+      socket.on('framesent', (frame) => {
+        if (String(frame.payload).includes('phx_join')) {
+          clearTimeout(timer)
+          resolve()
+        }
+      })
+    })
+  })
+  await appMeta
+  await joined
+}
+
 function fulfill(page: Page, pattern: string, status: number, body: unknown): Promise<void> {
   return page.route(pattern, (route) =>
     route.fulfill({
@@ -346,8 +376,10 @@ test('P3-T9: nhân viên không có link và bị chặn ở màn đổi email k
     })
   })
 
+  const menuReady = waitForMenuSyncReady(page)
   await page.goto('/dashboard')
   await expect(page.locator('a[href="/change-recovery-email"]')).toHaveCount(0)
+  await menuReady
 
   await page.goto('/change-recovery-email')
   await expect(page.getByRole('status')).toContainText('Chỉ admin mới dùng chức năng này')

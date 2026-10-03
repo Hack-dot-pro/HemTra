@@ -78,4 +78,26 @@ export async function injectAuth(page: Page, options: InjectAuthOptions = {}): P
       ]),
     }),
   )
+
+  // P4: sau đăng nhập, AppLayout chạy useMenuSync() (menuSync.ts) → query
+  // app_meta để so menu_version, lệch (cache rỗng) → tải categories/products/toppings.
+  // Không mock → 4-5 request đi thật với token giả → 401 vào console → Q10 fail.
+  // Mock tầng dữ liệu (giống p4-pwa.spec) — code app vẫn chạy thật.
+  const cors = {
+    'access-control-allow-origin': '*',
+    'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info, range',
+    'access-control-expose-headers': 'content-range',
+  }
+  const json = (body: unknown): { status: 200; contentType: string; headers: typeof cors; body: string } => ({
+    status: 200,
+    contentType: 'application/json',
+    headers: cors,
+    body: JSON.stringify(body),
+  })
+  await page.route('**/rest/v1/app_meta*', (route) =>
+    route.fulfill(json([{ id: 1, menu_version: 7, bootstrapped: false }])),
+  )
+  await page.route('**/rest/v1/categories*', (route) => route.fulfill(json([])))
+  await page.route('**/rest/v1/products*', (route) => route.fulfill(json([])))
+  await page.route('**/rest/v1/toppings*', (route) => route.fulfill(json([])))
 }

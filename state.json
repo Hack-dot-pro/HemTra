@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T09:20:00+07:00",
+    "last_updated": "2026-10-03T10:10:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P4",
     "task": "P4-T1",
     "step": "READ",
-    "note": "Dong P3 (QC vong 3 PASS + SEC vong 2 PASS, tick Gate plan.md, commit phase). Bat dau P4: doc skills pwa-offline + uiux + security(§Headers) truoc khi code. Code P4 da commit (6dc40c6) nhung chua doi chieu tick plan P4-T1..T9; con thieu: registerServiceWorker()/startDeployVersionPolling() (src/lib/pwaClient.ts) chua goi o main/App, PwaUpdateBar chua render, e2e co 3 test fail (helpers.ts chua mock rest/v1/app_meta)."
+    "note": "Dong P3 (QC vong 3 + SEC vong 2 PASS, commit b1bbf25). P4: da fix het 4 e2e fail (helpers.ts mock app_meta/menu; p3-auth them waitForMenuSyncReady truoc goto lan 2) -> 81/81 xanh, evidence p4-e2e-fix.md. Kiep: code P4 (6dc40c6) chua doi chieu tick plan P4-T1..T9; tiep theo: wire registerServiceWorker()/startDeployVersionPolling() (src/lib/pwaClient.ts) vao main/App + render PwaUpdateBar, chay QC/SEC P4; roi don backlog + hoi Q-004/Q-006 + commit package-lock.json."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -846,6 +846,31 @@
         ".opencode/evidence/p3-qc-round3.md"
       ],
       "result": "VERDICT PASS - S1-S15 xanh/N-A dung ly do; xac minh fix SEC-001 (session theo auth.sessions.created_at, live 11/11) + SEC-002 (require_current_password=true -> PUT /auth/v1/user 400); khong loi moi; cloud pre-bootstrap sach."
+    },
+    {
+      "at": "2026-10-03T09:35:00+07:00",
+      "agent": "main-coding",
+      "event": "skills_read",
+      "skills": [
+        ".opencode/skills/pwa-offline/skill.md (toan bo)",
+        ".opencode/skills/uiux/skill.md (toan bo)",
+        ".opencode/skills/security/skill.md (toan bo)",
+        ".opencode/skills/testing/skill.md (toan bo)"
+      ],
+      "note": "Doc truoc khi code P4 (ma tran AGENT.md §12.1) — sua e2e/helpers.ts (mock app_meta) va doi chieu code P4 da commit."
+    },
+    {
+      "at": "2026-10-03T10:10:00+07:00",
+      "agent": "main-coding",
+      "event": "fix 4 e2e fail sau dong P3",
+      "file": ".opencode/evidence/p4-e2e-fix.md",
+      "skills_read": [
+        ".opencode/skills/pwa-offline/skill.md",
+        ".opencode/skills/uiux/skill.md",
+        ".opencode/skills/security/skill.md",
+        ".opencode/skills/testing/skill.md"
+      ],
+      "note": "3 test chromium fail vi injectAuth chua mock rest/v1/app_meta (P4 AppLayout/useMenuSync query) -> them mock app_meta/categories/products/toppings + CORS; 1 test webkit p3-auth fail vi goto lan 2 khi menu sync dang bay + WS realtime dang handshake (teardown race, khong phai loi app) -> waitForMenuSyncReady (cho app_meta 200 + phx_join framesent) truoc goto. Ket qua: e2e 81/81 xanh (3 project, 4.5m; rieng test fail chay 4/4 webkit), typecheck 0, lint 0, vitest 252/252. Da go het debug instrumentation; menuSync.ts khong doi."
     }
   ],
   "phases": {
@@ -1307,6 +1332,10 @@
     {
       "ts": "2026-10-03T09:20:00+07:00",
       "event": "Dong phase P3: SEC vong 2 PASS -> tick Gate QC+SEC trong plan.md, trang thai done, pointer sang P4 (P4-T1/READ)."
+    },
+    {
+      "ts": "2026-10-03T10:10:00+07:00",
+      "event": "Sua 4 e2e fail: mock app_meta trong injectAuth (3 test chromium) + waitForMenuSyncReady truoc goto lan 2 cua p3-auth (teardown race WebSocket/app_meta, webkit 4/4 pass). Toan bo e2e 81/81, typecheck/lint 0, vitest 252/252. Ke tiep: wire PWA (registerServiceWorker + PwaUpdateBar) va tick plan P4."
     }
   ],
   "tasks": {}
