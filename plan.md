@@ -60,15 +60,15 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P4 — PWA, offline, chống kẹt cache
 📖 `uiux/skill.md`, `security/skill.md §Headers`, `design.md §8`
-- [ ] **P4-T1** `vite-plugin-pwa` (`injectManifest`), manifest, precache app shell, `index.html`/`sw.js` no-cache trong `public/_headers`
-- [ ] **P4-T2** Dexie: bảng `menuCache` (có `menu_version`, `fetched_at`) và `outbox`
-- [ ] **P4-T3** Đồng bộ menu: lúc mở app, `visibilitychange`, `online`, Realtime `app_meta`; so `menu_version`
-- [ ] **P4-T4** Banner trạng thái mạng + "giá cập nhật lúc …"; cảnh báo cache > 24 giờ
-- [ ] **P4-T5** Outbox bill + đồng bộ idempotent theo `client_uuid`; xử lý `price_drift`
-- [ ] **P4-T6** `version.json` + kiểm tra định kỳ; luồng cập nhật SW có xác nhận
-- [ ] **P4-T7** Hàm `hardRefresh()` (design §8.7) hoạt động Safari + Chrome; bảo vệ outbox (xác nhận trước khi xóa)
-- [ ] **P4-T8** Hoàn thiện nút Tải App & Xóa cache (nối logic thật với UI từ P2)
-- [ ] **P4-T9** Test: unit (so version, outbox), Playwright (offline → bán → online → đồng bộ; đổi giá ở tab khác → tab cũ thấy giá mới; hardRefresh)
+- [x] **P4-T1** `vite-plugin-pwa` (`injectManifest`), manifest, precache app shell, `index.html`/`sw.js` no-cache trong `public/_headers` → xong 2026-10-03 (config `vite.config.ts`: strategies injectManifest, `src/sw.ts`, `injectRegister:false`, manifest đủ icon 192/512/maskable; build thật: precache 21 entries 4837.78 KiB, `dist/sw.js`+`manifest.webmanifest`+`version.json`; `_headers`: `/index.html`+`/sw.js` no-cache, `/version.json` no-store, `/assets/*` immutable)
+- [x] **P4-T2** Dexie: bảng `menuCache` (có `menu_version`, `fetched_at`) và `outbox` → xong 2026-10-03 (`src/lib/db.ts`: `menuCache` (id/menu_version/fetched_at/categories/products/toppings) + `outbox` (client_uuid khóa chính, payload, png, status, attempts, last_error, price_drift); unit dùng module Dexie thật — không bịa schema tay)
+- [x] **P4-T3** Đồng bộ menu: lúc mở app, `visibilitychange`, `online`, Realtime `app_meta`; so `menu_version` → xong 2026-10-03 (`src/lib/menuSync.ts` 4 điểm chạm + `useMenuSync()` trong AppLayout; unit menuSync.test asserts đúng 1 listener visibilitychange/online + callback realtime; e2e `p4-pwa.spec.ts` T3: mở app sau đăng nhập → ghi menu vào IndexedDB)
+- [x] **P4-T4** Banner trạng thái mạng + "giá cập nhật lúc …"; cảnh báo cache > 24 giờ → xong 2026-10-03 (`src/components/ui/NetworkBanner.tsx`: offline / giá cập nhật lúc HH:mm / cache >24h; e2e T4: offline → banner, có mạng → hết)
+- [ ] **P4-T5** Outbox bill + đồng bộ idempotent theo `client_uuid`; xử lý `price_drift` — **lib xong, chờ nối POS**: `src/lib/outbox.ts` (`enqueueBill`/`syncOutbox` idempotent theo `client_uuid`, cờ `price_drift`, unit `outbox.test.ts`) nhưng chưa có code nào enqueue/sync ngoài test → nối luồng bán ở **P6-T7** (bán chưa có trong P4)
+- [x] **P4-T6** `version.json` + kiểm tra định kỳ; luồng cập nhật SW có xác nhận → xong 2026-10-03 (plugin `hemtra:version-json` sinh `dist/version.json` no-store; `pwaClient.ts`: `registerServiceWorker()` + `startDeployVersionPolling()` 10 phút + khi `online`, `PwaUpdateBar` chờ người dùng bấm — không tự reload; **đã nối** `main.tsx` + render `PwaUpdateBar` ở AppLayout 2026-10-03; smoke build thật qua `vite preview`: SW active + page controlled, `version.json`=id build, manifest OK, 0 console error)
+- [x] **P4-T7** Hàm `hardRefresh()` (design §8.7) hoạt động Safari + Chrome; bảo vệ outbox (xác nhận trước khi xóa) → xong 2026-10-03 (`src/lib/hardRefresh.ts` đúng thứ tự unregister SW → xóa caches → xóa `menuCache` **giữ outbox** → `confirmPending` khi còn bill chờ; unit `hardRefresh.test.ts` 5 case; e2e T7/T8: còn bill chưa sync → hỏi, xóa menu cache nhưng GIỮ outbox + username)
+- [x] **P4-T8** Hoàn thiện nút Tải App & Xóa cache (nối logic thật với UI từ P2) → xong 2026-10-03 (`LoginStage` dùng `useInstallPrompt()` + `useClearCache()` — runner mặc định `clearCacheAndReload()` gọi `hardRefresh()` thật; `simulateClearCache()` chỉ còn cho test; unit LoginStage.test + useClearCache.test)
+- [ ] **P4-T9** Test: unit (so version, outbox), Playwright (offline → bán → online → đồng bộ; đổi giá ở tab khác → tab cũ thấy giá mới; hardRefresh) — **một phần**: unit ✔ (version/outbox/hardRefresh/menuSync, tổng 252 xanh); Playwright có T3/T4/T7-T8 (81/81 xanh); case "offline → bán → online → đồng bộ" ghi ở **P6-T9** khi POS có (ghi rõ trong `e2e/p4-pwa.spec.ts` header), case "đổi giá tab khác" chờ menu UI ở **P5** rồi làm e2e chéo tab
 - **Gate:** QC ☐ · SEC ☐
 
 ## P5 — Menu Sản phẩm

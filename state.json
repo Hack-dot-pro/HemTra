@@ -5,14 +5,14 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-03T10:10:00+07:00",
+    "last_updated": "2026-10-03T11:05:00+07:00",
     "last_agent": "main-coding"
   },
   "pointer": {
     "phase": "P4",
     "task": "P4-T1",
     "step": "READ",
-    "note": "Dong P3 (QC vong 3 + SEC vong 2 PASS, commit b1bbf25). P4: da fix het 4 e2e fail (helpers.ts mock app_meta/menu; p3-auth them waitForMenuSyncReady truoc goto lan 2) -> 81/81 xanh, evidence p4-e2e-fix.md. Kiep: code P4 (6dc40c6) chua doi chieu tick plan P4-T1..T9; tiep theo: wire registerServiceWorker()/startDeployVersionPolling() (src/lib/pwaClient.ts) vao main/App + render PwaUpdateBar, chay QC/SEC P4; roi don backlog + hoi Q-004/Q-006 + commit package-lock.json."
+    "note": "P4: da nop PWA vao app (main.tsx: registerServiceWorker + startDeployVersionPolling; AppLayout render PwaUpdateBar), smoke build that (SW active + version.json = build id + 0 console error), tick plan P4-T1/T2/T3/T4/T6/T7/T8 (evidence p4-t6-wiring.md). P4-T5 (outbox chua noi POS) va P4-T9 (2 case e2e cho P6/P5) con pending - da ghi chu trong plan.md. Kiep: chay qc-test P4 (vong 1) sau do security-audit P4; sau gate: don backlog + hoi Q-004/Q-006 + commit package-lock.json."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -871,6 +871,13 @@
         ".opencode/skills/testing/skill.md"
       ],
       "note": "3 test chromium fail vi injectAuth chua mock rest/v1/app_meta (P4 AppLayout/useMenuSync query) -> them mock app_meta/categories/products/toppings + CORS; 1 test webkit p3-auth fail vi goto lan 2 khi menu sync dang bay + WS realtime dang handshake (teardown race, khong phai loi app) -> waitForMenuSyncReady (cho app_meta 200 + phx_join framesent) truoc goto. Ket qua: e2e 81/81 xanh (3 project, 4.5m; rieng test fail chay 4/4 webkit), typecheck 0, lint 0, vitest 252/252. Da go het debug instrumentation; menuSync.ts khong doi."
+    },
+    {
+      "at": "2026-10-03T11:05:00+07:00",
+      "agent": "main-coding",
+      "event": "P4: nop registerServiceWorker + version poll + PwaUpdateBar",
+      "file": ".opencode/evidence/p4-t6-wiring.md",
+      "note": "main.tsx goi registerServiceWorker() + startDeployVersionPolling(); AppLayout render PwaUpdateBar (cho phep nguoi dung xac nhan, khong tu reload). Dev: devOptions.enabled=false -> registerSW noop (e2e khong loi console). Build that + preview smoke: SW active/controlled, version.json=murqt4bb = build id, manifest OK, 0 console error; typecheck/lint 0, vitest 252, e2e 81/81. Tick plan P4-T1/T2/T3/T4/T6/T7/T8; T5/T9 pending ly do ghi ro trong plan.md."
     }
   ],
   "phases": {
@@ -956,14 +963,14 @@
         "sec": null
       },
       "tasks": {
-        "P4-T1": "pending",
-        "P4-T2": "pending",
-        "P4-T3": "pending",
-        "P4-T4": "pending",
+        "P4-T1": "done",
+        "P4-T2": "done",
+        "P4-T3": "done",
+        "P4-T4": "done",
         "P4-T5": "pending",
-        "P4-T6": "pending",
-        "P4-T7": "pending",
-        "P4-T8": "pending",
+        "P4-T6": "done",
+        "P4-T7": "done",
+        "P4-T8": "done",
         "P4-T9": "pending"
       }
     },
@@ -1336,6 +1343,10 @@
     {
       "ts": "2026-10-03T10:10:00+07:00",
       "event": "Sua 4 e2e fail: mock app_meta trong injectAuth (3 test chromium) + waitForMenuSyncReady truoc goto lan 2 cua p3-auth (teardown race WebSocket/app_meta, webkit 4/4 pass). Toan bo e2e 81/81, typecheck/lint 0, vitest 252/252. Ke tiep: wire PWA (registerServiceWorker + PwaUpdateBar) va tick plan P4."
+    },
+    {
+      "ts": "2026-10-03T11:05:00+07:00",
+      "event": "Nop PWA (registerServiceWorker + poll version.json + PwaUpdateBar) va tick P4-T1..T4/T6..T8 voi bang chung (build preview smoke SW active, 252 unit, 81/81 e2e). T5/T9 con pending (noi POS + 2 case e2e thuoc P6/P5). Ke tiep: qc-test P4."
     }
   ],
   "tasks": {}

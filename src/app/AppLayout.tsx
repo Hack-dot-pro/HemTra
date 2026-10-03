@@ -3,6 +3,7 @@ import { KeyRound, Mail } from 'lucide-react'
 import { NAV_ITEMS } from './nav'
 import { useAuthProfile } from './authProfileContext'
 import NetworkBanner from '../components/ui/NetworkBanner.tsx'
+import PwaUpdateBar from '../components/ui/PwaUpdateBar.tsx'
 import { useMenuSync } from '../lib/useMenu'
 
 function navLinkClass(isActive: boolean): string {
@@ -33,6 +34,9 @@ export default function AppLayout() {
     <div className="relative min-h-dvh">
       <div aria-hidden="true" className="app-bg absolute inset-0" />
       <div aria-hidden="true" className="absolute inset-0 bg-overlay backdrop-blur-md" />
+
+      {/* P4-T6: thanh xác nhận cập nhật SW/version.json — luôn chờ người dùng bấm (design §8.6). */}
+      <PwaUpdateBar />
 
       <div className="relative flex min-h-dvh">
         <aside className="hidden w-60 shrink-0 md:block">
