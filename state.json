@@ -10,10 +10,10 @@
     "agent": "main-coding"
   },
   "pointer": {
-    "phase": "P9",
-    "task": "P9-T1",
+    "phase": "P10",
+    "task": "P10-T1",
     "step": "START",
-    "note": "Dong P8 (QC PASS 472 unit + 15 e2e, bundle 232.82 kB gzip < 250 kB; SEC PASS RLS session_fresh). Chuyen sang P9 Quan ly user."
+    "note": "Dong P9 (QC PASS 503 unit + 18 e2e, bundle 237.24 kB gzip < 250 kB; SEC PASS RBAC server-side). Chuyen sang P10 Cung co bao mat toan he thong."
   },
   "limits": {
     "max_qc_rounds": 3,

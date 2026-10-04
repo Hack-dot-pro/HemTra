@@ -117,12 +117,12 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P9 — Menu Quản lý user
 📖 `backend/skill.md`, `security/skill.md §Auth`
-- [ ] **P9-T1** Danh sách user (role, người tạo, ngày tạo, trạng thái)
-- [ ] **P9-T2** 🔒 Edge Function `admin-users`: tạo user, cấp lại mật khẩu (sinh tạm), đặt mật khẩu, xóa — kiểm quyền phía server
-- [ ] **P9-T3** UI thêm user, cấp lại/đổi mật khẩu (admin), xóa (admin, có xác nhận)
-- [ ] **P9-T4** Chặn mọi thao tác lên tài khoản admin từ non-admin (cả UI và server)
-- [ ] **P9-T5** Test: ma trận quyền (admin/staff × hành động) bằng unit + SQL + Playwright
-- **Gate:** QC ☐ · SEC ☐
+- [x] **P9-T1** Danh sách user (role, người tạo, ngày tạo, trạng thái) → xong 2026-10-04 (`UsersPage.tsx`: bảng responsive glassmorphism, role badge tím/xanh, trạng thái đổi mật khẩu, người tạo, ngày tạo định dạng VN)
+- [x] **P9-T2** 🔒 Edge Function `admin-users`: tạo user, cấp lại mật khẩu (sinh tạm), đặt mật khẩu, xóa — kiểm quyền phía server → xong 2026-10-04 (EF `admin-users` deploy lên cloud Supabase, xác thực session caller, kiểm tra ma trận RBAC server-side)
+- [x] **P9-T3** UI thêm user, cấp lại/đổi mật khẩu (admin), xóa (admin, có xác nhận) → xong 2026-10-04 (Modal `CreateUserModal`, `TempPasswordModal` với nút sao chép, `SetPasswordModal`, `ConfirmDialog` xác nhận xóa)
+- [x] **P9-T4** Chặn mọi thao tác lên tài khoản admin từ non-admin (cả UI và server) → xong 2026-10-04 (chặn server-side và client-side: non-admin không thể thao tác lên tài khoản admin, admin không được tự xóa chính mình)
+- [x] **P9-T5** Test: ma trận quyền (admin/staff × hành động) bằng unit + SQL + Playwright → xong 2026-10-04 (31/31 unit test `features/users/` xanh, 8/8 live smoke test trên cloud Supabase đạt, 18/18 Playwright E2E xanh 3 browser Chromium/Firefox/WebKit)
+- **Gate:** QC ☑ PASS (2026-10-04, 503/503 unit test xanh, 18/18 e2e xanh, bundle 237.24 kB gzip < 250 kB) · SEC ☑ PASS (2026-10-04, RBAC server-side bằng Service Role trong Edge Function, 0 secret leak, 0 injection)
 
 ## P10 — Củng cố bảo mật toàn hệ thống
 📖 `security/skill.md` (toàn bộ)
