@@ -101,4 +101,7 @@ export async function injectAuth(page: Page, options: InjectAuthOptions = {}): P
   await page.route('**/rest/v1/products*', (route) => route.fulfill(json([])))
   await page.route('**/rest/v1/toppings*', (route) => route.fulfill(json([])))
   await page.route('**/rest/v1/product_toppings*', (route) => route.fulfill(json([])))
+  await page.route('**/rest/v1/stats_daily*', (route) => route.fulfill(json([])))
+  await page.route('**/rest/v1/stats_product_monthly*', (route) => route.fulfill(json([])))
+  await page.route('**/rest/v1/stats_product_alltime*', (route) => route.fulfill(json([])))
 }

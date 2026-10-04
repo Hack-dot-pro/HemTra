@@ -1,0 +1,24 @@
+name: Supabase Keep Alive Ping
+
+on:
+  schedule:
+    # Chạy vào 04:00 AM UTC mỗi 3 ngày một lần
+    - cron: '0 4 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Supabase Database & Auth
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "https://tsnrggxczipzqvvpcbld.supabase.co/rest/v1/app_meta?select=id" \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}")
+          echo "Supabase ping response HTTP status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Ping successful, Supabase project is active."
+          else
+            echo "Warning: Received HTTP status $STATUS"
+          fi

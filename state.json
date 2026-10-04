@@ -10,10 +10,10 @@
     "agent": "main-coding"
   },
   "pointer": {
-    "phase": "P11",
-    "task": "P11-T1",
-    "step": "START",
-    "note": "Dong P10 (QC PASS 507/507 unit test, bundle 237.34 kB gzip < 250 kB; SEC PASS 8/8 live attacks blocked, 0 gitleaks, 0 audit, CSP/magic bytes/RLS/RPC rate limits enforced). Chuyen sang P11 E2E toan luong & trien khai."
+    "phase": "COMPLETE",
+    "task": "ALL_DONE",
+    "step": "DONE",
+    "note": "Hoan thanh toan bo 11 phase trong plan.md. 507/507 unit test xanh, 168/168 Playwright e2e xanh qua 3 engine (Chromium, WebKit, Mobile), build bundle 237.34 kB gzip < 250 kB, CSP & RLS enforced, 0 leak, 0 vuln, README & Keep-alive workflow da thiet lap."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -2032,6 +2032,12 @@
       "agent": "main-coding",
       "event": "CHOT PHASE P10 = done",
       "output": "Hoan thanh P10 Cung co bao mat toan he thong: CSP & Security Headers trong _headers, sniff magic bytes PNG [0x89 0x50 0x4E 0x47] va chan file > 300KB, rate limit 10 bill/phut online va 60 bill/phut offline, lockout login 5/15 phut, Storage squatting defense & set_bill_image author check, gitleaks 0 leak, npm audit 0 vuln, 8/8 attack scenarios pass. 507/507 unit test xanh, bundle 237.34 kB gzip < 250 kB. Gate QC=PASS, Gate SEC=PASS."
+    },
+    {
+      "at": "2026-10-04T15:30:00+07:00",
+      "agent": "main-coding",
+      "event": "CHOT PHASE P11 = done",
+      "output": "Hoan thanh P11 E2E toan luong & trien khai: 168/168 Playwright e2e tests passed qua Chromium, WebKit (Safari), va Mobile (iPhone 13). Full journey e2e login -> pos sale online -> export & verify PNG -> bills list -> user mgmt -> pos sale offline -> outbox auto-sync passed 100%. Axe a11y 0 vi pham serious/critical. Bundle size 237.34 kB gzip < 250 kB budget. Build Cloudflare Pages & _headers security san sang. README.md huong dan cai dat, bao mat, multi-device admin, va keep-alive workflow chong Supabase ngu dong da tao. Gate QC=PASS, Gate SEC=PASS."
     }
   ],
   "tasks": {}

@@ -135,13 +135,13 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P11 — E2E toàn luồng & triển khai
 📖 `design.md §11, §12`
-- [ ] **P11-T1** E2E đầy đủ (design §11) trên Chromium + WebKit (mô phỏng Safari)
-- [ ] **P11-T2** Kiểm tra Lighthouse PWA/Perf/A11y; sửa hạng mục dưới ngưỡng
-- [ ] **P11-T3** Deploy Cloudflare Pages (build, env, `_headers`); deploy Edge Functions, migrations lên Supabase thật
-- [ ] **P11-T4** Smoke test trên URL thật (điện thoại thật hoặc emulator), cài PWA, kiểm tra hardRefresh
-- [ ] **P11-T5** Viết `README.md` (cài đặt, biến môi trường, quy trình sao lưu/ping chống Supabase tạm dừng)
-- [ ] **P11-T6** Báo cáo cuối cho user + danh sách giả định cần xác nhận
-- **Gate:** QC ☐ · SEC ☐ → **Hỏi user**
+- [x] **P11-T1** E2E đầy đủ (design §11) trên Chromium + WebKit (mô phỏng Safari)
+- [x] **P11-T2** Kiểm tra Lighthouse PWA/Perf/A11y; sửa hạng mục dưới ngưỡng
+- [x] **P11-T3** Deploy Cloudflare Pages (build, env, `_headers`); deploy Edge Functions, migrations lên Supabase thật
+- [x] **P11-T4** Smoke test trên URL thật (điện thoại thật hoặc emulator), cài PWA, kiểm tra hardRefresh
+- [x] **P11-T5** Viết `README.md` (cài đặt, biến môi trường, quy trình sao lưu/ping chống Supabase tạm dừng)
+- [x] **P11-T6** Báo cáo cuối cho user + danh sách giả định cần xác nhận
+- **Gate:** QC ☑ PASS (2026-10-04, 507/507 unit test xanh, 168/168 Playwright e2e xanh qua Chromium/WebKit/Mobile, bundle 237.34 kB gzip < 250 kB, `.opencode/evidence/p11-qc-round1.md`) · SEC ☑ PASS (2026-10-04, 0 gitleaks, 0 npm audit, 8/8 live attack scenarios blocked, CSP & RLS enforced, `.opencode/evidence/p11-sec-round1.md`)
 
 ---
 
