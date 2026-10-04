@@ -123,9 +123,11 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
   expect(download.suggestedFilename()).toBe('HT-261003-0001.png')
   const filePath = await download.path()
   expect(filePath).toBeTruthy()
-  const buf = await readFile(filePath as string)
   expect([...buf.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
   expect(buf.readUInt32BE(16)).toBe(2160)
+  expect(buf.readUInt32BE(20)).toBeGreaterThan(1000)
+  // Bill thật (có logo, QR, bảng món) phải > 50KB, không thể là ảnh trắng rỗng
+  expect(buf.length).toBeGreaterThan(50_000)
   await page.getByTestId('preview-close-btn').click()
   await expect(page.getByTestId('bill-preview')).toHaveCount(0)
 

@@ -9,6 +9,7 @@ import {
   isSafariCapture,
   pngDataUrlSize,
   preloadBillPngLib,
+  resolveBillTarget,
   warmBillImage,
 } from './exportBillPng'
 
@@ -64,6 +65,20 @@ describe('P6-T6/T9 — billNodeToPngDataUrl', () => {
     setUa('Mozilla/5.0 (X11; Linux x86_64) jsdom/24')
     toPng.mockResolvedValue('')
     await expect(billNodeToPngDataUrl(document.createElement('div'))).rejects.toThrow('PNG_EXPORT_EMPTY')
+  })
+
+  it('nhắm trúng element [data-testid="bill-sheet"] bên trong container ẩn', async () => {
+    const host = document.createElement('div')
+    host.setAttribute('data-testid', 'bill-host')
+    const sheet = document.createElement('div')
+    sheet.setAttribute('data-testid', 'bill-sheet')
+    host.appendChild(sheet)
+
+    expect(resolveBillTarget(host)).toBe(sheet)
+    expect(resolveBillTarget(sheet)).toBe(sheet)
+
+    await billNodeToPngDataUrl(host)
+    expect(toPng).toHaveBeenCalledWith(sheet, expect.anything())
   })
 })
 

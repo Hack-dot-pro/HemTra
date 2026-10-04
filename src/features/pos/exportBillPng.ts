@@ -69,19 +69,37 @@ async function embedImageSources(node: HTMLElement): Promise<void> {
   }
 }
 
+/** Tìm element BillSheet thật sự (tránh chụp trúng container ẩn -left-[10000px] làm trắng bill). */
+export function resolveBillTarget(node: HTMLElement): HTMLElement {
+  if (node.getAttribute?.('data-testid') === 'bill-sheet') return node
+  const sheet = node.querySelector<HTMLElement>('[data-testid="bill-sheet"]')
+  if (sheet) return sheet
+  return node
+}
+
 /**
  * Chụp bill → data URL PNG (không qua blob: WebKit không đọc được blob canvas
  * bằng FileReader/IDB — P6-T9 e2e webkit). Safari vẫn chụp 2 lần.
  */
 export async function billNodeToPngDataUrl(node: HTMLElement): Promise<string> {
   const { toPng } = await import('html-to-image')
-  await embedImageSources(node)
+  const target = resolveBillTarget(node)
+  await embedImageSources(target)
   const capture = () =>
-    toPng(node, {
+    toPng(target, {
       pixelRatio: EXPORT_PIXEL_RATIO,
       width: BILL_WIDTH_PX,
       backgroundColor: '#ffffff',
       cacheBust: true,
+      style: {
+        position: 'static',
+        left: '0px',
+        top: '0px',
+        right: 'auto',
+        bottom: 'auto',
+        transform: 'none',
+        margin: '0 auto',
+      },
       // Ảnh load lỗi (offline chưa warm) → bỏ qua, vẫn xuất PNG còn thiếu logo.
       onImageErrorHandler: (() => undefined) as never,
     })
