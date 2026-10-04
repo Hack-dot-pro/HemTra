@@ -2,9 +2,22 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { BILL_PNG_MAX_BYTES, billPngPath, createBillUploader } from './billUpload'
+import { BILL_PNG_MAX_BYTES, billPngPath, createBillUploader, isPngBlob } from './billUpload'
 
 const STORAGE_PATH_REGEX = /^[0-9]{4}\/[0-9]{2}\/HT-[0-9]{6}(-OFF-[A-Za-z0-9]{4}|-[0-9]{4,})\.png$/
+
+function createFakePng(extraBytes = 0): Blob {
+  const bytes = new Uint8Array(8 + extraBytes)
+  bytes[0] = 0x89
+  bytes[1] = 0x50
+  bytes[2] = 0x4e
+  bytes[3] = 0x47
+  bytes[4] = 0x0d
+  bytes[5] = 0x0a
+  bytes[6] = 0x1a
+  bytes[7] = 0x0a
+  return new Blob([bytes], { type: 'image/png' })
+}
 
 function stub(upload: ReturnType<typeof vi.fn>, rpc = vi.fn().mockResolvedValue({ data: true, error: null })): SupabaseClient {
   return { storage: { from: vi.fn(() => ({ upload })) }, rpc } as unknown as SupabaseClient
@@ -27,12 +40,41 @@ describe('P6-T7 — billPngPath (giờ VN = UTC+7)', () => {
   })
 })
 
+describe('P10-T2 — isPngBlob & Magic Bytes Check', () => {
+  it('nhận diện đúng Blob PNG hợp lệ', async () => {
+    expect(await isPngBlob(createFakePng())).toBe(true)
+  })
+
+  it('từ chối Blob có kích thước < 4 bytes', async () => {
+    expect(await isPngBlob(new Blob(['x']))).toBe(false)
+  })
+
+  it('từ chối Blob không bắt đầu bằng 89 50 4E 47', async () => {
+    const fake = new Blob([new Uint8Array([0x00, 0x01, 0x02, 0x03])])
+    expect(await isPngBlob(fake)).toBe(false)
+  })
+
+  it('chặn upload nếu file không phải PNG magic bytes', async () => {
+    const upload = vi.fn()
+    const nonPng = new Blob(['not a png file'])
+    await expect(
+      createBillUploader(stub(upload))({
+        code: 'HT-261003-0001',
+        blob: nonPng,
+        createdAtIso: '2026-10-03T05:00:00.000Z',
+        clientUuid: 'uuid-1',
+      }),
+    ).rejects.toThrow(/invalid_png_magic_bytes/)
+    expect(upload).not.toHaveBeenCalled()
+  })
+})
+
 describe('P6-T7 — createBillUploader', () => {
   it('happy: upload path đúng, contentType image/png, upsert false', async () => {
     const upload = vi.fn().mockResolvedValue({ error: null })
     const rpc = vi.fn().mockResolvedValue({ data: true, error: null })
     const client = stub(upload, rpc)
-    const png = new Blob(['x'], { type: 'image/png' })
+    const png = createFakePng()
     const out = await createBillUploader(client)({
       code: 'HT-261003-0001',
       blob: png,
@@ -55,7 +97,7 @@ describe('P6-T7 — createBillUploader', () => {
     const rpc = vi.fn().mockResolvedValue({ data: false, error: null })
     const out = await createBillUploader(stub(upload, rpc))({
       code: 'HT-261003-0001',
-      blob: new Blob(['x']),
+      blob: createFakePng(),
       createdAtIso: '2026-10-03T05:00:00.000Z',
       clientUuid: 'uuid-1',
     })
@@ -79,7 +121,7 @@ describe('P6-T7 — createBillUploader', () => {
     const rpc = vi.fn().mockResolvedValue({ data: true, error: null })
     const out = await createBillUploader(stub(upload, rpc))({
       code: 'HT-261003-0001',
-      blob: new Blob(['x']),
+      blob: createFakePng(),
       createdAtIso: '2026-10-03T05:00:00.000Z',
       clientUuid: 'uuid-1',
     })
@@ -96,7 +138,7 @@ describe('P6-T7 — createBillUploader', () => {
     await expect(
       createBillUploader(stub(upload, rpc))({
         code: 'HT-261003-0001',
-        blob: new Blob(['x']),
+        blob: createFakePng(),
         createdAtIso: '2026-10-03T05:00:00.000Z',
         clientUuid: 'uuid-1',
       }),
@@ -115,7 +157,7 @@ describe('P6-T7 — createBillUploader', () => {
     const client = stub(upload, rpc)
     const args = {
       code: 'HT-261003-0001',
-      blob: new Blob(['x']),
+      blob: createFakePng(),
       createdAtIso: '2026-10-03T05:00:00.000Z',
       clientUuid: 'uuid-1',
     }
@@ -135,7 +177,7 @@ describe('P6-T7 — createBillUploader', () => {
     await expect(
       createBillUploader(stub(upload, rpc))({
         code: 'HT-261003-0001',
-        blob: new Blob(['x']),
+        blob: createFakePng(),
         createdAtIso: '2026-10-03T05:00:00.000Z',
         clientUuid: 'uuid-1',
       }),
@@ -148,7 +190,7 @@ describe('P6-T7 — createBillUploader', () => {
     await expect(
       createBillUploader(stub(upload))({
         code: 'HT-261003-0001',
-        blob: new Blob(['x']),
+        blob: createFakePng(),
         createdAtIso: '2026-10-03T05:00:00.000Z',
         clientUuid: 'uuid-1',
       }),
@@ -157,7 +199,7 @@ describe('P6-T7 — createBillUploader', () => {
 
   it('biên: PNG vượt giới hạn bucket 300KB → chặn trước khi upload', async () => {
     const upload = vi.fn()
-    const big = new Blob([new Uint8Array(BILL_PNG_MAX_BYTES + 1)])
+    const big = createFakePng(BILL_PNG_MAX_BYTES + 1)
     await expect(
       createBillUploader(stub(upload))({
         code: 'HT-261003-0001',

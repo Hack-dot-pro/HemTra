@@ -34,7 +34,7 @@ vi.mock('../../lib/menuSync', async (importOriginal) => {
 })
 
 vi.mock('./exportBillPng', () => ({
-  billNodeToPngDataUrl: vi.fn(async () => 'data:image/png;base64,UE5H'),
+  billNodeToPngDataUrl: vi.fn(async () => 'data:image/png;base64,iVBORw0KGgo='),
   downloadBlob: vi.fn(),
   isSafariCapture: () => false,
   preloadBillPngLib: vi.fn(async () => undefined),
@@ -120,7 +120,7 @@ function captureSheetOnce(): void {
       const totalText = totalBox?.querySelectorAll('span')[1]?.textContent ?? '0'
       captured = { lineSum, total: Number(totalText.replace(/[^0-9]/g, '')) }
     }
-    return 'data:image/png;base64,UE5H'
+    return 'data:image/png;base64,iVBORw0KGgo='
   })
 }
 

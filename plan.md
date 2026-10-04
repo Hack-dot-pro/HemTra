@@ -126,12 +126,12 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## P10 — Củng cố bảo mật toàn hệ thống
 📖 `security/skill.md` (toàn bộ)
-- [ ] **P10-T1** Header an toàn + CSP trong `_headers`; kiểm tra không vỡ chức năng
-- [ ] **P10-T2** Rate limit tạo bill/phút, giới hạn kích thước & loại file upload
-- [ ] **P10-T3** Quét secret (gitleaks), `npm audit`, kiểm tra thư viện bị bỏ rơi
-- [ ] **P10-T4** Kịch bản tấn công thủ công: IDOR bill, nâng quyền staff→admin, sửa JWT, brute-force, XSS ở ghi chú/tên sản phẩm
-- [ ] **P10-T5** Cloudflare: rule rate-limit cho màn đăng nhập (*Turnstile đã bỏ* — quyết định 2026-10-02; lockout 5/15 phút ở EF đã có)
-- **Gate:** QC ☐ · SEC ☐ (SEC chạy toàn diện, không chỉ diff)
+- [x] **P10-T1** Header an toàn + CSP trong `_headers`; kiểm tra không vỡ chức năng
+- [x] **P10-T2** Rate limit tạo bill/phút, giới hạn kích thước & loại file upload
+- [x] **P10-T3** Quét secret (gitleaks), `npm audit`, kiểm tra thư viện bị bỏ rơi
+- [x] **P10-T4** Kịch bản tấn công thủ công: IDOR bill, nâng quyền staff→admin, sửa JWT, brute-force, XSS ở ghi chú/tên sản phẩm
+- [x] **P10-T5** Cloudflare: rule rate-limit cho màn đăng nhập (*Turnstile đã bỏ* — quyết định 2026-10-02; lockout 5/15 phút ở EF đã có)
+- **Gate:** QC ☑ PASS (2026-10-04, 507/507 unit tests xanh, bundle 237.34 kB gzip < 250 kB, `.opencode/evidence/p10-qc-round1.md`) · SEC ☑ PASS (2026-10-04, 8/8 live attacks blocked, 0 gitleaks, 0 npm audit, magic bytes & CSP enforced, `.opencode/evidence/p10-sec-round1.md`)
 
 ## P11 — E2E toàn luồng & triển khai
 📖 `design.md §11, §12`

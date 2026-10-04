@@ -9,6 +9,19 @@ import type { UploadPng } from './outbox'
 export const BILL_BUCKET = 'bills'
 export const BILL_PNG_MAX_BYTES = 307200
 
+/** Kiểm tra 4 byte đầu của file có khớp magic bytes chuẩn PNG: 0x89 0x50 0x4E 0x47 (SEC-007) */
+export async function isPngBlob(blob: Blob): Promise<boolean> {
+  if (blob.size < 4) return false
+  const header = await blob.slice(0, 4).arrayBuffer()
+  const bytes = new Uint8Array(header)
+  return (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  )
+}
+
 export function billPngPath(code: string, createdAtIso: string): string {
   const utc = new Date(createdAtIso).getTime() + 7 * 3600 * 1000 // giờ VN = UTC+7
   const d = new Date(utc)
@@ -29,6 +42,10 @@ export function createBillUploader(client: SupabaseClient): UploadPng {
   return async ({ code, blob, createdAtIso }) => {
     if (blob.size > BILL_PNG_MAX_BYTES) {
       throw new Error(`png_too_large: ${blob.size}`)
+    }
+    const isPng = await isPngBlob(blob)
+    if (!isPng) {
+      throw new Error('invalid_png_magic_bytes')
     }
     const path = billPngPath(code, createdAtIso)
     const { error } = await client.storage.from(BILL_BUCKET).upload(path, blob, {
