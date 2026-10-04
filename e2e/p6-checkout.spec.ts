@@ -211,6 +211,7 @@ test('P6-T9/P4-T9: offline → bán (mã OFF vào outbox) → online → sync cr
   // Có mạng lại → useOutboxSync bắn sync: create_bill(idempotent) rồi upload PNG
   const synced = page.waitForResponse((res) => res.url().includes('/rest/v1/rpc/create_bill'))
   await page.context().setOffline(false)
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
   await synced
 
   expect(rpcCalls).toHaveLength(1)
