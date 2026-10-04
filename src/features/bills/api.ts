@@ -1,7 +1,9 @@
 // Truy vấn danh sách bill — P7-T1. Bảng bills chỉ ĐỌC được từ client
-// (RLS "bills_read" + không có policy ghi — design §6: xóa chỉ qua cleanup-bills
-// P7-T4); số món lấy từ bill_items của đúng trang đang xem (2 query thay vì
-// aggregate phía server, tránh view/RPC mới). design §4.1: cả 2 role xem được.
+// (RLS "bills_read" + không có policy ghi — design §6: xóa chỉ qua EF
+// cleanup-bills (P7-T3) theo lịch pg_cron (P7-T4)); số món lấy từ bill_items
+// của đúng trang đang xem (2 query thay vì aggregate phía server, tránh view/
+// RPC mới). design §4.1: cả 2 role xem được. `expires_at` trả về cho tag
+// "tự xóa sau N ngày".
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { BILL_BUCKET } from '../../lib/billUpload'
@@ -62,6 +64,7 @@ type BillDbRow = {
   code: string
   total: number
   created_at: string
+  expires_at: string
   image_path: string
   profiles: { username: string } | { username: string }[] | null
 }
@@ -75,7 +78,7 @@ export const defaultBillsApi: BillsApi = {
 
       let query = client
         .from('bills')
-        .select('id,code,total,created_at,image_path,profiles(username)', { count: 'exact' })
+        .select('id,code,total,created_at,expires_at,image_path,profiles(username)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1)
       if (code) query = query.ilike('code', `%${escapeLike(code)}%`)
@@ -106,6 +109,7 @@ export const defaultBillsApi: BillsApi = {
           username: profile?.username ?? null,
           itemCount: counts[row.id] ?? 0,
           imagePath: row.image_path ?? '',
+          expiresAt: row.expires_at ?? '',
         }
       })
 

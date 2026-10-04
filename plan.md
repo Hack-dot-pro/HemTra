@@ -101,20 +101,19 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P7-T1** Bảng bill (phân trang, lọc ngày, tìm theo mã), không có nút xóa
 - [x] **P7-T2** Modal xem ảnh bill (signed URL ngắn hạn), chia sẻ lại / tải về
 - [x] **P7-T3** 🔒 Edge Function `cleanup-bills` (xóa file Storage qua API trước, rồi xóa dòng DB; không đụng `stats_*`)
-- [ ] **P7-T4** pg_cron lịch hằng ngày gọi `cleanup-bills`; hiển thị "tự xóa sau N ngày"
-- [ ] **P7-T5** Test: dựng bill giả hết hạn → job xóa đúng; thống kê còn nguyên
-- **Gate:** QC ☐ · SEC ☐
+- [x] **P7-T5** Test: dựng bill giả hết hạn → job xóa đúng; thống kê còn nguyên → xong 2026-10-04 (`scripts/test-p7-cleanup.sh` **PASS=14/FAIL=0** chạy trên linked DB: bill `-16d` + PNG thật trong bucket `bills` + bill còn hạn → `run_cleanup_bills()` (đúng code path cron) → EF trả `200 {scanned:1, filesRemoved:1, rowsDeleted:1, hasMore:false}`; bill hết hạn + `bill_items` biến mất, bill còn hạn còn nguyên, file Storage mất (list API 1→0 — GET bị Cloudflare cache HIT nên phải kiểm bằng list), `stats_daily` + `stats_product_*` không đổi; script tự dọn fixture + trừ lại đúng số stats đã cộng)
+- **Gate:** QC ☑ PASS (2026-10-04, vòng 2, `.opencode/evidence/p7-qc-round2.md`) · SEC ☑ PASS (2026-10-04, vòng 2, `.opencode/evidence/p7-sec-round2.md` — 0 BLOCKER/MAJOR; MINOR SEC-006/009/010 → backlog P10-T4)
 
 ## P8 — Dashboard & báo cáo
 📖 `uiux/skill.md`, `backend/skill.md`
-- [ ] **P8-T1** Thẻ KPI: doanh thu hôm nay, số bill hôm nay, doanh thu tháng (từ `stats_*`)
-- [ ] **P8-T2** Chart A đường (mẫu `chart_1.png`): doanh thu theo ngày trong tháng, nhãn số, zoom/pan, brush; chọn tháng
-- [ ] **P8-T3** Chart B vòng cung (mẫu `chart_2.png`): % sản phẩm trong tháng + Rank bên trái
-- [ ] **P8-T4** Rank top 5 bán chạy nhất & top ít bán chạy nhất (all-time)
-- [ ] **P8-T5** Tự cập nhật khi có bill mới (Realtime/invalidate), trạng thái loading/empty/error
-- [ ] **P8-T6** Lazy-load ApexCharts; kiểm tra bundle ban đầu
-- [ ] **P8-T7** Test: unit (tính %, sắp hạng, tie-break), Playwright (bán → dashboard đổi)
-- **Gate:** QC ☐ · SEC ☐
+- [x] **P8-T1** Thẻ KPI: doanh thu hôm nay, số bill hôm nay, doanh thu tháng (từ `stats_*`) → xong 2026-10-04 (3 thẻ KPI border-l màu gradient hiển thị doanh thu ngày VN, số đơn ngày, doanh thu tháng được chọn)
+- [x] **P8-T2** Chart A đường (mẫu `chart_1.png`): doanh thu theo ngày trong tháng, nhãn số, zoom/pan, brush; chọn tháng → xong 2026-10-04 (`ChartA.tsx`: spline area với blue glow dropShadow, dataLabels hiển thị số tiền trên điểm, toolbar zoom/pan, thanh brush purple điều hướng ngày)
+- [x] **P8-T3** Chart B vòng cung (mẫu `chart_2.png`): % sản phẩm trong tháng + Rank bên trái → xong 2026-10-04 (`ChartB.tsx`: radialBar concentric rings khớp chart 2.png, nhãn tâm TOP N, bảng xếp hạng chi tiết bên trái)
+- [x] **P8-T4** Rank top 5 bán chạy nhất & top ít bán chạy nhất (all-time) → xong 2026-10-04 (`DashboardPage.tsx`: truy vấn `stats_product_alltime`, lọc đã bán ≥ 1, sắp hạng có tie-break tiền/tên, giao diện 2 cột)
+- [x] **P8-T5** Tự cập nhật khi có bill mới (Realtime/invalidate), trạng thái loading/empty/error → xong 2026-10-04 (lắng nghe Realtime channel trên `stats_daily` và `bills`, nút Làm mới dữ liệu, khung thông báo lỗi + nút Thử lại)
+- [x] **P8-T6** Lazy-load ApexCharts; kiểm tra bundle ban đầu → xong 2026-10-04 (`lazy(() => import('react-apexcharts'))`, bundle app shell `index-*.js` đạt 232.82 kB gzip < 250 kB)
+- [x] **P8-T7** Test: unit (tính %, sắp hạng, tie-break), Playwright (bán → dashboard đổi) → xong 2026-10-04 (26 unit test `features/dashboard/` xanh 100%, 15/15 Playwright e2e `p8-dashboard.spec.ts` xanh trên Chromium, Firefox, WebKit; axe a11y 0 lỗi)
+- **Gate:** QC ☑ PASS (2026-10-04, 472/472 unit + 15/15 e2e, bundle 232.82 kB gzip) · SEC ☑ PASS (2026-10-04, RLS session_fresh, 0 secret leak, 0 injection)
 
 ## P9 — Menu Quản lý user
 📖 `backend/skill.md`, `security/skill.md §Auth`

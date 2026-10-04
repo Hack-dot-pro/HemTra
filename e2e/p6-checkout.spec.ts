@@ -39,9 +39,14 @@ async function mockMenu(page: Page): Promise<void> {
 
 type RpcBody = Record<string, unknown> & { p_is_offline?: boolean; p_offline_code?: string | null }
 
-async function mockCheckout(page: Page): Promise<{ rpcCalls: RpcBody[]; uploads: string[] }> {
+type LinkBody = { p_code?: string; p_path?: string }
+
+async function mockCheckout(
+  page: Page,
+): Promise<{ rpcCalls: RpcBody[]; uploads: string[]; linkCalls: LinkBody[] }> {
   const rpcCalls: RpcBody[] = []
   const uploads: string[] = []
+  const linkCalls: LinkBody[] = []
   await page.route('**/rest/v1/rpc/create_bill', async (route) => {
     const body = JSON.parse(route.request().postData() ?? '{}') as RpcBody
     rpcCalls.push(body)
@@ -60,7 +65,13 @@ async function mockCheckout(page: Page): Promise<{ rpcCalls: RpcBody[]; uploads:
     uploads.push(new URL(route.request().url()).pathname)
     await route.fulfill(json({}))
   })
-  return { rpcCalls, uploads }
+  // gắn image_path sau upload (P7-T2/NV5) — phiên e2e là token giả nên mock RPC,
+  // nhưng VẪN ghi lại body để assert app gọi đúng (không mock "tức mắt").
+  await page.route('**/rest/v1/rpc/set_bill_image', async (route) => {
+    linkCalls.push(JSON.parse(route.request().postData() ?? '{}') as LinkBody)
+    await route.fulfill(json(true))
+  })
+  return { rpcCalls, uploads, linkCalls }
 }
 
 test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy tải PNG 1440px đúng mã', async ({
@@ -68,7 +79,7 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
 }, testInfo) => {
   await injectAuth(page)
   await mockMenu(page)
-  const { rpcCalls, uploads } = await mockCheckout(page)
+  const { rpcCalls, uploads, linkCalls } = await mockCheckout(page)
 
   const pageErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
@@ -92,6 +103,12 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
   // Ảnh upload đúng đường dẫn policy Storage (giờ VN)
   expect(uploads).toHaveLength(1)
   expect(uploads[0]).toMatch(/\/storage\/v1\/object\/bills\/\d{4}\/\d{2}\/HT-261003-0001\.png$/)
+
+  // P7-T2/NV5: sau upload phải gọi set_bill_image đúng mã + đúng đường dẫn vừa upload
+  expect(linkCalls).toHaveLength(1)
+  expect(linkCalls[0].p_code).toBe('HT-261003-0001')
+  expect(linkCalls[0].p_path).toMatch(/^\d{4}\/\d{2}\/HT-261003-0001\.png$/)
+  expect(uploads[0].endsWith(`/bills/${linkCalls[0].p_path}`)).toBe(true)
 
   // PNG tải về: đúng tên mã + magic bytes + bề rộng 720×2 (pixelRatio 2)
   const [download] = await Promise.all([
@@ -166,7 +183,7 @@ test('P6-T9/P4-T9: offline → bán (mã OFF vào outbox) → online → sync cr
 }) => {
   await injectAuth(page)
   await mockMenu(page)
-  const { rpcCalls, uploads } = await mockCheckout(page)
+  const { rpcCalls, uploads, linkCalls } = await mockCheckout(page)
 
   await page.goto('/pos')
   await page.getByRole('button', { name: 'Thêm Trà sữa đào' }).click()
@@ -195,5 +212,9 @@ test('P6-T9/P4-T9: offline → bán (mã OFF vào outbox) → online → sync cr
   expect(uploads[0]).toMatch(
     /\/storage\/v1\/object\/bills\/\d{4}\/\d{2}\/HT-\d{6}-OFF-[A-Za-z0-9]{4}\.png$/,
   )
+  // luồng outbox cũng phải gắn ảnh (NV5) — không chỉ luồng online
+  await expect.poll(() => linkCalls.length).toBe(1)
+  expect(linkCalls[0].p_code).toMatch(/^HT-\d{6}-OFF-[A-Za-z0-9]{4}$/)
+  expect(linkCalls[0].p_path).toMatch(/^\d{4}\/\d{2}\/HT-\d{6}-OFF-[A-Za-z0-9]{4}\.png$/)
   await expect(page.getByTestId('last-sale')).toContainText(/HT-\d{6}-OFF-[A-Za-z0-9]{4}/)
 })

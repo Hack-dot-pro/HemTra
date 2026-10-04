@@ -1,6 +1,7 @@
-// Trang Quản lý bill — P7-T1 (design §7.4): bảng mã / thời gian / người tạo /
-// tổng / số món, phân trang, lọc theo ngày, tìm theo mã. Không có nút xóa ở
-// mọi role (design §4.1); ảnh PNG xem lại là P7-T2.
+// Trang Quản lý bill — P7-T1 (design §7.3 mục 4): bảng mã / thời gian / người tạo /
+// tổng / số món / tự dọn, phân trang, lọc theo ngày, tìm theo mã. Không có nút
+// xóa ở mọi role (design §4.1); ảnh PNG xem lại là P7-T2; tag "tự xóa sau N
+// ngày" (P7-T4) lấy từ `bills.expires_at` + job pg_cron.
 
 import { useCallback, useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
@@ -10,9 +11,12 @@ import { formatVnd } from '../../lib/format'
 import { downloadBlob } from '../pos/exportBillPng'
 import { defaultBillsApi, type BillsApi } from './api'
 import {
+  BILL_RETENTION_DAYS,
   PAGE_SIZE,
   billImageFileName,
   formatBillDateTime,
+  retentionDaysLeft,
+  retentionTagText,
   totalPages,
   validateDateRange,
   type BillRow,
@@ -147,9 +151,15 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
   return (
     <section className="glass-card p-4 sm:p-6">
       <h1 className="text-xl font-semibold">Quản lý bill</h1>
-      <p className="mt-1 text-sm text-white/70">
-        Bill chỉ đọc — không có thao tác xóa. Bill tự xóa sau 15 ngày.
-      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        <p className="text-sm text-white/70">Bill chỉ đọc — không có thao tác xóa.</p>
+        <span
+          data-testid="retention-policy-tag"
+          className="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-xs text-white/80"
+        >
+          {`Tự xóa sau ${BILL_RETENTION_DAYS} ngày`}
+        </span>
+      </div>
 
       <form
         className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
@@ -218,7 +228,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
       ) : null}
 
       <div className="mt-4 overflow-x-auto" tabIndex={0} role="region" aria-label="Danh sách bill">
-        <table className="w-full min-w-[680px] text-left text-sm">
+        <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="text-xs uppercase text-white/60">
             <tr>
               <th scope="col" className="py-2 pr-2">Mã bill</th>
@@ -226,6 +236,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
               <th scope="col" className="py-2 pr-2">Người tạo</th>
               <th scope="col" className="py-2 pr-2 text-right">Tổng</th>
               <th scope="col" className="py-2 pr-2 text-right">Số món</th>
+              <th scope="col" className="py-2 pr-2">Tự dọn</th>
               <th scope="col" className="py-2 text-right">Thao tác</th>
             </tr>
           </thead>
@@ -239,6 +250,11 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
                 <td className="py-2 pr-2 text-white/70">{row.username ?? '—'}</td>
                 <td className="py-2 pr-2 text-right whitespace-nowrap">{formatVnd(row.total)}</td>
                 <td className="py-2 pr-2 text-right">{row.itemCount}</td>
+                <td className="py-2 pr-2 whitespace-nowrap">
+                  <span className="rounded-full border border-white/30 bg-white/15 px-2 py-0.5 text-xs text-white/80">
+                    {retentionTagText(retentionDaysLeft(row.expiresAt))}
+                  </span>
+                </td>
                 <td className="py-2 text-right">
                   {row.imagePath ? (
                     <button
@@ -257,7 +273,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
             ))}
             {rows.length === 0 && !loading && !error && !rangeError ? (
               <tr>
-                <td colSpan={6} className="py-6 text-center text-white/60">
+                <td colSpan={7} className="py-6 text-center text-white/60">
                   {total === 0 ? 'Chưa có bill nào.' : 'Không tìm thấy bill khớp.'}
                 </td>
               </tr>

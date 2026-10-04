@@ -17,6 +17,13 @@ export function billPngPath(code: string, createdAtIso: string): string {
   return `${yyyy}/${mm}/${code}.png`
 }
 
+/** Gắn ảnh vào bill sau khi file đã nằm trong bucket — RPC `set_bill_image`
+ *  chỉ nhận `YYYY/MM/<code>.png` và chỉ khi bill chưa có ảnh (idempotent). */
+export async function linkBillImage(client: SupabaseClient, code: string, path: string): Promise<void> {
+  const { error } = await client.rpc('set_bill_image', { p_code: code, p_path: path })
+  if (error) throw new Error(`image_link_failed: ${error.message}`)
+}
+
 /** UploadPng thật cho syncOutbox — lỗi → outbox retry, bill không mất. */
 export function createBillUploader(client: SupabaseClient): UploadPng {
   return async ({ code, blob, createdAtIso }) => {
@@ -28,7 +35,19 @@ export function createBillUploader(client: SupabaseClient): UploadPng {
       contentType: 'image/png',
       upsert: false,
     })
-    if (error) throw new Error(`png_upload_failed: ${error.message}`)
+    if (error) {
+      // File đã có = retry sau lần upload thành công mà gắn ảnh thất bại → đi gắn ảnh.
+      // Storage project này trả HTTP 400 + body {"statusCode":"409","code":"KeyAlreadyExists"}
+      // (không phải status 409) — bắt đủ 3 dạng + regex như mặc định.
+      const e = error as { message: string; status?: number; statusCode?: string | number; code?: string }
+      const duplicate =
+        e.status === 409 ||
+        String(e.statusCode ?? '') === '409' ||
+        e.code === 'KeyAlreadyExists' ||
+        /already exists|duplicate/i.test(e.message)
+      if (!duplicate) throw new Error(`png_upload_failed: ${error.message}`)
+    }
+    await linkBillImage(client, code, path)
     return path
   }
 }

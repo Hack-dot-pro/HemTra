@@ -1,4 +1,4 @@
-// Unit test cho BillsPage — P7-T1: bảng 5 cột, phân trang, lọc ngày, tìm theo
+// Unit test cho BillsPage — P7-T1: bảng cột, phân trang, lọc ngày, tìm theo
 // mã, trạng thái rỗng/lỗi và KHÔNG có nút xóa (design §4.1 — AGENT.md §11.4).
 // Dùng fake BillsApi qua prop `api` (không đụng mạng). Modal ảnh bill (P7-T2)
 // mock luôn module `downloadBlob` của POS để không đụng DOM download thật.
@@ -24,6 +24,8 @@ function makeRow(overrides: Partial<BillRow> = {}): BillRow {
     username: 't7staff',
     itemCount: 3,
     imagePath: '2026/10/HT-261003-0001.png',
+    // = created_at + 7 ngày — đủ xa để phân biệt với tag policy 15 ngày ở đầu trang
+    expiresAt: '2026-10-10T07:05:00.000Z',
     ...overrides,
   }
 }
@@ -48,7 +50,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('P7-T1 — bảng bill hiển thị đúng 5 cột', () => {
+describe('P7-T1 — bảng bill hiển thị đủ cột', () => {
   it('in mã, thời gian giờ VN, người tạo, tổng, số món', async () => {
     render(<BillsPage api={fakeApi()} />)
 
@@ -74,8 +76,53 @@ describe('P7-T1 — bảng bill hiển thị đúng 5 cột', () => {
     render(<BillsPage api={fakeApi()} />)
     await screen.findByText('HT-261003-0001')
 
-    const labels = screen.getAllByRole('button').map((button) => button.textContent ?? '')
-    expect(labels.some((label) => /x[oó]a/i.test(label))).toBe(false)
+    // Quét cả text lẫn aria-label: nút icon-only vẫn có accessible name.
+    const names = screen.getAllByRole('button').map((button) =>
+      [button.textContent ?? '', button.getAttribute('aria-label') ?? ''].join(' '),
+    )
+    expect(names.some((name) => /x[oó]a/i.test(name))).toBe(false)
+    expect(screen.queryByRole('button', { name: /x[oó]a/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('P7-T4 — tag "tự xóa sau N ngày"', () => {
+  it('tag chính sách 15 ngày ở đầu trang + tag đếm ngược theo expires_at ở từng dòng', async () => {
+    render(<BillsPage api={fakeApi()} />)
+
+    expect(await screen.findByText('HT-261003-0001')).toBeInTheDocument()
+    // Tag policy: lấy từ BILL_RETENTION_DAYS (không hardcode 15 ở JSX)
+    expect(screen.getByTestId('retention-policy-tag')).toHaveTextContent('Tự xóa sau 15 ngày')
+    // Dòng dữ liệu: ngày còn lại phụ thuộc thời điểm chạy test → chỉ so định dạng
+    const row = screen.getByRole('row', { name: /HT-261003-0001/ })
+    expect(row).toHaveTextContent(/Tự xóa (hôm nay|sau \d+ ngày)/)
+    expect(screen.getByRole('columnheader', { name: 'Tự dọn' })).toBeInTheDocument()
+  })
+
+  it('thiếu/khỏe cột expires_at → tag "—", không hiện NaN', async () => {
+    const api = fakeApi({
+      list: vi.fn(async () => ({
+        rows: [makeRow({ expiresAt: '' })],
+        total: 1,
+      })),
+    })
+    render(<BillsPage api={api} />)
+
+    const row = await screen.findByRole('row', { name: /HT-261003-0001/ })
+    expect(row).toHaveTextContent('—')
+    expect(row).not.toHaveTextContent('NaN')
+  })
+
+  it('bill đã quá hạn → "Tự xóa hôm nay"', async () => {
+    const api = fakeApi({
+      list: vi.fn(async () => ({
+        rows: [makeRow({ expiresAt: '2020-01-01T00:00:00.000Z' })],
+        total: 1,
+      })),
+    })
+    render(<BillsPage api={api} />)
+
+    const row = await screen.findByRole('row', { name: /HT-261003-0001/ })
+    expect(row).toHaveTextContent('Tự xóa hôm nay')
   })
 })
 

@@ -13,14 +13,17 @@ import { syncMenu, writeCachedMenu } from '../../lib/menuSync'
 import { billNodeToPngDataUrl, downloadBlob } from './exportBillPng'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 
-const { rpcMock, uploadMock } = vi.hoisted(() => ({
+const { rpcMock, uploadMock, linkMock } = vi.hoisted(() => ({
   rpcMock: vi.fn(),
   uploadMock: vi.fn(),
+  linkMock: vi.fn(),
 }))
 
 vi.mock('../../lib/supabase', () => ({
   getSupabase: () => ({
-    rpc: (...args: unknown[]) => rpcMock(...args),
+    rpc: (fn: string, ...args: unknown[]) =>
+      // gắn ảnh bill (P7-T2/NV5) do createBillUploader gọi — không phải RPC nghiệp vụ
+      fn === 'set_bill_image' ? linkMock(fn, ...args) : rpcMock(fn, ...args),
     storage: { from: () => ({ upload: (...args: unknown[]) => uploadMock(...args) }) },
   }),
 }))
@@ -69,6 +72,7 @@ function menuFixture(): MenuSnapshot {
 beforeEach(async () => {
   rpcMock.mockReset()
   uploadMock.mockReset().mockResolvedValue({ error: null })
+  linkMock.mockReset().mockResolvedValue({ data: true, error: null })
   vi.mocked(syncMenu).mockClear()
   testDb = new HemTraDB(`pos-test-${Math.random().toString(16).slice(2)}`)
   setDbForTest(testDb)
@@ -253,6 +257,13 @@ describe('P6-T7 — thanh toán online', () => {
       expect.any(Blob),
       { contentType: 'image/png', upsert: false },
     )
+    // P7-T2/NV5: upload xong phải gắn image_path qua RPC set_bill_image
+    // (nếu không gọi → bảng Quản lý bill không hiện nút "Xem ảnh")
+    expect(linkMock).toHaveBeenCalledTimes(1)
+    expect(linkMock).toHaveBeenCalledWith('set_bill_image', {
+      p_code: 'HT-261003-0001',
+      p_path: expect.stringMatching(/^\d{4}\/\d{2}\/HT-261003-0001\.png$/),
+    })
     expect(screen.getByTestId('bill-count')).toHaveTextContent('0 món')
     expect(screen.getByTestId('last-sale')).toHaveTextContent('HT-261003-0001')
     expect(await listPending()).toHaveLength(0) // online không đi outbox

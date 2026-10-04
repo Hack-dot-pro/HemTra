@@ -1,5 +1,5 @@
-// P7-T3 — cleanup-bills: dọn bill quá 15 ngày (design §6.1, §7.4 tag
-// "tự xóa sau N ngày", backend/skill §Storage).
+// P7-T3 — cleanup-bills: dọn bill quá 15 ngày (design §5 + §6.4 vòng đời,
+// §7.3 mục 4 tag "tự xóa sau N ngày", backend/skill §Storage).
 //
 // verify_jwt = false (config.toml) — pg_cron gọi bằng net.http_post nên không
 // có user JWT. Bảo vệ bằng secret CRON_SECRET ở header Authorization (so sánh

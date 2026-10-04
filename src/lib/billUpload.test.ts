@@ -6,8 +6,8 @@ import { BILL_PNG_MAX_BYTES, billPngPath, createBillUploader } from './billUploa
 
 const STORAGE_PATH_REGEX = /^[0-9]{4}\/[0-9]{2}\/HT-[0-9]{6}(-OFF-[A-Za-z0-9]{4}|-[0-9]{4,})\.png$/
 
-function stub(upload: ReturnType<typeof vi.fn>): SupabaseClient {
-  return { storage: { from: vi.fn(() => ({ upload })) } } as unknown as SupabaseClient
+function stub(upload: ReturnType<typeof vi.fn>, rpc = vi.fn().mockResolvedValue({ data: true, error: null })): SupabaseClient {
+  return { storage: { from: vi.fn(() => ({ upload })) }, rpc } as unknown as SupabaseClient
 }
 
 describe('P6-T7 — billPngPath (giờ VN = UTC+7)', () => {
@@ -30,7 +30,8 @@ describe('P6-T7 — billPngPath (giờ VN = UTC+7)', () => {
 describe('P6-T7 — createBillUploader', () => {
   it('happy: upload path đúng, contentType image/png, upsert false', async () => {
     const upload = vi.fn().mockResolvedValue({ error: null })
-    const client = stub(upload)
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null })
+    const client = stub(upload, rpc)
     const png = new Blob(['x'], { type: 'image/png' })
     const out = await createBillUploader(client)({
       code: 'HT-261003-0001',
@@ -43,6 +44,103 @@ describe('P6-T7 — createBillUploader', () => {
       contentType: 'image/png',
       upsert: false,
     })
+    expect(rpc).toHaveBeenCalledWith('set_bill_image', {
+      p_code: 'HT-261003-0001',
+      p_path: '2026/10/HT-261003-0001.png',
+    })
+  })
+
+  it('409 đã có file (retry) → vẫn gắn ảnh, không ném', async () => {
+    const upload = vi.fn().mockResolvedValue({ error: { message: 'The resource already exists', status: 409 } })
+    const rpc = vi.fn().mockResolvedValue({ data: false, error: null })
+    const out = await createBillUploader(stub(upload, rpc))({
+      code: 'HT-261003-0001',
+      blob: new Blob(['x']),
+      createdAtIso: '2026-10-03T05:00:00.000Z',
+      clientUuid: 'uuid-1',
+    })
+    expect(out).toBe('2026/10/HT-261003-0001.png')
+    expect(rpc).toHaveBeenCalledTimes(1)
+  })
+
+  it('shape THẬT của storage khi trùng file → vẫn coi là đã có và đi gắn ảnh', async () => {
+    // Kiểm chứng thực tế trên Storage linked (POST trùng path, x-upsert:false):
+    // HTTP 400 + body {"statusCode":"409","error":"Duplicate","message":"The resource already exists",
+    // "code":"KeyAlreadyExists"} → storage-js gán status=400, statusCode="409",
+    // message="The resource already exists" (node_modules/@supabase/storage-js handleError).
+    const upload = vi.fn().mockResolvedValue({
+      error: {
+        message: 'The resource already exists',
+        status: 400,
+        statusCode: '409',
+        code: 'KeyAlreadyExists',
+      },
+    })
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null })
+    const out = await createBillUploader(stub(upload, rpc))({
+      code: 'HT-261003-0001',
+      blob: new Blob(['x']),
+      createdAtIso: '2026-10-03T05:00:00.000Z',
+      clientUuid: 'uuid-1',
+    })
+    expect(out).toBe('2026/10/HT-261003-0001.png')
+    expect(rpc).toHaveBeenCalledWith('set_bill_image', {
+      p_code: 'HT-261003-0001',
+      p_path: '2026/10/HT-261003-0001.png',
+    })
+  })
+
+  it('gắn ảnh thất bại → ném để outbox retry (upload đã xong, không mất bill)', async () => {
+    const upload = vi.fn().mockResolvedValue({ error: null })
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'permission denied' } })
+    await expect(
+      createBillUploader(stub(upload, rpc))({
+        code: 'HT-261003-0001',
+        blob: new Blob(['x']),
+        createdAtIso: '2026-10-03T05:00:00.000Z',
+        clientUuid: 'uuid-1',
+      }),
+    ).rejects.toThrow(/image_link_failed/)
+  })
+
+  it('retry sau khi gắn ảnh thất bại: lần 1 rpc lỗi → ném; lần 2 upload 409 + rpc OK → gắn được', async () => {
+    const upload = vi
+      .fn()
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: { message: 'The resource already exists', status: 409 } })
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: null, error: { message: 'network' } })
+      .mockResolvedValueOnce({ data: true, error: null })
+    const client = stub(upload, rpc)
+    const args = {
+      code: 'HT-261003-0001',
+      blob: new Blob(['x']),
+      createdAtIso: '2026-10-03T05:00:00.000Z',
+      clientUuid: 'uuid-1',
+    }
+
+    await expect(createBillUploader(client)(args)).rejects.toThrow(/image_link_failed/)
+    // outbox retry → upload báo đã tồn tại (409) KHÔNG chặn, rpc chạy tiếp và thành công
+    await expect(createBillUploader(client)(args)).resolves.toBe('2026/10/HT-261003-0001.png')
+    expect(rpc).toHaveBeenLastCalledWith('set_bill_image', {
+      p_code: 'HT-261003-0001',
+      p_path: '2026/10/HT-261003-0001.png',
+    })
+  })
+
+  it('upload lỗi khác 409 (status 500) → vẫn ném png_upload_failed, không đi gắn ảnh', async () => {
+    const upload = vi.fn().mockResolvedValue({ error: { message: 'internal error', status: 500 } })
+    const rpc = vi.fn()
+    await expect(
+      createBillUploader(stub(upload, rpc))({
+        code: 'HT-261003-0001',
+        blob: new Blob(['x']),
+        createdAtIso: '2026-10-03T05:00:00.000Z',
+        clientUuid: 'uuid-1',
+      }),
+    ).rejects.toThrow(/png_upload_failed/)
+    expect(rpc).not.toHaveBeenCalled()
   })
 
   it('upload lỗi → ném để outbox retry (không mất bill)', async () => {

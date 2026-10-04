@@ -136,7 +136,6 @@ async function recordAttempt(
   await admin.from("login_attempts").delete().eq("username", username).lt("at", cutoff);
 }
 
-// profiles.username → auth email. Không lộ phân biệt "tồn tại/không" ra client.
 async function resolveAuthEmail(
   admin: SupabaseClient,
   username: string,
@@ -146,13 +145,26 @@ async function resolveAuthEmail(
     .select("id")
     .eq("username", username)
     .maybeSingle();
-  if (!profile) return null;
-  const { data, error } = await admin.auth.admin.getUserById(profile.id);
-  if (error || !data?.user?.email) {
-    console.error("auth-login: getUserById:", error?.message);
-    return null;
+  if (profile) {
+    const { data, error } = await admin.auth.admin.getUserById(profile.id);
+    if (error || !data?.user?.email) {
+      console.error("auth-login: getUserById:", error?.message);
+      return null;
+    }
+    return data.user.email;
   }
-  return data.user.email;
+
+  // Fallback: nếu đăng nhập bằng email admin trực tiếp (khớp app_meta.admin_email)
+  const { data: meta } = await admin
+    .from("app_meta")
+    .select("admin_email")
+    .eq("id", 1)
+    .maybeSingle();
+  if (meta?.admin_email && username.toLowerCase() === meta.admin_email.toLowerCase()) {
+    return meta.admin_email;
+  }
+
+  return null;
 }
 
 async function handleLogin(req: Request, admin: SupabaseClient, anon: SupabaseClient, raw: unknown): Promise<Response> {

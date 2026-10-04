@@ -1,6 +1,7 @@
-// Logic thuần của trang Quản lý bill — P7-T1 (design §7.4: bảng mã, thời gian,
-// người tạo, tổng, số món; phân trang + lọc ngày + tìm theo mã). Không đụng
-// mạng: phần truy vấn nằm ở api.ts, phần hiển thị ở BillsPage.tsx.
+// Logic thuần của trang Quản lý bill — P7-T1 (design §7.3 mục 4: bảng mã, thời gian,
+// người tạo, tổng, số món, tự dọn; phân trang + lọc ngày + tìm theo mã) và
+// P7-T4 (đếm ngày còn lại đến expires_at cho tag "tự xóa sau N ngày").
+// Không đụng mạng: phần truy vấn nằm ở api.ts, phần hiển thị ở BillsPage.tsx.
 
 /** Số dòng mỗi trang — vừa khít mobile, tránh kéo bill_items quá lớn. */
 export const PAGE_SIZE = 20
@@ -10,6 +11,14 @@ export const PAGE_SIZE = 20
  * gian tải <img> + chia sẻ/tải về, không để link đọc ảnh bill dùng mãi được.
  */
 export const SIGNED_URL_TTL_SECONDS = 120
+
+/**
+ * Số ngày giữ bill trước khi job `cleanup-bills` tự xóa (design §5 cột
+ * `bills.expires_at` default +15 ngày, §6.4 vòng đời). Dùng cho tag "tự xóa sau N ngày".
+ */
+export const BILL_RETENTION_DAYS = 15
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 export type BillListParams = {
   /** Chỉ số trang bắt đầu từ 0. */
@@ -33,6 +42,8 @@ export type BillRow = {
   itemCount: number
   /** Đường dẫn PNG trong bucket `bills`; rỗng = bill chưa có ảnh (P7-T2). */
   imagePath: string
+  /** `bills.expires_at` (ISO) — mốc job pg_cron tự xóa bill + ảnh (P7-T4). */
+  expiresAt: string
 }
 
 export type BillPage = { rows: BillRow[]; total: number }
@@ -105,4 +116,22 @@ export function formatBillDateTime(iso: string): string {
 /** Tên file khi tải về / chia sẻ lại ảnh bill: <code>.png */
 export function billImageFileName(code: string): string {
   return `${code}.png`
+}
+
+/**
+ * Số ngày còn lại đến `expires_at` (làm tròn lên: bill bán lúc 14:05 thì sau
+ * 15 ngày đúng lúc 14:05 mới hết hạn → vẫn còn 15 ngày). Quá hạn hoặc ngày
+ * hỏng → 0 / null để UI không hiện số âm hay NaN.
+ */
+export function retentionDaysLeft(expiresAt: string, now: Date = new Date()): number | null {
+  const expires = new Date(expiresAt).getTime()
+  if (Number.isNaN(expires)) return null
+  return Math.max(0, Math.ceil((expires - now.getTime()) / DAY_MS))
+}
+
+/** Tag "tự xóa sau N ngày" (design §7.3 mục 4) — hết hạn trong hôm nay hoặc thiếu dữ liệu → chuỗi riêng. */
+export function retentionTagText(daysLeft: number | null): string {
+  if (daysLeft === null) return '—'
+  if (daysLeft <= 0) return 'Tự xóa hôm nay'
+  return `Tự xóa sau ${daysLeft} ngày`
 }

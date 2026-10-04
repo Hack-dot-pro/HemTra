@@ -2,9 +2,10 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { injectAuth } from './helpers'
 
-// P7-T1 — e2e trang Quản lý bill: bảng 5 cột đọc dữ liệu REST thật (mock tầng
+// P7-T1 — e2e trang Quản lý bill: bảng bill đọc dữ liệu REST thật (mock tầng
 // dữ liệu, code app chạy), tìm theo mã, phân trang, không có nút xóa (design
-// §4.1), không lỗi console + ảnh 2 cỡ (Q10) + axe (Q11).
+// §4.1), tag "tự xóa sau N ngày" (P7-T4), không lỗi console + ảnh 2 cỡ (Q10)
+// + axe (Q11).
 
 const VIEWPORTS = [
   { name: '390x844', width: 390, height: 844 },
@@ -46,6 +47,8 @@ type SeedBill = {
   code: string
   total: number
   created_at: string
+  /** created_at + 15 ngày — đúng default `bills.expires_at` (P7-T4). */
+  expires_at: string
   username: string | null
   /** '' = bill chưa có ảnh (chưa xuất / chưa sync) — không có nút xem (P7-T2). */
   imagePath: string
@@ -55,11 +58,13 @@ type SeedBill = {
 function seedBills(count: number): SeedBill[] {
   return Array.from({ length: count }, (_, index) => {
     const day = String((index % 3) + 1).padStart(2, '0')
+    const expiresDay = String((index % 3) + 16).padStart(2, '0')
     return {
       id: `bill-${index + 1}`,
       code: `HT-2610${day}-${String(index + 1).padStart(4, '0')}`,
       total: 35000 + index * 5000,
       created_at: `2026-10-${day}T07:05:00.000Z`,
+      expires_at: `2026-10-${expiresDay}T07:05:00.000Z`,
       username: index % 2 === 0 ? 't7staff' : null,
       imagePath: index % 5 === 4 ? '' : `2026/10/HT-2610${day}-${String(index + 1).padStart(4, '0')}.png`,
       items:
@@ -113,6 +118,7 @@ async function mockBillsApi(page: Page, bills: SeedBill[]): Promise<string[]> {
           code: row.code,
           total: row.total,
           created_at: row.created_at,
+          expires_at: row.expires_at,
           image_path: row.imagePath,
           profiles: row.username ? { username: row.username } : null,
         })),
@@ -163,7 +169,16 @@ test('P7-T1: bảng bill — dữ liệu, tìm theo mã, phân trang, không nú
   await injectAuth(page)
   const urls = await mockBillsApi(page, seedBills(21))
   const pageErrors: string[] = []
+  const consoleErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
+  // Lỗi console của app (bỏ 4xx có chủ đích do token e2e fake) — cùng cách
+  // làm của e2e/p3-auth.spec.ts:collectAppErrors.
+  page.on('console', (message) => {
+    if (message.type() !== 'error') return
+    const text = message.text()
+    if (text.includes('Failed to load resource')) return
+    consoleErrors.push(text)
+  })
 
   await page.goto('/bills')
 
@@ -173,6 +188,11 @@ test('P7-T1: bảng bill — dữ liệu, tìm theo mã, phân trang, không nú
   await expect(firstRow).toContainText('35.000 ₫')
   await expect(firstRow).toContainText('3') // 2 + 1 ly, không tính topping
   await expect(firstRow).toContainText('14:05') // giờ VN, không phải 07:05 UTC
+
+  // P7-T4 — tag "tự xóa sau N ngày": policy 15 ngày ở đầu trang + đếm ngược theo expires_at ở dòng
+  await expect(page.getByTestId('retention-policy-tag')).toHaveText('Tự xóa sau 15 ngày')
+  await expect(table.getByRole('columnheader', { name: 'Tự dọn' })).toBeVisible()
+  await expect(firstRow).toContainText(/Tự xóa (hôm nay|sau \d+ ngày)/)
   await expect(page.getByText('Trang 1/2 · 21 bill · 20 dòng/trang')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Trước' })).toBeDisabled()
 
@@ -189,15 +209,26 @@ test('P7-T1: bảng bill — dữ liệu, tìm theo mã, phân trang, không nú
   await expect(page.getByText('Trang 2/2 · 21 bill · 20 dòng/trang')).toBeVisible()
   expect(urls.some((url) => url.includes('offset=20'))).toBe(true)
 
-  // Không có nút xóa ở bất kỳ role nào (design §4.1)
+  // Không có nút xóa ở bất kỳ role nào (design §4.1) — quét cả accessible name
+  // (nút icon-only có aria-label vẫn bị bắt).
   const buttonLabels = await page.getByRole('button').allInnerTexts()
   expect(buttonLabels.some((label) => /x[oó]a/i.test(label))).toBe(false)
+  await expect(page.getByRole('button', { name: /x[oó]a/i })).toHaveCount(0)
 
-  // Q10 — không lỗi console + ảnh 2 cỡ
+  // Q10 — không lỗi console + ảnh 2 cỡ + không tràn ngang cấp trang
   expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await expect(table).toBeVisible()
+    const overflow = await page.evaluate(() => ({
+      inner: window.innerWidth,
+      scroll: document.documentElement.scrollWidth,
+    }))
+    expect(
+      overflow.scroll,
+      `document.scrollWidth=${overflow.scroll} > innerWidth=${overflow.inner} ở ${viewport.name}`,
+    ).toBeLessThanOrEqual(overflow.inner)
     await page.screenshot({
       path: `e2e/screenshots/p7-bills-${testInfo.project.name}-${viewport.name}.png`,
     })

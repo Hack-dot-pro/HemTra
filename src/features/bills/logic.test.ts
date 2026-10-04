@@ -1,15 +1,19 @@
 // Unit test logic thuần của trang Quản lý bill — P7-T1: bộ lọc ngày theo giờ
 // VN (biên đầu/cuối ngày), escape ký tự LIKE, cộng số món, phân trang, định
-// dạng thời gian.
+// dạng thời gian. P7-T4: đếm ngày còn lại đến expires_at cho tag "tự xóa sau
+// N ngày".
 
 import { describe, expect, it } from 'vitest'
 import {
+  BILL_RETENTION_DAYS,
   PAGE_SIZE,
   SIGNED_URL_TTL_SECONDS,
   billImageFileName,
   dateFilterIso,
   escapeLike,
   formatBillDateTime,
+  retentionDaysLeft,
+  retentionTagText,
   summarizeItemCounts,
   totalPages,
   validateDateRange,
@@ -118,5 +122,39 @@ describe('P7-T2 — signed URL và tên file ảnh bill', () => {
   it('tên file tải/chia sẻ = <mã bill>.png', () => {
     expect(billImageFileName('HT-261003-0001')).toBe('HT-261003-0001.png')
     expect(billImageFileName('HT-261003-OFF-ab12')).toBe('HT-261003-OFF-ab12.png')
+  })
+})
+
+describe('P7-T4 — tag "tự xóa sau N ngày" (bills.expires_at)', () => {
+  const now = new Date('2026-10-03T07:05:00.000Z')
+
+  it('thời hạn giữ bill = 15 ngày (bất biến AGENT.md §11.4)', () => {
+    expect(BILL_RETENTION_DAYS).toBe(15)
+  })
+
+  it('bill mới bán → đúng 15 ngày (làm tròn lên, không phải 14)', () => {
+    // expires_at = created_at + 15 ngày → còn tròn 15 ngày
+    expect(retentionDaysLeft('2026-10-18T07:05:00.000Z', now)).toBe(15)
+    // còn 15 ngày 1 phút → làm tròn lên 16 (qua hạn mới chắc chắn bị xóa)
+    expect(retentionDaysLeft('2026-10-18T07:06:00.000Z', now)).toBe(16)
+    // còn đúng 14 ngày
+    expect(retentionDaysLeft('2026-10-17T07:05:00.000Z', now)).toBe(14)
+  })
+
+  it('đã quá hạn → 0 (không hiện số âm), hết hạn trong hôm nay → "Tự xóa hôm nay"', () => {
+    expect(retentionDaysLeft('2026-10-03T07:00:00.000Z', now)).toBe(0)
+    expect(retentionDaysLeft('2026-10-01T07:05:00.000Z', now)).toBe(0)
+    expect(retentionTagText(0)).toBe('Tự xóa hôm nay')
+  })
+
+  it('ngày hỏng / thiếu cột → null → "—" (không hiện NaN)', () => {
+    expect(retentionDaysLeft('', now)).toBeNull()
+    expect(retentionDaysLeft('không-phải-ngày', now)).toBeNull()
+    expect(retentionTagText(null)).toBe('—')
+  })
+
+  it('nội dung tag tiếng Việt đúng số ít', () => {
+    expect(retentionTagText(15)).toBe('Tự xóa sau 15 ngày')
+    expect(retentionTagText(1)).toBe('Tự xóa sau 1 ngày')
   })
 })

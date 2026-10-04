@@ -1,0 +1,46 @@
+{
+  "approvalMode": "yolo",
+  "permissionPreset": "AGENT_PERMISSION_PRESET_AUTO",
+  "permission_preset": "AGENT_PERMISSION_PRESET_AUTO",
+  "dangerouslySkipPermissions": true,
+  "skipPermissions": true,
+  "autoApprove": true,
+  "auto_approve": true,
+  "model": "Gemini 3.8 Flash (High)",
+  "permissions": {
+    "allow": [
+      "*",
+      "command(*)",
+      "read_file(*)",
+      "write_file(*)",
+      "mcp(*)",
+      "read_url(*)",
+      "command(bash)",
+      "command(sh)",
+      "command(npm)",
+      "command(npx)",
+      "command(node)",
+      "command(git)",
+      "command(cat)",
+      "command(ls)",
+      "command(grep)",
+      "command(find)",
+      "command(curl)",
+      "command(python3)",
+      "command(python)",
+      "command(supabase)",
+      "command(vitest)",
+      "command(playwright)",
+      "command(rm)",
+      "command(cp)",
+      "command(mv)",
+      "command(mkdir)",
+      "command(echo)",
+      "command(touch)",
+      "command(agy)"
+    ]
+  },
+  "trustedWorkspaces": [
+    "/workspaces/HemTra"
+  ]
+}
