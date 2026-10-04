@@ -196,6 +196,7 @@ test('P6-T9/P4-T9: offline → bán (mã OFF vào outbox) → online → sync cr
   const { rpcCalls, uploads, linkCalls } = await mockCheckout(page)
 
   await page.goto('/pos')
+  await page.waitForLoadState('networkidle')
   await page.getByRole('button', { name: 'Thêm Trà sữa đào' }).click()
 
   // Mất mạng → banner + vẫn bán được từ cache
