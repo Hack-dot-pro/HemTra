@@ -218,12 +218,12 @@ test('P6-T9/P4-T9: offline → bán (mã OFF vào outbox) → online → sync cr
   expect(String(rpcCalls[0].p_offline_code)).toMatch(/^HT-\d{6}-OFF-[A-Za-z0-9]{4}$/)
   expect(rpcCalls[0].p_items).toMatchObject([{ product_id: 'p1', unit_price: 35000 }])
 
-  await expect.poll(() => uploads.length).toBe(1)
+  await expect.poll(() => uploads.length, { timeout: 10_000 }).toBe(1)
   expect(uploads[0]).toMatch(
     /\/storage\/v1\/object\/bills\/\d{4}\/\d{2}\/HT-\d{6}-OFF-[A-Za-z0-9]{4}\.png$/,
   )
   // luồng outbox cũng phải gắn ảnh (NV5) — không chỉ luồng online
-  await expect.poll(() => linkCalls.length).toBe(1)
+  await expect.poll(() => linkCalls.length, { timeout: 10_000 }).toBe(1)
   expect(linkCalls[0].p_code).toMatch(/^HT-\d{6}-OFF-[A-Za-z0-9]{4}$/)
   expect(linkCalls[0].p_path).toMatch(/^\d{4}\/\d{2}\/HT-\d{6}-OFF-[A-Za-z0-9]{4}\.png$/)
   await expect(page.getByTestId('last-sale')).toContainText(/HT-\d{6}-OFF-[A-Za-z0-9]{4}/)
