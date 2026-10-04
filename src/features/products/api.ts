@@ -42,7 +42,9 @@ export type ProductLists = {
   links: ToppingLink[]
 }
 
-export type SaveOutcome = { ok: true } | { ok: false; message: string }
+// P12-T4: `id` = id thực tế đã ghi (tạo mới sinh id trước, cập nhật = id cũ)
+// để page vá list cục bộ thay vì refetch toàn bộ.
+export type SaveOutcome = { ok: true; id?: string } | { ok: false; message: string }
 
 export type ProductsApi = {
   load(): Promise<ProductLists>
@@ -81,7 +83,8 @@ function throwOnError(result: { error: unknown }): void {
   }
 }
 
-function newId(): string {
+/** P12-T4: page tự sinh id trước khi lưu → cập nhật list cục bộ không cần refetch. */
+export function newRowId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0
@@ -103,10 +106,12 @@ async function withClient<T>(fn: (client: SupabaseClient) => Promise<T>): Promis
 }
 
 /** Bọc thao tác ghi thành SaveOutcome — không bao giờ reject (modal hiển thị message). */
-async function outcome(fn: (client: SupabaseClient) => Promise<void>): Promise<SaveOutcome> {
+async function outcome(
+  fn: (client: SupabaseClient) => Promise<string | undefined | void>,
+): Promise<SaveOutcome> {
   try {
-    await withClient(fn)
-    return { ok: true }
+    const id = await withClient(fn)
+    return id ? { ok: true, id } : { ok: true }
   } catch (error) {
     if (error instanceof ApiError) return { ok: false, message: error.message }
     return { ok: false, message: SERVER_ERROR }
@@ -143,14 +148,19 @@ export const defaultProductsApi: ProductsApi = {
         sort_order: values.sort_order,
         is_active: values.is_active,
       }
-      if (values.id) throwOnError(await client.from('categories').update(row).eq('id', values.id))
-      else throwOnError(await client.from('categories').insert({ id: newId(), ...row }))
+      if (values.id) {
+        throwOnError(await client.from('categories').update(row).eq('id', values.id))
+        return values.id
+      }
+      const id = newRowId()
+      throwOnError(await client.from('categories').insert({ id, ...row }))
+      return id
     })
   },
 
   async saveProduct(values) {
     return outcome(async (client) => {
-      const id = values.id ?? newId()
+      const id = values.id ?? newRowId()
       const row = {
         name: values.name.trim(),
         category_id: values.category_id,
@@ -168,6 +178,7 @@ export const defaultProductsApi: ProductsApi = {
             .insert(values.topping_ids.map((topping_id) => ({ product_id: id, topping_id }))),
         )
       }
+      return id
     })
   },
 
@@ -179,8 +190,13 @@ export const defaultProductsApi: ProductsApi = {
         icon: values.icon.trim(),
         is_active: values.is_active,
       }
-      if (values.id) throwOnError(await client.from('toppings').update(row).eq('id', values.id))
-      else throwOnError(await client.from('toppings').insert({ id: newId(), ...row }))
+      if (values.id) {
+        throwOnError(await client.from('toppings').update(row).eq('id', values.id))
+        return values.id
+      }
+      const id = newRowId()
+      throwOnError(await client.from('toppings').insert({ id, ...row }))
+      return id
     })
   },
 

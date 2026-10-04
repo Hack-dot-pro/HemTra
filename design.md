@@ -66,7 +66,7 @@ Nguyên tắc ưu tiên **ổn định & tốc độ**, không nhất thiết b�
 | Xem Dashboard / Bill / Sản phẩm / Thanh toán | ✔ | ✔ |
 | Thêm/sửa sản phẩm, nhóm, topping | ✔ | ✔ |
 | Tạo bill, xuất PNG | ✔ | ✔ |
-| Xóa bill | ✘ (không ai) | ✘ |
+| Xóa bill (nhập lại **mật khẩu admin**, xác minh server-side qua EF `delete-bills`) | ✔ | ✘ |
 | Thêm user mới (role staff) | ✔ | ✔ |
 | Cấp lại / đổi mật khẩu **người khác** | ✔ | ✘ |
 | Xóa user | ✔ | ✘ |
@@ -128,14 +128,17 @@ Mailer mặc định của Supabase bị giới hạn rất thấp. Dùng **SMTP
 
 ## 6. Quy tắc bill
 
-### 6.1 Bố cục (từ trên xuống, canh giữa, rộng xuất 720 px, `pixelRatio` 2)
+### 6.1 Bố cục (P12-T7 — user chốt 2026-10-04; từ trên xuống, canh giữa, rộng xuất 720 px, `pixelRatio` 2)
 1. **Logo** — `Logo.png`
-2. **Mã bill** `HT-YYMMDD-0001` (số thứ tự reset theo ngày VN) + SĐT: `0338525677 (Vi) - 0362335733 (Linh)` (+ thời gian)
-3. **Bảng sản phẩm**: `Sản phẩm | SL | Đơn giá | Thành tiền`; dòng ghi chú ngay dưới món (chữ nhỏ, nghiêng); topping là dòng con thụt lề kèm giá
-4. **Tổng tiền** (in đậm, cuối bảng)
-5. **QR** trỏ tới `https://www.facebook.com/linh.kh.142` (+ nhãn "Facebook")
-6. **Lời chúc**: `Cảm ơn khách hàng thân yêu của Hẻm`
-7. **Địa chỉ** (cuối bill): `Phường Long Nguyên, Thành Phố Hồ Chí Minh`
+2. **SĐT** (ngay dưới logo): `☎️ 0338525677 (Vi) - 0362335733 (Linh)`
+3. **Số hóa đơn** `Mã đơn HT-YYMMDD-0001` (số thứ tự reset theo ngày VN) + dòng thời gian
+4. **Địa chỉ**: nhãn `Địa chỉ:` rồi dòng `Phường Long Nguyên, Thành Phố Hồ Chí Minh (Gần KCN Bàu bàng)`
+5. **Bảng sản phẩm**: `Sản phẩm | SL | Đơn giá | Thành tiền`; dòng ghi chú ngay dưới món (chữ nhỏ, nghiêng); topping là dòng con thụt lề kèm giá
+6. **Tổng tiền** (in đậm, cuối bảng)
+7. **QR** trỏ tới `https://www.facebook.com/linh.kh.142` (+ nhãn "Facebook Hẻm Trà")
+8. **Lời chúc** (khối cuối cùng): `Cảm Ơn khách hàng thân yêu của hẽm 💕`
+
+Không có thông tin tiền mặt/chuyển khoản, giảm giá, tiền thối. Địa chỉ chỉ in **1 lần** (không lặp ở cuối bill).
 
 Không có thông tin tiền mặt/chuyển khoản, giảm giá, tiền thối.
 
@@ -143,8 +146,8 @@ Không có thông tin tiền mặt/chuyển khoản, giảm giá, tiền thối.
 - Online: RPC `next_bill_code()` cấp số tuần tự theo ngày (nguyên tử, không trùng).
 - Offline: mã tạm `HT-YYMMDD-OFF-<4 ký tự>` và **giữ nguyên** làm mã chính thức (ảnh đã gửi cho khách nên không đổi). `is_offline = true`.
 
-### 6.3 Xuất & chia sẻ
-Render bill ra DOM ẩn → `html-to-image.toBlob()` → (1) upload Supabase Storage `bills/YYYY/MM/<code>.png` (hoặc xếp outbox nếu offline) → (2) `navigator.share({files})` để chia sẻ Zalo/Messenger; nếu thiết bị không hỗ trợ thì nút **Lưu về máy**. Lưu ý Safari: gọi chụp ảnh 2 lần (lần đầu để nạp font/ảnh) và dùng ảnh dạng data-URL cho logo/QR.
+### 6.3 Xuất & chia sẻ (P12-T8 — user chốt 2026-10-04)
+Render bill ra DOM ẩn → `html-to-image.toPng()` với **`pixelRatio = 3` → 720 × 3 = 2160px ≥ 2048 (2K)** → (1) upload Supabase Storage `bills/YYYY/MM/<code>.png` (hoặc xếp outbox nếu offline) → (2) **modal preview ảnh 2K** tự mở sau khi thanh toán (modal rộng `max-w-3xl`, cuộn được) với 3 nút: **Chia sẻ** (`navigator.share({files})` → Zalo/Messenger), **Lưu về máy**, **Đóng**; cột phải có thêm nút **Xem bill** để mở lại preview. `pngDataUrlSize()` đọc IHDR để hiển thị/kiểm chứng kích thước ≥ 2048px. Lưu ý Safari: gọi chụp ảnh 2 lần (lần đầu để nạp font/ảnh) và dùng ảnh dạng data-URL cho logo/QR.
 
 ### 6.4 Vòng đời
 Thanh toán → ghi bill + items (transaction) → trigger cập nhật `stats_*` → ảnh vào Storage → hiện ở menu Quản lý bill. Sau 15 ngày `cleanup-bills` xóa dòng `bills/bill_items` **và** file trong Storage (qua Storage API, không xóa bằng SQL).
@@ -158,13 +161,18 @@ Thay đổi so với template: **font Calibri/Carlito** (template đang dùng In
 ### 7.2 Sau đăng nhập
 Nền `background.png` (ảnh sáng, chói) + **overlay tối** `rgba(8,30,60,.45)` + `backdrop-blur`. Thành phần: sidebar/bottom-nav 5 mục, thẻ kính (`bg-white/15`, `border-white/30`, `backdrop-blur-xl`), chữ trắng, tương phản ≥ 4.5:1.
 
+**Header (P12-T9, chốt 2026-10-04)** — thanh trên cùng sticky, góc **trái**: nút avatar (chữ viết tắt hoặc ảnh đại diện trong bucket `avatars`, `profiles.avatar_path`) + **chấm trạng thái online/offline** + nút **Đồng bộ** (gọi `syncNow()` — bấm khi có mạng; khi offline thì khóa + tooltip "Đang offline"), kèm nhãn "Đã đồng bộ HH:mm"; góc **phải**: ảnh `Logo.png`. Bấm avatar → **modal "Hồ sơ tài khoản"** của CHÍNH người dùng:
+- **Admin**: sửa ảnh đại diện (nén ≤ 256px client, upload qua EF), tên hiển thị, tên đăng nhập, mật khẩu mới + link "Đổi email khôi phục" → `/change-recovery-email`; **mọi thay đổi phải xác nhận bằng OTP 6 số** gửi về `app_meta.admin_email` (EF `profile-update`, OTP dùng 1 lần — quyết định user 2026-10-04).
+- **Staff**: chỉ xem tên/avatar + nút "Đổi mật khẩu của tôi" → `/change-password` (§4.1 vẫn cho staff đổi mật khẩu của chính mình); tên/avatar do admin sửa trong modal Quản lý user.
+- **Bỏ 2 link** "Đổi mật khẩu" / "Đổi email khôi phục" khỏi sidebar + hàng trên mobile (vào qua modal hồ sơ); route `/change-password` giữ nguyên cho luồng ép đổi `must_change_password`.
+
 ### 7.3 Năm menu
 1. **Dashboard** — KPI: doanh thu hôm nay, số bill hôm nay (+ doanh thu tháng). 
-   - **Chart A (đường, mẫu `chart_1.png`)**: doanh thu theo tháng, hiển thị số trên điểm, có phóng to/thu nhỏ, kéo cuộn khi zoom, thanh brush bên dưới, đường cong spline màu xanh phát sáng, nền kính.
+   - **Chart A (CỘT theo ngày — P12-T5, user chốt 2026-10-04)**: doanh thu từng ngày trong tháng, mỗi ngày 1 cột; **label ngày hiển thị đầy đủ** (xoay -55° cho vừa mobile, không ẩn nhãn chồng), có **legend** ("Doanh thu") và nhãn số VND trên cột > 0; y-axis rút gọn (k/M); **bỏ toolbar zoom/pan/selection/reset và bỏ chart brush** — trên mobile thao tác chạm trực tiếp. Vẫn nền kính, tooltip VND, drop-shadow xanh.
    - **Chart B (vòng cung, mẫu `chart_2.png`)**: tỷ lệ % sản phẩm bán chạy trong tháng (radialBar nhiều vòng, nhãn giữa "TOP N"). Cạnh trái là **Rank** của tháng; % = qty sản phẩm / tổng qty tháng.
    - **Rank top 5 bán chạy nhất** (all-time) và **top ít bán chạy nhất** (all-time, chỉ tính sản phẩm đã từng bán ≥ 1).
 2. **Sản phẩm** — modal thêm sản phẩm; nhóm mặc định (Trà trái cây, Trà sữa, Cà phê, Latte, Sữa tươi, Nước ép, Sinh tố) **không khóa cứng**, thêm/sửa/ẩn nhóm; sản phẩm có đơn giá + topping; bảng danh sách có tìm kiếm/lọc.
-3. **Thanh toán** — lưới sản phẩm (icon 2D theo nhóm; bấm "+" thêm vào bill) bên trái; **panel bill realtime** bên phải hiển thị đúng layout 6.1; nút Thanh toán → xuất PNG → chia sẻ/lưu.
+3. **Thanh toán** — lưới sản phẩm (icon 2D theo nhóm; bấm "+" thêm vào bill) bên trái; **panel bill realtime** bên phải hiển thị đúng layout 6.1; nút Thanh toán → tạo bill → **modal preview ảnh PNG ≥ 2048px (2K)** với Chia sẻ / Lưu về máy / Đóng (+ nút **Xem bill** ở cột phải để mở lại).
 4. **Quản lý bill** — bảng (mã, thời gian, người tạo, tổng, số món), nút mở modal xem ảnh PNG, chia sẻ lại/tải về; **không có nút xóa**; tag "tự xóa sau N ngày".
 5. **Quản lý user** — danh sách, thêm user, cấp lại mật khẩu, đổi mật khẩu, xóa (theo bảng quyền 4.1).
 

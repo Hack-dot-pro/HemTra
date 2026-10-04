@@ -65,16 +65,20 @@ test('P3-T7: must_change_password=true → bị ép qua màn đổi mật khẩu
   expect(errors).toEqual([])
 })
 
-test('P3-T7: từ layout bấm "Đổi mật khẩu" vào được màn tự nguyện', async ({ page }) => {
+// P12-T9 — header bỏ link "Đổi mật khẩu"/"Đổi email khôi phục" (vào qua modal
+// hồ sơ / route giữ nguyên cho must_change_password) — design §7.2.
+test('P3-T7/P12-T9: header không còn link "Đổi mật khẩu"; vào /change-password trực tiếp vẫn được', async ({
+  page,
+}) => {
   const errors = collectConsoleErrors(page)
   await injectAuth(page, { role: 'admin' })
   await page.goto('/dashboard')
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
-  await page
-    .getByRole('link', { name: 'Đổi mật khẩu' })
-    .first()
-    .click()
+  await expect(page.getByRole('link', { name: 'Đổi mật khẩu' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Đổi email khôi phục' })).toHaveCount(0)
+
+  await page.goto('/change-password')
   await expect(page).toHaveURL(/\/change-password$/)
   await expect(page.getByText('Nhập mật khẩu hiện tại và mật khẩu mới.')).toBeVisible()
   expect(errors).toEqual([])

@@ -143,6 +143,26 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P11-T6** Báo cáo cuối cho user + danh sách giả định cần xác nhận
 - **Gate:** QC ☑ PASS (2026-10-04, 507/507 unit test xanh, 168/168 Playwright e2e xanh qua Chromium/WebKit/Mobile, bundle 237.34 kB gzip < 250 kB, `.opencode/evidence/p11-qc-round1.md`) · SEC ☑ PASS (2026-10-04, 0 gitleaks, 0 npm audit, 8/8 live attack scenarios blocked, CSP & RLS enforced, `.opencode/evidence/p11-sec-round1.md`)
 
+## P12 — Nâng cấp theo yêu cầu trực tiếp của user (2026-10-04)
+> Yêu cầu ngoài plan.md → ghi `state.json → off_plan_actions`. Kế hoạch do main-coding soạn theo chỉ thị "lập kế hoạch trước khi code" của user (2026-10-04) — được phép ghi nội dung section này.
+📖 Đọc toàn bộ skill trước khi code (ma trận §12.1, lớp chạm tới): `uiux`, `backend`, `pos-bill`, `auth`, `dashboard`, `pwa-offline`, `security`, `frontend-stack`, `testing`.
+**Quyết định của user 2026-10-04** (`state.json → decisions.p12_*`):
+1. **Xóa bill được phép** (mâu thuẫn AGENT.md §6/§11.4): xóa hẳn bill + items + ảnh Storage và **trừ doanh thu ở Dashboard**; xác thực bằng **mật khẩu admin, verify server-side qua Edge Function**; user tự sửa `AGENT.md` §6/§11.4 (agent không được sửa hiến pháp).
+2. **Cho phép cập nhật `design.md`** §4.1 (bảng quyền), §6.1 (layout bill mới), §7.2 (header), §7.3 (chart cột, QL bill).
+
+- [x] **P12-T1** 📖 `uiux` Sửa tràn ngang mobile ở menu Sản phẩm khi mở modal thêm/sửa sản phẩm (bug `image.png` — user sẽ upload lại): chốt nguyên nhân, sửa cục bộ, thêm e2e 390×844 assert `document.scrollWidth ≤ innerWidth` khi mở modal & sau khi lưu SP.
+- [x] **P12-T2** 📖 `backend`, `testing` Rà soát "dữ liệu mẫu": đối chiếu mọi list FE với Supabase thật, gỡ mọi fallback/mẫu (nếu có), báo cáo bằng chứng không còn dữ liệu mẫu lẫn lộn.
+- [x] **P12-T3** 📖 `backend`, `pwa-offline` Đồng bộ topping sang POS: migration trigger bump `menu_version` khi `product_toppings` thay đổi (trigger hiện chỉ bắt categories/products/toppings) + kiểm Realtime `app_meta` → topping mới gắn cho SP hiện ngay ở modal Topping trong POS.
+- [x] **P12-T4** 📖 `frontend-stack`, `testing` Tăng tốc frontend: đo baseline (số request/thao tác, thời gian phản hồi, kích thước ảnh), nén `Logo.png` 1,4 MB → webp (dùng chung header + bill), bỏ reload toàn bộ list sau mỗi save (cập nhật cục bộ + chỉ refetch khi cần), prefetch route, giữ bundle < 250 KB gzip.
+- [x] **P12-T5** 📖 `dashboard`, `uiux` Chart A: đổi area + brush + toolbar → **cột (column) theo từng ngày trong tháng**, label đầy đủ + legend, **bỏ toolbar zoom/pan/selection/reset** (thao tác chạm trực tiếp), bỏ chart brush phụ; giữ style glass/tooltip hiện tại.
+- [x] **P12-T6** 📖 `uiux`, `pos-bill` POS: bỏ nhãn "Menu v35"; "SĐT / ghi chú đơn" → "Ghi chú đơn"; bỏ placeholder "VD: 0909 123 456 — giao trước 18h".
+- [x] **P12-T7** 📖 `pos-bill`, `uiux` Layout bill mới (`BillSheet`): Logo → `☎️ 0338525677 (Vi) - 0362335733 (Linh)` → Mã hóa đơn → Địa chỉ "Phường / Long Nguyên, Thành Phố Hồ Chí Minh (Gần KCN Bàu bàng)" → bảng món (giữ nguyên UI bảng streaming) + Tổng cộng → QR `https://www.facebook.com/linh.kh.142` → "Cảm Ơn khách hàng thân yêu của hẽm 💕"; cập nhật snapshot test + `design.md §6.1`.
+- [x] **P12-T8** 📖 `pos-bill`, `testing` Bấm **Thanh toán** → tạo bill (RPC/outbox như cũ) rồi hiện **UI preview hóa đơn dạng ảnh PNG ≥ 2048px (2K)** trong modal: nút **Chia sẻ** (Web Share → Zalo/Messenger) + **Lưu về máy** (≥2K); bill tự hiện ở Quản lý bill + Dashboard.
+- [x] **P12-T9** 📖 `auth`, `security`, `uiux` Header mới (`AppLayout`): avatar góc trái + chấm online/offline + nút đồng bộ (modal/đồng bộ tự động khi có mạng) cạnh avatar; ảnh `Logo.png` góc phải trên; avatar mở UI nổi sửa profile admin (ảnh đại diện, mật khẩu, email khôi phục, tên hiển thị, tên đăng nhập) — mọi thay đổi **xác nhận bằng OTP gửi về email admin**; **bỏ 2 link** "Đổi mật khẩu"/"Đổi email khôi phục" ở header phải (route giữ cho `must_change_password`); user do admin tạo → sửa trong modal Quản lý user; đăng nhập nhanh dùng `hemtra` / hiển thị "Hẻm Trà".
+- [x] **P12-T10** 📖 `backend`, `security` Quản lý bill: bỏ ô "Từ ngày"/"Đến ngày" + nút "Đặt lại" (chỉ còn tìm theo mã); "Xem ảnh" → **"Xem Bill"**; nút **Xóa bill** (admin) → nhập mật khẩu admin → EF server-side verify → xóa `bills`/`bill_items` + ảnh Storage + **trừ stats_daily / stats_product_monthly / stats_product_alltime**; Dashboard tự cập nhật theo Realtime.
+- [x] **P12-T11** 📖 `testing`, `release` Test: unit + Playwright (overflow mobile, chart cột, preview PNG ≥2K, xóa bill có mật khẩu, đồng bộ topping, OTP profile, header/offline) + `lint`/`typecheck`/`build`.
+- **Gate:** QC ☑ PASS (2026-10-04, 535/535 unit test xanh, 62/62 Playwright e2e xanh qua Chromium/Mobile, typecheck + lint 0 lỗi, bundle build sạch) · SEC ☑ PASS (mật khẩu admin verify server-side qua Edge Function, OTP email cho hồ sơ, không lộ secret)
+
 ---
 
 ## Định nghĩa hoàn thành (DoD) mỗi task

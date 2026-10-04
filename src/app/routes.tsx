@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './AppLayout.tsx'
 import RequireAuth from './RequireAuth.tsx'
@@ -6,11 +7,13 @@ import RecoveryStage from '../features/auth/RecoveryStage.tsx'
 import ChangePasswordPage from '../features/auth/ChangePasswordPage.tsx'
 import ChangeRecoveryEmailPage from '../features/auth/ChangeRecoveryEmailPage.tsx'
 import SetupStage from '../features/setup/SetupStage.tsx'
-import DashboardPage from '../features/dashboard/DashboardPage.tsx'
-import ProductsPage from '../features/products/ProductsPage.tsx'
-import PosPage from '../features/pos/PosPage.tsx'
-import BillsPage from '../features/bills/BillsPage.tsx'
-import UsersPage from '../features/users/UsersPage.tsx'
+// P12-T4: 5 menu page tách chunk riêng (bundle lần đầu nhẹ hơn) + prefetch
+// khi hover/focus link (src/app/prefetch.ts) → vào trang là chạy ngay.
+const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage.tsx'))
+const ProductsPage = lazy(() => import('../features/products/ProductsPage.tsx'))
+const PosPage = lazy(() => import('../features/pos/PosPage.tsx'))
+const BillsPage = lazy(() => import('../features/bills/BillsPage.tsx'))
+const UsersPage = lazy(() => import('../features/users/UsersPage.tsx'))
 import { useSessionExpiry } from '../features/auth/sessionGuard.ts'
 
 // Định tuyến 5 menu (design.md §7.3). P3-T7: mọi route sau đăng nhập đi qua

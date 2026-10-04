@@ -417,6 +417,17 @@ verify_jwt = false
 [functions.cleanup-bills]
 verify_jwt = false
 
+# P12-T10: delete-bills nhan user access_token + tu xac thuc role=admin va
+# MAT KHAU ADMIN server-side (password grant) -> verify_jwt = false nhu cac EF khac.
+[functions.delete-bills]
+verify_jwt = false
+
+# P12-T9: profile-update nhan user access_token + tu xac thuc role=admin,
+# MOI thay đổi deu xac nhan bang OTP gui ve app_meta.admin_email
+# -> verify_jwt = false nhu cac EF khac.
+[functions.profile-update]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

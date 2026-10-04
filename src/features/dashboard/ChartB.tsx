@@ -1,5 +1,6 @@
 import { lazy, Suspense, useMemo } from 'react'
 import type { ApexOptions } from 'apexcharts'
+import ErrorBoundary from '../../components/ui/ErrorBoundary'
 import type { MonthlyRankItem } from './types'
 import { formatVndNumber } from '../../lib/format'
 
@@ -145,12 +146,20 @@ export default function ChartB({ items, series, labels }: ChartBProps) {
             <Suspense
               fallback={<div className="h-full flex items-center justify-center text-xs text-white/50">Đang tải biểu đồ...</div>}
             >
-              <ReactApexChart
-                options={chartOptions}
-                series={series.length > 0 ? series : [0]}
-                type="radialBar"
-                height="100%"
-              />
+              <ErrorBoundary
+                fallback={
+                  <div className="h-full flex items-center justify-center text-xs text-white/50">
+                    Không thể tải biểu đồ khi đang offline.
+                  </div>
+                }
+              >
+                <ReactApexChart
+                  options={chartOptions}
+                  series={series.length > 0 ? series : [0]}
+                  type="radialBar"
+                  height="100%"
+                />
+              </ErrorBoundary>
             </Suspense>
           </div>
         ) : (

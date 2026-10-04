@@ -1,6 +1,6 @@
 // Logic thuần của trang Quản lý bill — P7-T1 (design §7.3 mục 4: bảng mã, thời gian,
-// người tạo, tổng, số món, tự dọn; phân trang + lọc ngày + tìm theo mã) và
-// P7-T4 (đếm ngày còn lại đến expires_at cho tag "tự xóa sau N ngày").
+// người tạo, tổng, số món, tự dọn; phân trang + tìm theo mã — P12-T10 bỏ lọc ngày)
+// và P7-T4 (đếm ngày còn lại đến expires_at cho tag "tự xóa sau N ngày").
 // Không đụng mạng: phần truy vấn nằm ở api.ts, phần hiển thị ở BillsPage.tsx.
 
 /** Số dòng mỗi trang — vừa khít mobile, tránh kéo bill_items quá lớn. */
@@ -25,10 +25,6 @@ export type BillListParams = {
   page: number
   /** Từ khóa tìm theo mã bill (đã trim), chuỗi rỗng = không lọc. */
   code?: string
-  /** 'YYYY-MM-DD' (giờ VN) — đầu ngày bắt đầu lọc. */
-  from?: string
-  /** 'YYYY-MM-DD' (giờ VN) — cuối ngày kết thúc lọc. */
-  to?: string
 }
 
 export type BillRow = {
@@ -51,30 +47,6 @@ export type BillPage = { rows: BillRow[]; total: number }
 /** Ký tự đặc biệt của LIKE (%, _, \) — người dùng gõ "100%" không phải wildcard. */
 export function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`)
-}
-
-/** 'YYYY-MM-DD' → mốc UTC tương ứng 00:00 giờ VN (+07:00). */
-export function vnDayStartIso(date: string): string {
-  return `${date}T00:00:00+07:00`
-}
-
-/** 'YYYY-MM-DD' → mốc UTC tương ứng 23:59:59.999 giờ VN (+07:00). */
-export function vnDayEndIso(date: string): string {
-  return `${date}T23:59:59.999+07:00`
-}
-
-/** Bộ lọc ngày hợp lệ? Trả về thông báo lỗi tiếng Việt hoặc null. */
-export function validateDateRange(from: string, to: string): string | null {
-  if (from && to && from > to) return 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.'
-  return null
-}
-
-/** Chuyển bộ lọc ngày UI (giờ VN) sang ISO UTC gửi cho PostgREST. */
-export function dateFilterIso(from: string, to: string): { fromIso: string | null; toIso: string | null } {
-  return {
-    fromIso: from ? vnDayStartIso(from) : null,
-    toIso: to ? vnDayEndIso(to) : null,
-  }
 }
 
 export type BillItemRow = {

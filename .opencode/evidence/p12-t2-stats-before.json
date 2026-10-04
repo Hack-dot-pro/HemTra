@@ -1,0 +1,39 @@
+{
+  "stats_daily": [
+    {
+      "date": "2026-10-04",
+      "revenue": 595000,
+      "bill_count": 23
+    }
+  ],
+  "stats_product_monthly": [
+    {
+      "month": "2026-10-01",
+      "product_key": "125c3768-6ae6-47f3-9d84-c4ed3df54763",
+      "name": "Rượu đế",
+      "qty": 2,
+      "revenue": 70000
+    },
+    {
+      "month": "2026-10-01",
+      "product_key": "3603de7f-1ed1-4438-97cd-cdf2a7bea4c9",
+      "name": "Bia hơi",
+      "qty": 21,
+      "revenue": 525000
+    }
+  ],
+  "stats_product_alltime": [
+    {
+      "product_key": "3603de7f-1ed1-4438-97cd-cdf2a7bea4c9",
+      "name": "Bia hơi",
+      "qty": 21,
+      "revenue": 525000
+    },
+    {
+      "product_key": "125c3768-6ae6-47f3-9d84-c4ed3df54763",
+      "name": "Rượu đế",
+      "qty": 2,
+      "revenue": 70000
+    }
+  ]
+}

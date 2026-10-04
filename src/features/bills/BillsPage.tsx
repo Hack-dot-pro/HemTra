@@ -1,11 +1,13 @@
-// Trang Quản lý bill — P7-T1 (design §7.3 mục 4): bảng mã / thời gian / người tạo /
-// tổng / số món / tự dọn, phân trang, lọc theo ngày, tìm theo mã. Không có nút
-// xóa ở mọi role (design §4.1); ảnh PNG xem lại là P7-T2; tag "tự xóa sau N
-// ngày" (P7-T4) lấy từ `bills.expires_at` + job pg_cron.
+// Trang Quản lý bill — P7-T1 + P12-T10 (design §7.3 mục 4): bảng mã / thời gian /
+// người tạo / tổng / số món / tự dọn, phân trang, tìm theo mã (ĐÃ BỎ "Từ ngày"/
+// "Đến ngày"/"Đặt lại"). "Xem Bill" mở modal ảnh PNG (P7-T2); admin có nút
+// "Xóa bill" → nhập mật khẩu admin → EF `delete-bills` xác minh server-side
+// (quyết định user 2026-10-04, design §4.1); staff không thấy nút.
 
 import { useCallback, useEffect, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Trash2 } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
+import { useAuthProfile } from '../../app/authProfileContext'
 import { SERVER_ERROR } from '../../lib/http'
 import { formatVnd } from '../../lib/format'
 import { downloadBlob } from '../pos/exportBillPng'
@@ -18,7 +20,6 @@ import {
   retentionDaysLeft,
   retentionTagText,
   totalPages,
-  validateDateRange,
   type BillRow,
 } from './logic'
 
@@ -32,24 +33,31 @@ type BillModal = {
 }
 
 export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
+  const authProfile = useAuthProfile()
+  const isAdmin = authProfile?.role === 'admin'
   const [rows, setRows] = useState<BillRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [codeInput, setCodeInput] = useState('')
   const [appliedCode, setAppliedCode] = useState('')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState<BillModal | null>(null)
+  /** P12-T10 — modal xóa bill (admin, mật khẩu xác minh server-side). */
+  const [deleting, setDeleting] = useState<{
+    row: BillRow
+    password: string
+    busy: boolean
+    error: string
+  } | null>(null)
+  const [doneNotice, setDoneNotice] = useState('')
 
-  const rangeError = validateDateRange(from, to)
   const pages = totalPages(total)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await api.list({ page, code: appliedCode, from, to })
+      const result = await api.list({ page, code: appliedCode })
       setRows(result.rows)
       setTotal(result.total)
       setError('')
@@ -60,38 +68,19 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
     } finally {
       setLoading(false)
     }
-  }, [api, page, appliedCode, from, to])
+  }, [api, page, appliedCode])
 
   useEffect(() => {
-    if (rangeError) return
     // load() chỉ set state sau await; hẹn qua microtask để rule
     // react-hooks/set-state-in-effect không thấy setState đồng bộ trong effect.
     queueMicrotask(() => {
       void load()
     })
-  }, [load, rangeError])
-
-  function changeFrom(value: string) {
-    setFrom(value)
-    setPage(0)
-  }
-
-  function changeTo(value: string) {
-    setTo(value)
-    setPage(0)
-  }
+  }, [load])
 
   function submitSearch(event: React.FormEvent) {
     event.preventDefault()
     setAppliedCode(codeInput.trim())
-    setPage(0)
-  }
-
-  function resetFilters() {
-    setCodeInput('')
-    setAppliedCode('')
-    setFrom('')
-    setTo('')
     setPage(0)
   }
 
@@ -146,13 +135,33 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
     }
   }
 
+  /** P12-T10 — gọi EF `delete-bills`; thành công → đóng modal, nạp lại danh sách. */
+  async function confirmDelete(): Promise<void> {
+    if (!deleting || deleting.busy || !deleting.password) return
+    const { row, password } = deleting
+    setDeleting((current) => (current ? { ...current, busy: true, error: '' } : current))
+    try {
+      await api.deleteBill({ id: row.id, password })
+      setDeleting(null)
+      setDoneNotice(`Đã xóa bill ${row.code} (ảnh + thống kê đã cập nhật).`)
+      await load()
+    } catch (deleteError) {
+      const message = deleteError instanceof Error && deleteError.message ? deleteError.message : SERVER_ERROR
+      setDeleting((current) => (current ? { ...current, busy: false, error: message } : current))
+    }
+  }
+
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   return (
     <section className="glass-card p-4 sm:p-6">
       <h1 className="text-xl font-semibold">Quản lý bill</h1>
       <div className="mt-1 flex flex-wrap items-center gap-2">
-        <p className="text-sm text-white/70">Bill chỉ đọc — không có thao tác xóa.</p>
+        <p className="text-sm text-white/70">
+          {isAdmin
+            ? 'Bill chỉ đọc — admin xóa bill bằng mật khẩu admin.'
+            : 'Bill chỉ đọc — không có thao tác xóa.'}
+        </p>
         <span
           data-testid="retention-policy-tag"
           className="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-xs text-white/80"
@@ -176,39 +185,16 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
             autoComplete="off"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-white/70">Từ ngày</span>
-          <input
-            type="date"
-            className="glass-input"
-            value={from}
-            onChange={(event) => changeFrom(event.target.value)}
-            aria-label="Từ ngày"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-white/70">Đến ngày</span>
-          <input
-            type="date"
-            className="glass-input"
-            value={to}
-            onChange={(event) => changeTo(event.target.value)}
-            aria-label="Đến ngày"
-          />
-        </label>
         <div className="flex gap-2">
           <button type="submit" className="glass-btn glass-btn-primary flex items-center gap-1">
             <Search aria-hidden="true" className="h-4 w-4" /> Tìm
           </button>
-          <button type="button" className="glass-btn" onClick={resetFilters}>
-            Đặt lại
-          </button>
         </div>
       </form>
 
-      {rangeError ? (
-        <p role="alert" className="mt-3 rounded-lg bg-amber-500/15 px-3 py-2 text-sm text-amber-200">
-          {rangeError}
+      {doneNotice ? (
+        <p role="status" className="mt-3 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">
+          {doneNotice}
         </p>
       ) : null}
 
@@ -221,7 +207,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
         </div>
       ) : null}
 
-      {loading && !rangeError ? (
+      {loading ? (
         <p role="status" className="mt-3 text-sm text-white/70">
           Đang tải bill…
         </p>
@@ -256,22 +242,36 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
                   </span>
                 </td>
                 <td className="py-2 text-right">
-                  {row.imagePath ? (
-                    <button
-                      type="button"
-                      className="glass-btn !px-2 !py-1 text-xs"
-                      aria-label={`Xem ảnh ${row.code}`}
-                      onClick={() => void openImage(row)}
-                    >
-                      Xem ảnh
-                    </button>
-                  ) : (
-                    <span className="text-xs text-white/50">Chưa có ảnh</span>
-                  )}
+                  <div className="flex justify-end gap-1.5">
+                    {row.imagePath ? (
+                      <button
+                        type="button"
+                        className="glass-btn !px-2 !py-1 text-xs"
+                        aria-label={`Xem bill ${row.code}`}
+                        onClick={() => void openImage(row)}
+                      >
+                        Xem Bill
+                      </button>
+                    ) : (
+                      <span className="text-xs text-white/50">Chưa có ảnh</span>
+                    )}
+                    {isAdmin ? (
+                      <button
+                        type="button"
+                        className="glass-btn !px-2 !py-1 text-xs !border-red-300/40 !text-red-100"
+                        aria-label={`Xóa bill ${row.code}`}
+                        data-testid={`delete-bill-${row.code}`}
+                        onClick={() => setDeleting({ row, password: '', busy: false, error: '' })}
+                      >
+                        <Trash2 aria-hidden="true" className="mr-1 inline h-3 w-3" />
+                        Xóa
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && !loading && !error && !rangeError ? (
+            {rows.length === 0 && !loading && !error ? (
               <tr>
                 <td colSpan={7} className="py-6 text-center text-white/60">
                   {total === 0 ? 'Chưa có bill nào.' : 'Không tìm thấy bill khớp.'}
@@ -370,6 +370,65 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
               }
             >
               {modal.notice.text}
+            </p>
+          ) : null}
+        </Modal>
+      ) : null}
+
+      {/* P12-T10 — xác nhận xóa bill bằng mật khẩu admin (EF delete-bills) */}
+      {deleting ? (
+        <Modal
+          title={`Xóa bill ${deleting.row.code}`}
+          onClose={() => (deleting.busy ? undefined : setDeleting(null))}
+          footer={
+            <>
+              <button
+                type="button"
+                className="glass-btn"
+                disabled={deleting.busy}
+                onClick={() => setDeleting(null)}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className="glass-btn !border-red-300/50 !bg-red-500/25 !text-red-100"
+                data-testid="confirm-delete-bill"
+                disabled={deleting.busy || deleting.password.length === 0}
+                onClick={() => void confirmDelete()}
+              >
+                {deleting.busy ? 'Đang xóa…' : 'Xóa vĩnh viễn'}
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-white/80">
+            Hành động này xóa vĩnh viễn bill, các dòng món và ảnh PNG của bill, và{' '}
+            <strong>trừ doanh thu/thống kê</strong> trên Dashboard. Không thể hoàn tác.
+          </p>
+          <label className="mt-4 block text-sm text-white/70" htmlFor="delete-bill-password">
+            Nhập mật khẩu admin để xác nhận
+          </label>
+          <input
+            id="delete-bill-password"
+            data-testid="delete-bill-password"
+            type="password"
+            autoComplete="current-password"
+            className="glass-input mt-1 w-full"
+            value={deleting.password}
+            disabled={deleting.busy}
+            onChange={(event) =>
+              setDeleting((current) =>
+                current ? { ...current, password: event.target.value, error: '' } : current,
+              )
+            }
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') void confirmDelete()
+            }}
+          />
+          {deleting.error ? (
+            <p role="alert" className="mt-3 text-sm text-red-200">
+              {deleting.error}
             </p>
           ) : null}
         </Modal>

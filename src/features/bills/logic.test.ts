@@ -1,7 +1,6 @@
-// Unit test logic thuần của trang Quản lý bill — P7-T1: bộ lọc ngày theo giờ
-// VN (biên đầu/cuối ngày), escape ký tự LIKE, cộng số món, phân trang, định
-// dạng thời gian. P7-T4: đếm ngày còn lại đến expires_at cho tag "tự xóa sau
-// N ngày".
+// Unit test logic thuần của trang Quản lý bill — P7-T1: escape ký tự LIKE, cộng
+// số món, phân trang, định dạng thời gian. P12-T10: bỏ bộ lọc ngày (không còn
+// dateFilterIso/validateDateRange). P7-T4: đếm ngày còn lại đến expires_at.
 
 import { describe, expect, it } from 'vitest'
 import {
@@ -9,16 +8,12 @@ import {
   PAGE_SIZE,
   SIGNED_URL_TTL_SECONDS,
   billImageFileName,
-  dateFilterIso,
   escapeLike,
   formatBillDateTime,
   retentionDaysLeft,
   retentionTagText,
   summarizeItemCounts,
   totalPages,
-  validateDateRange,
-  vnDayEndIso,
-  vnDayStartIso,
 } from './logic'
 
 describe('escapeLike — người dùng gõ ký tự đặc biệt của LIKE', () => {
@@ -30,45 +25,6 @@ describe('escapeLike — người dùng gõ ký tự đặc biệt của LIKE', 
 
   it('chuỗi thường giữ nguyên', () => {
     expect(escapeLike('HT-261003-0001')).toBe('HT-261003-0001')
-  })
-})
-
-describe('dateFilterIso — lọc theo ngày giờ VN (+07:00)', () => {
-  it('đầu ngày → 00:00:00 giờ VN, cuối ngày → 23:59:59.999 giờ VN', () => {
-    expect(vnDayStartIso('2026-10-03')).toBe('2026-10-03T00:00:00+07:00')
-    expect(vnDayEndIso('2026-10-03')).toBe('2026-10-03T23:59:59.999+07:00')
-    expect(dateFilterIso('2026-10-01', '2026-10-03')).toEqual({
-      fromIso: '2026-10-01T00:00:00+07:00',
-      toIso: '2026-10-03T23:59:59.999+07:00',
-    })
-  })
-
-  it('chưa chọn ngày → không lọc', () => {
-    expect(dateFilterIso('', '')).toEqual({ fromIso: null, toIso: null })
-    expect(dateFilterIso('2026-10-03', '')).toEqual({
-      fromIso: '2026-10-03T00:00:00+07:00',
-      toIso: null,
-    })
-  })
-
-  it('bờ UTC lệch ngày đúng: 00:00 VN = 17:00 hôm trước (UTC)', () => {
-    expect(new Date(vnDayStartIso('2026-10-03')).toISOString()).toBe('2026-10-02T17:00:00.000Z')
-  })
-})
-
-describe('validateDateRange — bộ lọc ngày', () => {
-  it('từ ≤ đến → hợp lệ (null)', () => {
-    expect(validateDateRange('', '')).toBeNull()
-    expect(validateDateRange('2026-10-03', '')).toBeNull()
-    expect(validateDateRange('', '2026-10-03')).toBeNull()
-    expect(validateDateRange('2026-10-03', '2026-10-03')).toBeNull()
-    expect(validateDateRange('2026-10-01', '2026-10-03')).toBeNull()
-  })
-
-  it('từ > đến → thông báo tiếng Việt', () => {
-    expect(validateDateRange('2026-10-03', '2026-10-01')).toBe(
-      'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
-    )
   })
 })
 

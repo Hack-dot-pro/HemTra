@@ -41,13 +41,9 @@
 
 @layer components {
 /* Nền sau đăng nhập — design.md §7.2: ảnh + overlay tối + backdrop-blur.
-   image-set() để tải webp khi hỗ trợ, png chỉ là dự phòng (không tải song song). */
+   P12-T4: chỉ webp (144KB) — bỏ fallback png 2,1MB khỏi build & precache. */
 .app-bg {
-  background-image: url("../assets/background.png");
-  background-image: image-set(
-    url("../assets/background.webp") type("image/webp"),
-    url("../assets/background.png") type("image/png")
-  );
+  background-image: url("../assets/background.webp");
   background-size: cover;
   background-position: top;
   background-repeat: no-repeat;

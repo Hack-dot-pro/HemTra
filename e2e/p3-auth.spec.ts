@@ -328,9 +328,12 @@ test('P3-T9: admin đổi email khôi phục 3 bước → tự đăng xuất, g
   })
 
   await page.goto('/dashboard')
-  // Link chỉ hiện cho admin — đúng 1 link hiển thị ở viewport hiện tại.
-  await expect(page.locator('a[href="/change-recovery-email"]:visible')).toHaveCount(1)
-  await page.locator('a[href="/change-recovery-email"]:visible').click()
+  // P12-T9 — link ở header đã bỏ; vào qua modal hồ sơ (avatar trên header).
+  await expect(page.locator('a[href="/change-recovery-email"]:visible')).toHaveCount(0)
+  await page.getByTestId('profile-btn').click()
+  const profileModal = page.getByTestId('profile-modal')
+  await expect(profileModal).toBeVisible()
+  await profileModal.locator('a[href="/change-recovery-email"]').click()
   await expect(page).toHaveURL(/\/change-recovery-email$/)
 
   // Bước 1 — mật khẩu admin hiện tại (điều kiện 1a).

@@ -1,5 +1,6 @@
-// Unit test cho BillsPage — P7-T1: bảng cột, phân trang, lọc ngày, tìm theo
-// mã, trạng thái rỗng/lỗi và KHÔNG có nút xóa (design §4.1 — AGENT.md §11.4).
+// Unit test cho BillsPage — P7-T1 + P12-T10: bảng cột, phân trang, tìm theo mã,
+// trạng thái rỗng/lỗi; staff KHÔNG có nút xóa, admin có nút "Xóa" → modal nhập
+// mật khẩu admin → EF delete-bills (quyết định user 2026-10-04, design §4.1).
 // Dùng fake BillsApi qua prop `api` (không đụng mạng). Modal ảnh bill (P7-T2)
 // mock luôn module `downloadBlob` của POS để không đụng DOM download thật.
 
@@ -7,9 +8,11 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import BillsPage from './BillsPage'
+import { AuthProfileContext } from '../../app/authProfileContext'
 import { downloadBlob } from '../pos/exportBillPng'
 import type { BillsApi } from './api'
 import type { BillListParams, BillPage, BillRow } from './logic'
+import type { AccessProfile } from '../auth/accessGuard'
 
 vi.mock('../pos/exportBillPng', () => ({
   downloadBlob: vi.fn(),
@@ -36,9 +39,17 @@ function fakeApi(overrides: Partial<BillsApi> = {}): BillsApi {
   return {
     list: vi.fn(async () => ({ rows: [makeRow()], total: 1 }) satisfies BillPage),
     signedImageUrl: vi.fn(async () => SIGNED_URL),
+    deleteBill: vi.fn(async ({ id }: { id: string }) => ({ code: id })),
     ...overrides,
   }
 }
+
+/** Render với bối cảnh role (P12-T10): không truyền profile = không có admin. */
+function renderWithRole(ui: React.ReactElement, profile: AccessProfile | null = null) {
+  return render(<AuthProfileContext.Provider value={profile}>{ui}</AuthProfileContext.Provider>)
+}
+
+const ADMIN_PROFILE: AccessProfile = { role: 'admin', mustChangePassword: false }
 
 function lastParams(api: BillsApi): BillListParams {
   const list = api.list as ReturnType<typeof vi.fn>
@@ -139,7 +150,11 @@ describe('P7-T1 — trạng thái rỗng và lỗi', () => {
       .fn()
       .mockRejectedValueOnce(new Error('Không thể kết nối máy chủ, thử lại sau.'))
       .mockResolvedValueOnce({ rows: [makeRow()], total: 1 })
-    const api: BillsApi = { list, signedImageUrl: vi.fn(async () => SIGNED_URL) }
+    const api: BillsApi = {
+      list,
+      signedImageUrl: vi.fn(async () => SIGNED_URL),
+      deleteBill: vi.fn(async () => ({ code: 'HT-261003-0001' })),
+    }
     render(<BillsPage api={api} />)
 
     const alert = await screen.findByRole('alert')
@@ -164,60 +179,6 @@ describe('P7-T1 — tìm theo mã', () => {
 
     await waitFor(() => expect(lastParams(api).code).toBe('HT-26100'))
     expect(lastParams(api).page).toBe(0)
-  })
-
-  it('bấm Đặt lại → bỏ bộ lọc, gọi lại với mã rỗng', async () => {
-    const api = fakeApi()
-    const user = userEvent.setup()
-    render(<BillsPage api={api} />)
-    await screen.findByText('HT-261003-0001')
-
-    await user.type(screen.getByRole('searchbox'), 'HT-26100')
-    await user.click(screen.getByRole('button', { name: 'Tìm' }))
-    await waitFor(() => expect(lastParams(api).code).toBe('HT-26100'))
-
-    await user.click(screen.getByRole('button', { name: 'Đặt lại' }))
-
-    await waitFor(() => expect(lastParams(api).code).toBe(''))
-    expect(lastParams(api).page).toBe(0)
-  })
-})
-
-describe('P7-T1 — lọc theo ngày', () => {
-  it('chọn 2 ngày → gửi ISO đầu/cuối ngày theo giờ VN', async () => {
-    const api = fakeApi()
-    const user = userEvent.setup()
-    render(<BillsPage api={api} />)
-    await screen.findByText('HT-261003-0001')
-
-    await user.type(screen.getByLabelText('Từ ngày'), '2026-10-01')
-    await user.type(screen.getByLabelText('Đến ngày'), '2026-10-03')
-
-    await waitFor(() =>
-      expect(lastParams(api)).toMatchObject({
-        from: '2026-10-01',
-        to: '2026-10-03',
-      }),
-    )
-    expect(lastParams(api).page).toBe(0)
-  })
-
-  it('từ > đến → hiện cảnh báo, không gọi api lần nữa', async () => {
-    const api = fakeApi()
-    const user = userEvent.setup()
-    render(<BillsPage api={api} />)
-    await screen.findByText('HT-261003-0001')
-
-    await user.type(screen.getByLabelText('Từ ngày'), '2026-10-03')
-    await waitFor(() => expect((api.list as ReturnType<typeof vi.fn>).mock.calls.length).toBe(2))
-    const callsWithValidFrom = (api.list as ReturnType<typeof vi.fn>).mock.calls.length
-
-    await user.type(screen.getByLabelText('Đến ngày'), '2026-10-01')
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
-    )
-    expect((api.list as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsWithValidFrom)
   })
 })
 
@@ -244,31 +205,16 @@ describe('P7-T1 — phân trang', () => {
     expect(screen.getByRole('button', { name: 'Sau' })).toBeDisabled()
     expect(lastParams(api).page).toBe(1)
   })
-
-  it('đổi ngày lọc → lùi về trang đầu để không kẹt trên trang 2 với dữ liệu mới', async () => {
-    const api = fakeApi({ list: vi.fn(async () => ({ rows: [makeRow()], total: 40 })) })
-    const user = userEvent.setup()
-    render(<BillsPage api={api} />)
-    await screen.findByText('HT-261003-0001')
-
-    await user.click(screen.getByRole('button', { name: 'Sau' }))
-    await waitFor(() => expect(lastParams(api).page).toBe(1))
-
-    await user.type(screen.getByLabelText('Từ ngày'), '2026-10-03')
-
-    await waitFor(() => expect(lastParams(api).page).toBe(0))
-  })
 })
 
-
 describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
-  it('bấm "Xem ảnh" → hiện dialog đúng mã, ảnh lấy từ signed URL', async () => {
+  it('bấm "Xem Bill" → hiện dialog đúng mã, ảnh lấy từ signed URL', async () => {
     const api = fakeApi()
     const user = userEvent.setup()
     render(<BillsPage api={api} />)
     await screen.findByText('HT-261003-0001')
 
-    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+    await user.click(screen.getByRole('button', { name: 'Xem bill HT-261003-0001' }))
 
     const dialog = await screen.findByRole('dialog', { name: 'Bill HT-261003-0001' })
     expect(api.signedImageUrl).toHaveBeenCalledWith('2026/10/HT-261003-0001.png')
@@ -289,7 +235,7 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     render(<BillsPage api={api} />)
     await screen.findByText('HT-261003-0001')
 
-    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+    await user.click(screen.getByRole('button', { name: 'Xem bill HT-261003-0001' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được ảnh bill.')
     await user.click(screen.getByRole('button', { name: 'Thử lại' }))
@@ -305,7 +251,7 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     await screen.findByText('HT-261003-0001')
 
     expect(screen.getByText('Chưa có ảnh')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Xem ảnh HT-261003-0001' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xem bill HT-261003-0001' })).not.toBeInTheDocument()
   })
 
   it('Tải về → lấy blob qua signed URL mới, tải <code>.png, hiện thông báo', async () => {
@@ -317,7 +263,7 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     )
     render(<BillsPage api={api} />)
     await screen.findByText('HT-261003-0001')
-    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+    await user.click(screen.getByRole('button', { name: 'Xem bill HT-261003-0001' }))
     await screen.findByRole('img', { name: 'Ảnh bill HT-261003-0001' })
 
     await user.click(screen.getByRole('button', { name: 'Tải về' }))
@@ -343,7 +289,7 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     )
     render(<BillsPage api={api} />)
     await screen.findByText('HT-261003-0001')
-    await user.click(screen.getByRole('button', { name: 'Xem ảnh HT-261003-0001' }))
+    await user.click(screen.getByRole('button', { name: 'Xem bill HT-261003-0001' }))
     await screen.findByRole('img', { name: 'Ảnh bill HT-261003-0001' })
 
     await user.click(screen.getByRole('button', { name: 'Chia sẻ lại' }))
@@ -356,5 +302,72 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     Reflect.deleteProperty(navigator, 'share')
     Reflect.deleteProperty(navigator, 'canShare')
     vi.unstubAllGlobals()
+  })
+})
+
+describe('P12-T10 — nút "Xóa bill" của admin + xác nhận mật khẩu', () => {
+  it('staff (không role admin) → không thấy nút Xóa, header báo chỉ đọc', async () => {
+    const api = fakeApi()
+    renderWithRole(<BillsPage api={api} />, { role: 'staff', mustChangePassword: false })
+    await screen.findByText('HT-261003-0001')
+
+    expect(screen.queryByRole('button', { name: 'Xóa bill HT-261003-0001' })).not.toBeInTheDocument()
+    expect(screen.getByText('Bill chỉ đọc — không có thao tác xóa.')).toBeInTheDocument()
+    expect(api.deleteBill).not.toHaveBeenCalled()
+  })
+
+  it('admin → có nút Xóa; chưa nhập mật khẩu thì nút Xóa vĩnh viễn bị khóa', async () => {
+    const api = fakeApi()
+    const user = userEvent.setup()
+    renderWithRole(<BillsPage api={api} />, ADMIN_PROFILE)
+    await screen.findByText('HT-261003-0001')
+
+    await user.click(screen.getByRole('button', { name: 'Xóa bill HT-261003-0001' }))
+    expect(await screen.findByRole('dialog', { name: 'Xóa bill HT-261003-0001' })).toBeInTheDocument()
+    expect(screen.getByTestId('confirm-delete-bill')).toBeDisabled()
+
+    await user.type(screen.getByTestId('delete-bill-password'), 'mat-khau-admin')
+    expect(screen.getByTestId('delete-bill-password')).toHaveValue('mat-khau-admin')
+    expect(screen.getByTestId('confirm-delete-bill')).toBeEnabled()
+
+    await user.click(screen.getByTestId('confirm-delete-bill'))
+    await waitFor(() =>
+      expect(api.deleteBill).toHaveBeenCalledWith({
+        id: 'bill-1',
+        password: 'mat-khau-admin',
+      }),
+    )
+    expect(await screen.findByText(/Đã xóa bill HT-261003-0001/)).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Xóa bill HT-261003-0001' })).not.toBeInTheDocument()
+  })
+
+  it('sai mật khẩu → hiện lỗi từ EF, giữ modal để nhập lại', async () => {
+    const api = fakeApi({
+      deleteBill: vi.fn(async () => {
+        throw new Error('Mật khẩu admin không đúng')
+      }),
+    })
+    const user = userEvent.setup()
+    renderWithRole(<BillsPage api={api} />, ADMIN_PROFILE)
+    await screen.findByText('HT-261003-0001')
+
+    await user.click(screen.getByRole('button', { name: 'Xóa bill HT-261003-0001' }))
+    await user.type(screen.getByTestId('delete-bill-password'), 'sai-mat-khau')
+    await user.click(screen.getByTestId('confirm-delete-bill'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mật khẩu admin không đúng')
+    expect(screen.getByRole('dialog', { name: 'Xóa bill HT-261003-0001' })).toBeInTheDocument()
+    expect(screen.getByTestId('confirm-delete-bill')).toBeEnabled()
+  })
+
+  it('không còn ô "Từ ngày"/"Đến ngày" và nút "Đặt lại" (P12-T10)', async () => {
+    render(<BillsPage api={fakeApi()} />)
+    await screen.findByText('HT-261003-0001')
+
+    expect(screen.queryByLabelText('Từ ngày')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Đến ngày')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Đặt lại' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xem ảnh HT-261003-0001' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Xem bill HT-261003-0001' })).toBeInTheDocument()
   })
 })

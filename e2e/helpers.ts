@@ -55,29 +55,29 @@ export async function injectAuth(page: Page, options: InjectAuthOptions = {}): P
   )
 
   // loadAccessProfile đọc profiles qua REST — trả đúng 1 dòng theo role/cờ.
-  // maybeSingle() nhận mảng 1 phần tử (postgrest-js isMaybeSingle).
-  await page.route('**/rest/v1/profiles*', (route) =>
-    route.fulfill({
+  // maybeSingle() nhận mảng 1 phần tử; single() nhận object JSON.
+  await page.route('**/rest/v1/profiles*', (route) => {
+    const isSingle = (route.request().headers()['accept'] ?? '').includes('vnd.pgrst.object+json')
+    const profile = {
+      id: PROFILE_ID,
+      username: 'e2e',
+      display_name: 'E2E',
+      role,
+      must_change_password: mustChangePassword,
+      avatar_path: '',
+    }
+    return route.fulfill({
       status: 200,
-      contentType: 'application/json',
-      // REST là cross-origin — WebKit cần header CORS (xem e2e/p3-auth.spec.ts)
+      contentType: isSingle ? 'application/vnd.pgrst.object+json' : 'application/json',
       headers: {
         'Content-Range': '0-0/1',
         'access-control-allow-origin': '*',
         'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info, range',
         'access-control-expose-headers': 'content-range',
       },
-      body: JSON.stringify([
-        {
-          id: PROFILE_ID,
-          username: 'e2e',
-          display_name: 'E2E',
-          role,
-          must_change_password: mustChangePassword,
-        },
-      ]),
-    }),
-  )
+      body: JSON.stringify(isSingle ? profile : [profile]),
+    })
+  })
 
   // P4: sau đăng nhập, AppLayout chạy useMenuSync() (menuSync.ts) → query
   // app_meta để so menu_version, lệch (cache rỗng) → tải categories/products/toppings.

@@ -39,6 +39,7 @@ vi.mock('./exportBillPng', () => ({
   isSafariCapture: () => false,
   preloadBillPngLib: vi.fn(async () => undefined),
   warmBillImage: vi.fn(async () => 'data:image/png;base64,AA=='),
+  pngDataUrlSize: vi.fn(() => ({ width: 2160, height: 3600 })), // 720 × 3 — P12-T8
 }))
 
 let testDb: DBType
@@ -216,15 +217,21 @@ describe('P6-T2/T3 — panel bill realtime', () => {
     expect(screen.getByText('Món này chưa có topping.')).toBeInTheDocument()
   })
 
-  it('số món, SĐT/ghi chú đơn cập nhật theo bill', async () => {
+  it('số món, ghi chú đơn cập nhật theo bill (P12-T6: bỏ gợi ý SĐT)', async () => {
     const user = await renderPos()
     await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
     await user.click(screen.getByRole('button', { name: 'Tăng Trà sữa đào' }))
     expect(screen.getByTestId('bill-count')).toHaveTextContent('2 món')
 
-    const phone = screen.getByLabelText('SĐT / ghi chú đơn')
+    const phone = screen.getByLabelText('Ghi chú đơn')
+    expect(phone).not.toHaveAttribute('placeholder')
     await user.type(phone, '0909 123 456')
     expect(phone).toHaveValue('0909 123 456')
+  })
+
+  it('P12-T6: không còn nhãn "Menu v{n}" trên đầu POS', async () => {
+    await renderPos()
+    expect(screen.queryByText(/Menu v\d+/)).not.toBeInTheDocument()
   })
 })
 
@@ -507,6 +514,48 @@ describe('P6-T8 — chia sẻ / lưu PNG', () => {
 
     await user.click(screen.getByTestId('share-btn'))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
+
+describe('P12-T8 — preview ảnh bill 2K sau thanh toán', () => {
+  async function checkoutOne(user: Awaited<ReturnType<typeof renderPos>>) {
+    await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
+    rpcMock.mockResolvedValueOnce({
+      data: { code: 'HT-261003-0001', total: 35000, price_drift: false, duplicate: false },
+      error: null,
+    })
+    await user.click(screen.getByTestId('checkout-btn'))
+    await screen.findByTestId('bill-preview')
+  }
+
+  it('thanh toán xong → hiện modal preview ảnh PNG ≥ 2048px', async () => {
+    const user = await renderPos()
+    await checkoutOne(user)
+
+    const img = screen.getByTestId('bill-preview-img')
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,iVBORw0KGgo=')
+    expect(screen.getByTestId('bill-preview-size')).toHaveTextContent('2160')
+    expect(screen.getByTestId('bill-preview-size')).toHaveTextContent('2K')
+    // modal rộng (max-w-3xl) — preview 2K không bị bóp trong max-w-md
+    expect(screen.getByRole('dialog').className).toContain('max-w-3xl')
+  })
+
+  it('modal có nút Chia sẻ / Lưu về máy / Đóng (Web Share khả dụng)', async () => {
+    Object.defineProperty(navigator, 'share', { value: vi.fn(async () => undefined), configurable: true })
+    Object.defineProperty(navigator, 'canShare', { value: vi.fn(() => true), configurable: true })
+    const user = await renderPos()
+    await checkoutOne(user)
+
+    expect(screen.getByTestId('preview-share-btn')).toBeInTheDocument()
+    await user.click(screen.getByTestId('preview-save-btn'))
+    expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'HT-261003-0001.png')
+
+    await user.click(screen.getByTestId('preview-close-btn'))
+    expect(screen.queryByTestId('bill-preview')).not.toBeInTheDocument()
+    // vẫn còn nút "Xem bill" ở cột phải để mở lại preview
+    expect(screen.getByTestId('view-bill-btn')).toBeInTheDocument()
+    await user.click(screen.getByTestId('view-bill-btn'))
+    expect(screen.getByTestId('bill-preview')).toBeInTheDocument()
   })
 })
 

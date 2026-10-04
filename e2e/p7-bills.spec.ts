@@ -165,7 +165,7 @@ async function mockBillsApi(page: Page, bills: SeedBill[]): Promise<string[]> {
   return urls
 }
 
-test('P7-T1: bảng bill — dữ liệu, tìm theo mã, phân trang, không nút xóa', async ({ page }, testInfo) => {
+test('P7-T1/P12-T10: bảng bill — dữ liệu, tìm theo mã, phân trang, admin có nút xóa', async ({ page }, testInfo) => {
   await injectAuth(page)
   const urls = await mockBillsApi(page, seedBills(21))
   const pageErrors: string[] = []
@@ -203,17 +203,24 @@ test('P7-T1: bảng bill — dữ liệu, tìm theo mã, phân trang, không nú
   await expect(page.getByText('Trang 1/1 · 1 bill · 20 dòng/trang')).toBeVisible()
   expect(urls.some((url) => url.includes('code=ilike') && url.includes('HT-261001-0001'))).toBe(true)
 
-  // Phân trang — trang 2 lấy offset=20
-  await page.getByRole('button', { name: 'Đặt lại' }).click()
+  // P12-T10 — bỏ ô "Từ ngày"/"Đến ngày" + nút "Đặt lại"; chỉ còn tìm theo mã
+  await expect(page.getByLabel('Từ ngày')).toHaveCount(0)
+  await expect(page.getByLabel('Đến ngày')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Đặt lại' })).toHaveCount(0)
+
+  // Phân trang — bỏ lọc (xóa ô tìm) rồi sang trang 2 lấy offset=20
+  await page.getByPlaceholder('HT-261003-0001').fill('')
+  await page.getByRole('button', { name: 'Tìm' }).click()
+  await expect(page.getByText('Trang 1/2 · 21 bill · 20 dòng/trang')).toBeVisible()
   await page.getByRole('button', { name: 'Sau' }).click()
   await expect(page.getByText('Trang 2/2 · 21 bill · 20 dòng/trang')).toBeVisible()
   expect(urls.some((url) => url.includes('offset=20'))).toBe(true)
 
-  // Không có nút xóa ở bất kỳ role nào (design §4.1) — quét cả accessible name
-  // (nút icon-only có aria-label vẫn bị bắt).
+  // P12-T10 — admin (injectAuth mặc định) có nút Xóa ở từng dòng; không có
+  // date filter. Staff không thấy nút (case staff ở test riêng dưới).
+  await expect(page.getByTestId('delete-bill-HT-261003-0021')).toBeVisible()
   const buttonLabels = await page.getByRole('button').allInnerTexts()
-  expect(buttonLabels.some((label) => /x[oó]a/i.test(label))).toBe(false)
-  await expect(page.getByRole('button', { name: /x[oó]a/i })).toHaveCount(0)
+  expect(buttonLabels.some((label) => /x[oó]a/i.test(label))).toBe(true)
 
   // Q10 — không lỗi console + ảnh 2 cỡ + không tràn ngang cấp trang
   expect(pageErrors).toEqual([])
@@ -262,7 +269,7 @@ test('P7-T2: modal ảnh bill — signed URL ngắn hạn, ảnh hiện, Esc đ�
   await page.goto('/bills')
   await page.getByRole('region', { name: 'Danh sách bill' }).getByText('HT-261001-0001').waitFor()
 
-  await page.getByRole('button', { name: 'Xem ảnh HT-261001-0001' }).click()
+  await page.getByRole('button', { name: 'Xem bill HT-261001-0001' }).click()
 
   const dialog = page.getByRole('dialog', { name: 'Bill HT-261001-0001' })
   await expect(dialog).toBeVisible()
@@ -288,7 +295,9 @@ test('P7-T2: modal ảnh bill — signed URL ngắn hạn, ảnh hiện, Esc đ�
   await expect(dialog).not.toBeVisible()
 })
 
-test('P7-T2: bill chưa có ảnh → hiện "Chưa có ảnh", không có nút xem', async ({ page }) => {
+test('P7-T2: bill chưa có ảnh → hiện "Chưa có ảnh", không có nút Xem Bill (admin vẫn Xóa)', async ({
+  page,
+}) => {
   await injectAuth(page)
   const bills = seedBills(5)
   await mockBillsApi(page, bills)
@@ -300,5 +309,7 @@ test('P7-T2: bill chưa có ảnh → hiện "Chưa có ảnh", không có nút 
     .getByRole('row', { name: /HT-261002-0005/ })
   await row.waitFor()
   await expect(row.getByText('Chưa có ảnh')).toBeVisible()
-  await expect(row.getByRole('button')).toHaveCount(0)
+  await expect(row.getByRole('button', { name: /xem bill/i })).toHaveCount(0)
+  // P12-T10 — admin thấy nút Xóa kể cả khi bill chưa có ảnh
+  await expect(row.getByRole('button', { name: /xóa/i })).toHaveCount(1)
 })

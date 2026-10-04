@@ -28,43 +28,62 @@ function props() {
 
 afterEach(cleanup)
 
-describe('P6-T4 — BillSheet đúng 7 khối (design §6.1)', () => {
-  it('snapshot: layout khóa theo thứ tự logo → mã/SĐT → bảng → tổng → QR → lời chúc → địa chỉ', () => {
+describe('P6-T4 + P12-T7 — BillSheet đúng thứ tự khối (design §6.1 mới)', () => {
+  it('snapshot: layout khóa theo thứ tự logo → SĐT → mã/tg → địa chỉ → bảng → tổng → QR → lời chúc', () => {
     const { container } = render(<BillSheet {...props()} />)
     expect(container).toMatchSnapshot()
   })
 
-  it('7 khối hiển thị đúng nội dung, rộng 720px', () => {
+  it('các khối hiển thị đúng nội dung, rộng 720px', () => {
     render(<BillSheet {...props()} />)
     const sheet = screen.getByTestId('bill-sheet')
     expect(sheet).toHaveStyle({ width: `${BILL_WIDTH_PX}px` })
 
     const text = sheet.textContent ?? ''
-    // 1 logo (alt), 2 mã + thời gian + SĐT
+    // 1 logo (alt), 2 SĐT có emoji ☎️, 3 mã + thời gian
     expect(screen.getByAltText('Hẻm Trà')).toBeInTheDocument()
+    expect(SHOP_PHONES.startsWith('☎️')).toBe(true)
+    expect(text).toContain(SHOP_PHONES)
     expect(text).toContain('Mã đơn HT-261003-0001')
     expect(text).toContain('14:15 03/10/2026') // Intl vi-VN đặt giờ trước
-    expect(text).toContain(SHOP_PHONES)
-    // 3 bảng: đúng tên món, ghi chú nghiêng, dòng con topping thụt lề
+    // 4 địa chỉ (nhãn + giá trị có "(Gần KCN Bàu bàng)")
+    expect(text).toContain('Địa chỉ:')
+    expect(BILL_ADDRESS).toContain('(Gần KCN Bàu bàng)')
+    expect(text).toContain(BILL_ADDRESS)
+    // bảng: đúng tên món, ghi chú nghiêng, dòng con topping thụt lề
     expect(text).toContain('Trà sữa đào')
     expect(text).toContain('ít đá')
     expect(text).toContain('+ Trân châu')
-    // 4 tổng in đậm (tính đúng: (35000+5000)×2 + 30000 = 110.000)
+    // tổng in đậm (tính đúng: (35000+5000)×2 + 30000 = 110.000)
     expect(screen.getByText('Tổng cộng')).toBeInTheDocument()
     expect(sheet).toHaveTextContent('110.000 ₫')
-    // 5 QR (placeholder khi chưa có T5), 6 lời chúc, 7 địa chỉ
+    // QR (placeholder khi chưa có T5), lời chúc cuối hóa đơn
     expect(screen.getByTestId('bill-qr-placeholder')).toBeInTheDocument()
+    expect(BILL_GREETING).toContain('💕')
     expect(text).toContain(BILL_GREETING)
-    expect(text).toContain(BILL_ADDRESS)
   })
 
-  it('thứ tự 7 khối theo DOM (không đảo)', () => {
+  it('thứ tự khối theo DOM (không đảo, P12-T7)', () => {
     const { container } = render(<BillSheet {...props()} />)
     const sheet = screen.getByTestId('bill-sheet')
     const kids = Array.from(sheet.children).map((el) => el.tagName)
-    // logo(img) → mã(p) → giờ(p) → sđt(p) → table → tổng(div) → qr(div) → chúc(p) → địa chỉ(p)
-    expect(kids).toEqual(['IMG', 'P', 'P', 'P', 'TABLE', 'DIV', 'DIV', 'P', 'P'])
+    // img → SĐT → mã → giờ → "Địa chỉ:" → địa chỉ → table → tổng → qr → chúc
+    expect(kids).toEqual(['IMG', 'P', 'P', 'P', 'P', 'P', 'TABLE', 'DIV', 'DIV', 'P'])
     expect(container.querySelectorAll('tr').length).toBeGreaterThan(0)
+  })
+
+  it('P12-T7: không còn lặp địa chỉ ở cuối — lời chúc là khối cuối cùng', () => {
+    const { container } = render(<BillSheet {...props()} />)
+    const sheet = screen.getByTestId('bill-sheet')
+    const kids = Array.from(sheet.children)
+    const last = kids[kids.length - 1]
+    expect(last?.tagName).toBe('P')
+    expect(last?.textContent).toBe(BILL_GREETING)
+    // địa chỉ chỉ xuất hiện đúng 1 lần (không còn lặp ở cuối bill)
+    const addressLines = Array.from(container.querySelectorAll('p')).filter(
+      (p) => p.textContent === BILL_ADDRESS,
+    )
+    expect(addressLines).toHaveLength(1)
   })
 
   it('QR có data-URL (T5) → hiện img thay ô chờ', () => {

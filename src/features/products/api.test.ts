@@ -67,7 +67,8 @@ describe('productsApi.saveCategory', () => {
       sort_order: 3,
       is_active: true,
     })
-    expect(result).toEqual({ ok: true })
+    // P12-T4: trả id đã ghi để page vá list cục bộ (không refetch).
+    expect(result).toEqual({ ok: true, id: expect.any(String) })
     const rows = fake.tables.categories
     expect(rows).toHaveLength(3)
     const created = rows.find((r) => r.name === 'Đào')
@@ -84,7 +85,7 @@ describe('productsApi.saveCategory', () => {
       sort_order: 1,
       is_active: true,
     })
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, id: 'c1' })
     expect(fake.tables.categories.find((r) => r.id === 'c1')?.is_active).toBe(true)
     expect(fake.tables.categories).toHaveLength(2)
   })
@@ -109,7 +110,7 @@ describe('productsApi.saveProduct', () => {
       is_active: true,
       topping_ids: ['t1', 't2'],
     })
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, id: expect.any(String) })
     expect(fake.tables.products).toHaveLength(2)
     expect(fake.tables.product_toppings).toEqual([
       { product_id: 'p1', topping_id: 't1' },
@@ -129,7 +130,7 @@ describe('productsApi.saveProduct', () => {
       is_active: false,
       topping_ids: [],
     })
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, id: 'p1' })
     expect(fake.tables.products).toHaveLength(1)
     expect(fake.tables.products[0]).toMatchObject({ price: 36000, is_active: false })
     expect(fake.tables.product_toppings).toEqual([])

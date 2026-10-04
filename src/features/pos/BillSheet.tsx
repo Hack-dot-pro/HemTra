@@ -1,16 +1,19 @@
-// BillSheet — P6-T4 (pos-bill/skill.md §3, design §6.1): đúng 7 khối, đúng
-// thứ tự, rộng 720px (khớp vùng xuất PNG ×2 ở T6). Render trên nền trắng chữ
-// đen để chụp ảnh — KHÔNG dùng thẻ kính (đó là style app, không phải style bill).
-// QR (khối 5) nhận data-URL từ T5; chưa có thì hiện ô chờ.
+// BillSheet — P6-T4 (pos-bill/skill.md §3) + P12-T7 layout mới (user 2026-10-04,
+// design §6.1 đã cập nhật): rộng 720px, đúng thứ tự
+//   Logo → ☎️ SĐT → Mã đơn + thời gian → Địa chỉ → bảng → Tổng cộng → QR → lời chúc.
+// Render trên nền trắng chữ đen để chụp ảnh — KHÔNG dùng thẻ kính.
 
 import { Fragment } from 'react'
-import logoUrl from '../../assets/logo.png'
+import logoUrl from '../../assets/logo.webp'
 import { formatVnd, formatVndNumber } from '../../lib/format'
 
 export const BILL_WIDTH_PX = 720
-export const SHOP_PHONES = '0338525677 (Vi) - 0362335733 (Linh)'
-export const BILL_GREETING = 'Cảm ơn khách hàng thân yêu của Hẻm'
-export const BILL_ADDRESS = 'Phường Long Nguyên, Thành Phố Hồ Chí Minh'
+/** P12-T7: thêm emoji ☎️, đúng số máy 2 số như user yêu cầu. */
+export const SHOP_PHONES = '☎️ 0338525677 (Vi) - 0362335733 (Linh)'
+/** P12-T7: đúng câu chúc + emoji của user ("hẽm" viết thường như yêu cầu). */
+export const BILL_GREETING = 'Cảm Ơn khách hàng thân yêu của hẽm 💕'
+/** P12-T7: thêm "(Gần KCN Bàu bàng)". */
+export const BILL_ADDRESS = 'Phường Long Nguyên, Thành Phố Hồ Chí Minh (Gần KCN Bàu bàng)'
 
 export type BillSheetTopping = {
   key: string
@@ -67,12 +70,18 @@ export default function BillSheet({ code, createdAt, items, total, qrDataUrl }: 
       {/* 1 — Logo */}
       <img src={logoUrl} alt="Hẻm Trà" className="h-16 w-auto object-contain" />
 
-      {/* 2 — Mã bill + SĐT + thời gian */}
+      {/* 2 — Số điện thoại (ngay dưới logo) */}
+      <p className="mt-4 text-sm">{SHOP_PHONES}</p>
+
+      {/* 3 — Số hóa đơn + thời gian */}
       <p className="mt-4 text-lg font-bold">Mã đơn {code}</p>
       <p className="text-sm">Thời gian: {formatCreatedAt(createdAt)}</p>
-      <p className="text-sm">{SHOP_PHONES}</p>
 
-      {/* 3 — Bảng sản phẩm */}
+      {/* 4 — Địa chỉ */}
+      <p className="mt-4 text-sm font-semibold">Địa chỉ:</p>
+      <p className="text-sm">{BILL_ADDRESS}</p>
+
+      {/* 5 — Bảng sản phẩm */}
       <table className="mt-4 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-black/40 text-left">
@@ -111,13 +120,13 @@ export default function BillSheet({ code, createdAt, items, total, qrDataUrl }: 
         </tbody>
       </table>
 
-      {/* 4 — Tổng tiền (in đậm) */}
+      {/* 6 — Tổng tiền (in đậm) */}
       <div className="mt-2 flex w-full items-center justify-between border-t border-black/40 pt-2 text-base font-bold">
         <span>Tổng cộng</span>
         <span className="tabular-nums">{formatVnd(total)}</span>
       </div>
 
-      {/* 5 — QR Facebook (P6-T5 điền data-URL) */}
+      {/* 7 — QR Facebook (P6-T5 điền data-URL) */}
       <div className="mt-4 flex flex-col items-center gap-1">
         {qrDataUrl ? (
           <img src={qrDataUrl} alt="QR Facebook" className="h-28 w-28" />
@@ -132,11 +141,8 @@ export default function BillSheet({ code, createdAt, items, total, qrDataUrl }: 
         <span className="text-xs">Facebook Hẻm Trà</span>
       </div>
 
-      {/* 6 — Lời chúc */}
+      {/* 8 — Lời chúc (cuối hóa đơn — P12-T7 dời lên trên, bỏ khối địa chỉ lặp) */}
       <p className="mt-4 text-sm">{BILL_GREETING}</p>
-
-      {/* 7 — Địa chỉ */}
-      <p className="mt-1 text-sm">{BILL_ADDRESS}</p>
     </div>
   )
 }

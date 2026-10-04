@@ -5,6 +5,7 @@
 // được cả khi offline; app_meta sync do AppLayout lo.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Minus, NotebookPen, Plus } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { formatVnd } from '../../lib/format'
@@ -17,8 +18,14 @@ import { dataUrlToBlob } from '../../lib/outbox'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 import BillSheet, { type BillSheetProps } from './BillSheet'
 import { generateQrDataUrl, preloadQrLib } from './qr'
-import { billNodeToPngDataUrl, downloadBlob, preloadBillPngLib, warmBillImage } from './exportBillPng'
-import logoUrl from '../../assets/logo.png'
+import {
+  billNodeToPngDataUrl,
+  downloadBlob,
+  pngDataUrlSize,
+  preloadBillPngLib,
+  warmBillImage,
+} from './exportBillPng'
+import logoUrl from '../../assets/logo.webp'
 import {
   CheckoutRateLimitedError,
   MenuVersionChangedError,
@@ -69,6 +76,8 @@ export default function PosPage() {
   const [paying, setPaying] = useState(false)
   const [checkoutMsg, setCheckoutMsg] = useState<CheckoutMsg | null>(null)
   const [lastSale, setLastSale] = useState<{ code: string; png: string | null } | null>(null)
+  /** P12-T8: modal preview ảnh bill 2K sau khi thanh toán. */
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [sheet, setSheet] = useState<BillSheetProps | null>(null)
   const hostRef = useRef<HTMLDivElement | null>(null)
 
@@ -102,7 +111,9 @@ export default function PosPage() {
 
   /** Mount BillSheet vào DOM ẩn rồi chụp PNG (html-to-image cần node có layout). */
   async function renderBillPng(sheetData: BillSheetProps): Promise<string> {
-    setSheet(sheetData)
+    flushSync(() => {
+      setSheet(sheetData)
+    })
     await nextPaint()
     const node = hostRef.current
     if (!node) throw new Error('bill_host_missing')
@@ -161,6 +172,7 @@ export default function PosPage() {
           }
         }
         setLastSale({ code: result.code, png })
+        if (png) setPreviewOpen(true)
         setCheckoutMsg({
           tone: result.price_drift || serverMismatch ? 'warn' : 'ok',
           text: result.price_drift
@@ -183,6 +195,7 @@ export default function PosPage() {
         })
         await enqueueOfflineBill({ bill, menuVersion: menu.menu_version, png, offlineCode: offline_code })
         setLastSale({ code: offline_code, png })
+        if (png) setPreviewOpen(true)
         setCheckoutMsg({
           tone: 'ok',
           text: `Offline — bill ${offline_code} đã lưu, sẽ tự đồng bộ khi có mạng.`,
@@ -243,11 +256,9 @@ export default function PosPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
       <section aria-label="Sản phẩm" className="min-w-0">
+        {/* P12-T6: bỏ nhãn "Menu v{n}" — số version nội bộ, khách không cần biết. */}
         <div className="mb-3 flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Thanh toán</h1>
-          {snapshot && snapshot.fetched_at > 0 ? (
-            <span className="text-xs text-white/60">Menu v{snapshot.menu_version}</span>
-          ) : null}
         </div>
 
         {snapshot === undefined ? (
@@ -425,15 +436,15 @@ export default function PosPage() {
           </ul>
         )}
 
+        {/* P12-T6: đổi nhãn "SĐT / ghi chú đơn" → "Ghi chú đơn", bỏ gợi ý mẫu. */}
         <label className="mt-3 block text-xs text-white/70" htmlFor="bill-phone-note">
-          SĐT / ghi chú đơn
+          Ghi chú đơn
         </label>
         <input
           id="bill-phone-note"
           className="glass-input mt-1 w-full !py-1.5 text-sm"
           value={bill.phone_note}
           maxLength={MAX_PHONE_NOTE_LENGTH}
-          placeholder="VD: 0909 123 456 — giao trước 18h"
           onChange={(event) => setBill((prev) => setPhoneNote(prev, event.target.value))}
         />
 
@@ -476,6 +487,14 @@ export default function PosPage() {
             </p>
             {lastSale.png ? (
               <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  data-testid="view-bill-btn"
+                  onClick={() => setPreviewOpen(true)}
+                  className="glass-btn flex-1 !py-1.5 text-sm"
+                >
+                  Xem bill
+                </button>
                 {typeof navigator.share === 'function' ? (
                   <button
                     type="button"
@@ -504,15 +523,73 @@ export default function PosPage() {
         ) : null}
       </aside>
 
-      {sheet ? (
-        <div
-          ref={hostRef}
-          aria-hidden="true"
-          data-testid="bill-host"
-          className="pointer-events-none fixed -left-[10000px] top-0"
+      <div
+        ref={hostRef}
+        aria-hidden="true"
+        data-testid="bill-host"
+        className="pointer-events-none fixed -left-[10000px] top-0"
+      >
+        {sheet ? <BillSheet {...sheet} /> : null}
+      </div>
+
+      {/* P12-T8 — preview ảnh bill ≥2048px (2K) + Chia sẻ / Lưu về máy */}
+      {previewOpen && lastSale?.png ? (
+        <Modal
+          title={`Hóa đơn ${lastSale.code}`}
+          wide
+          onClose={() => setPreviewOpen(false)}
+          footer={
+            <>
+              {typeof navigator.share === 'function' ? (
+                <button
+                  type="button"
+                  data-testid="preview-share-btn"
+                  onClick={() => void handleShare()}
+                  className="glass-btn glass-btn-primary !py-2 text-sm"
+                >
+                  Chia sẻ
+                </button>
+              ) : null}
+              <button
+                type="button"
+                data-testid="preview-save-btn"
+                onClick={handleSave}
+                className="glass-btn !py-2 text-sm"
+              >
+                Lưu về máy
+              </button>
+              <button
+                type="button"
+                data-testid="preview-close-btn"
+                onClick={() => setPreviewOpen(false)}
+                className="glass-btn !py-2 text-sm"
+              >
+                Đóng
+              </button>
+            </>
+          }
         >
-          <BillSheet {...sheet} />
-        </div>
+          <div
+            data-testid="bill-preview"
+            tabIndex={0}
+            role="region"
+            aria-label="Xem trước hóa đơn"
+            className="max-h-[65vh] overflow-auto outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+          >
+            <img
+              src={lastSale.png}
+              alt={`Hóa đơn ${lastSale.code}`}
+              data-testid="bill-preview-img"
+              className="mx-auto h-auto w-full rounded bg-white"
+            />
+          </div>
+          <p className="mt-2 text-center text-xs text-white/60" data-testid="bill-preview-size">
+            Ảnh {(() => {
+              const size = pngDataUrlSize(lastSale.png)
+              return size && size.width > 0 ? `${size.width} × ${size.height}` : '≥ 2048'
+            })()}px — đủ độ phân giải in/chia sẻ (2K)
+          </p>
+        </Modal>
       ) : null}
 
       {toppingLine ? (

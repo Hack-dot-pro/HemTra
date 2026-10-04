@@ -34,6 +34,9 @@ type FakeOptions = {
   /** null = server trả 200 nhưng không có signedUrl. */
   signedUrl?: string | null
   signError?: string | null
+  /** P12-T10 — kết quả EF delete-bills. */
+  invokeData?: unknown
+  invokeError?: unknown
 }
 
 type QueryResult = { data: unknown; error: unknown; count?: number }
@@ -99,6 +102,12 @@ function makeClient(options: FakeOptions = {}): {
         },
       }
       return chain
+    },
+    functions: {
+      invoke: async () => ({
+        data: options.invokeData ?? null,
+        error: options.invokeError ?? null,
+      }),
     },
     storage: {
       from(bucket: string) {
@@ -218,27 +227,67 @@ describe('billsApi.list — ghép dòng hiển thị', () => {
   })
 })
 
-describe('billsApi.list — bộ lọc tìm theo mã + ngày giờ VN', () => {
-  it('ký tự LIKE được escape, mốc ngày là 00:00/23:59:59.999 giờ VN', async () => {
+describe('billsApi.list — tìm theo mã (P12-T10: bỏ lọc ngày)', () => {
+  it('ký tự LIKE được escape; KHÔNG còn filter gte/lte ngày', async () => {
     const fake = makeClient({ bills: [], count: 0 })
     holder.client = fake.client
 
-    await defaultBillsApi.list({ page: 0, code: '  100%  ', from: '2026-10-01', to: '2026-10-03' })
+    await defaultBillsApi.list({ page: 0, code: '  100%  ' })
 
     expect(fake.selectCalls[0].ilike).toEqual(['code', '%100\\%%'])
-    expect(fake.selectCalls[0].gte).toEqual(['created_at', '2026-10-01T00:00:00+07:00'])
-    expect(fake.selectCalls[0].lte).toEqual(['created_at', '2026-10-03T23:59:59.999+07:00'])
+    expect(fake.selectCalls[0].gte).toBeUndefined()
+    expect(fake.selectCalls[0].lte).toBeUndefined()
   })
 
-  it('mã rỗng / chưa chọn ngày → không gắn bộ lọc', async () => {
+  it('mã rỗng → không gắn bộ lọc', async () => {
     const fake = makeClient({ bills: [], count: 0 })
     holder.client = fake.client
 
-    await defaultBillsApi.list({ page: 0, code: '   ', from: '', to: '' })
+    await defaultBillsApi.list({ page: 0, code: '   ' })
 
     expect(fake.selectCalls[0].ilike).toBeUndefined()
-    expect(fake.selectCalls[0].gte).toBeUndefined()
-    expect(fake.selectCalls[0].lte).toBeUndefined()
+  })
+})
+
+describe('billsApi.deleteBill (P12-T10) — EF delete-bills', () => {
+  it('EF trả ok → trả về mã bill', async () => {
+    holder.client = makeClient({ invokeData: { ok: true, code: 'HT-261003-0001' } }).client
+
+    await expect(
+      defaultBillsApi.deleteBill({ id: 'b1', password: 'secret-admin-pass' }),
+    ).resolves.toEqual({ code: 'HT-261003-0001' })
+  })
+
+  it('EF trả lỗi trong body (401 sai mật khẩu) → ném đúng thông điệp tiếng Việt', async () => {
+    holder.client = makeClient({ invokeData: { error: 'Mật khẩu admin không đúng' } }).client
+
+    await expect(defaultBillsApi.deleteBill({ id: 'b1', password: 'sai' })).rejects.toThrow(
+      'Mật khẩu admin không đúng',
+    )
+  })
+
+  it('FunctionsHttpError có body 4xx → đọc {error} trong context.json()', async () => {
+    const httpError = Object.assign(new Error('Edge Function returned a non-2xx status code'), {
+      context: {
+        json: async () => ({ error: 'Chỉ admin mới được xóa bill' }),
+      },
+    })
+    holder.client = makeClient({ invokeError: httpError }).client
+
+    await expect(defaultBillsApi.deleteBill({ id: 'b1', password: 'x' })).rejects.toThrow(
+      'Chỉ admin mới được xóa bill',
+    )
+  })
+
+  it('mất mạng → Không thể kết nối máy chủ', async () => {
+    const netError = Object.assign(new TypeError('Failed to fetch'), {
+      context: { json: async () => ({ error: 'Không thể kết nối máy chủ — kiểm tra mạng.' }) },
+    })
+    holder.client = makeClient({ invokeError: netError }).client
+
+    await expect(defaultBillsApi.deleteBill({ id: 'b1', password: 'x' })).rejects.toThrow(
+      'Không thể kết nối máy chủ — kiểm tra mạng.',
+    )
   })
 })
 

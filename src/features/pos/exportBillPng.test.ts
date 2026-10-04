@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   billNodeToPngDataUrl,
   downloadBlob,
+  EXPORT_PIXEL_RATIO,
   isSafariCapture,
+  pngDataUrlSize,
   preloadBillPngLib,
   warmBillImage,
 } from './exportBillPng'
@@ -47,7 +49,7 @@ describe('P6-T6/T9 — billNodeToPngDataUrl', () => {
     const dataUrl = await billNodeToPngDataUrl(node)
     expect(dataUrl).toBe(PNG_DATA_URL)
     expect(toPng).toHaveBeenCalledTimes(1)
-    expect(toPng).toHaveBeenCalledWith(node, expect.objectContaining({ pixelRatio: 2, width: 720 }))
+    expect(toPng).toHaveBeenCalledWith(node, expect.objectContaining({ pixelRatio: 3, width: 720 }))
   })
 
   it('Safari: chụp 2 lần — lần 1 ấm (kể cả lỗi vẫn chụp tiếp)', async () => {
@@ -172,5 +174,29 @@ describe('P6-T9 — preloadBillPngLib', () => {
     const mod = (await preloadBillPngLib()) as { toPng?: unknown }
     expect(mod).toBeTypeOf('object')
     expect(typeof mod?.toPng).toBe('function')
+  })
+})
+
+describe('P12-T8 — ảnh ≥ 2048px (2K)', () => {
+  it('EXPORT_PIXEL_RATIO × 720 ≥ 2048', () => {
+    expect(EXPORT_PIXEL_RATIO * 720).toBeGreaterThanOrEqual(2048)
+    expect(EXPORT_PIXEL_RATIO).toBe(3)
+  })
+
+  it('pngDataUrlSize đọc đúng kích thước từ IHDR', () => {
+    const width = 2160
+    const height = 3600
+    const bytes = new Uint8Array(24)
+    bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0)
+    bytes.set([0, 0, 0, 13], 8)
+    bytes.set([0x49, 0x48, 0x44, 0x52], 12)
+    const view = new DataView(bytes.buffer)
+    view.setUint32(16, width)
+    view.setUint32(20, height)
+    const dataUrl = `data:image/png;base64,${btoa(String.fromCharCode(...bytes))}`
+
+    expect(pngDataUrlSize(dataUrl)).toEqual({ width: 2160, height: 3600 })
+    expect(pngDataUrlSize('data:image/png;base64,NOTAPNG')).toBeNull()
+    expect(pngDataUrlSize('garbage')).toBeNull()
   })
 })

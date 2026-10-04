@@ -23,9 +23,9 @@ function makeLists(): ProductLists {
 function fakeApi(overrides: Partial<ProductsApi> = {}): ProductsApi {
   return {
     load: vi.fn(async () => makeLists()),
-    saveCategory: vi.fn(async () => ({ ok: true as const })),
-    saveProduct: vi.fn(async () => ({ ok: true as const })),
-    saveTopping: vi.fn(async () => ({ ok: true as const })),
+    saveCategory: vi.fn(async () => ({ ok: true as const, id: 'c-new' })),
+    saveProduct: vi.fn(async () => ({ ok: true as const, id: 'p-new' })),
+    saveTopping: vi.fn(async () => ({ ok: true as const, id: 't-new' })),
     setActive: vi.fn(async () => ({ ok: true as const })),
     remove: vi.fn(async () => ({ ok: true as const })),
     ...overrides,
@@ -92,6 +92,42 @@ describe('P5-T1 — sắp xếp nhóm bằng ↑/↓', () => {
       'Không thể kết nối máy chủ, thử lại sau.',
     )
     expect(api.saveCategory).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('P12-T4 — lưu xong cập nhật cục bộ, KHÔNG refetch toàn bộ list', () => {
+  it('thêm nhóm mới → hiện ngay trong bảng, api.load chỉ gọi 1 lần lúc mở trang', async () => {
+    const api = fakeApi()
+    const user = userEvent.setup()
+    render(<ProductsPage api={api} />)
+    await screen.findByText('Trà đào')
+    expect(api.load).toHaveBeenCalledTimes(1)
+
+    await openCategoryTab(user)
+    await user.click(screen.getByRole('button', { name: 'Thêm nhóm' }))
+    await screen.findByLabelText('Tên nhóm')
+    await user.type(screen.getByLabelText('Tên nhóm'), 'Cà phê')
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(screen.getByText('Cà phê')).toBeInTheDocument())
+    expect(api.load).toHaveBeenCalledTimes(1)
+    expect(api.saveCategory).toHaveBeenCalledWith(expect.objectContaining({ name: 'Cà phê' }))
+  })
+
+  it('ẩn sản phẩm (xác nhận) → badge "Đã ẩn" hiện ngay, không refetch', async () => {
+    const api = fakeApi()
+    const user = userEvent.setup()
+    render(<ProductsPage api={api} />)
+    await screen.findByText('Trà đào')
+
+    await user.click(screen.getByRole('button', { name: /Ẩn Trà đào/ }))
+    await screen.findByRole('dialog')
+    await user.click(screen.getByRole('button', { name: 'Ẩn' }))
+
+    // Nút toggle đổi nhãn + aria-pressed — list cập nhật ngay, không cần refetch.
+    await waitFor(() => expect(screen.getByRole('button', { name: /Bật bán Trà đào/ })).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /Bật bán Trà đào/ })).toHaveAttribute('aria-pressed', 'false')
+    expect(api.load).toHaveBeenCalledTimes(1)
   })
 })
 

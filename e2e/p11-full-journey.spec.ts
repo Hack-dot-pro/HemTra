@@ -218,10 +218,11 @@ test.describe('P11 — E2E Toàn Luồng Hệ Thống (design.md §11)', () => {
     await expect(page.getByTestId('checkout-msg')).toHaveText('Đã tạo bill HT-261004-0001.')
     await expect(page.getByTestId('last-sale')).toContainText('HT-261004-0001')
 
-    // Tải bill PNG về máy
+    // Tải bill PNG về máy — P12-T8: hiện modal preview 2K rồi tải từ đó
+    await expect(page.getByTestId('bill-preview')).toBeVisible()
     const [download] = await Promise.all([
       page.waitForEvent('download'),
-      page.getByTestId('save-btn').click(),
+      page.getByTestId('preview-save-btn').click(),
     ])
     expect(download.suggestedFilename()).toBe('HT-261004-0001.png')
     const filePath = await download.path()
@@ -229,7 +230,10 @@ test.describe('P11 — E2E Toàn Luồng Hệ Thống (design.md §11)', () => {
     if (filePath) {
       const buffer = await readFile(filePath)
       expect(buffer.subarray(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
+      expect(buffer.readUInt32BE(16)).toBeGreaterThanOrEqual(2048)
     }
+    await page.getByTestId('preview-close-btn').click()
+    await expect(page.getByTestId('bill-preview')).toHaveCount(0)
 
     // STEP 3: Xem Lịch Sử Hóa Đơn (/bills)
     await page.goto('/bills')

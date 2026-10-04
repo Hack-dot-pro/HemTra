@@ -12,7 +12,6 @@ import { getSupabase } from '../../lib/supabase'
 import {
   PAGE_SIZE,
   SIGNED_URL_TTL_SECONDS,
-  dateFilterIso,
   escapeLike,
   summarizeItemCounts,
   type BillListParams,
@@ -24,7 +23,14 @@ export type BillsApi = {
   list(params: BillListParams): Promise<BillPage>
   /** Signed URL ngắn hạn cho ảnh PNG trong bucket `bills` (P7-T2). */
   signedImageUrl(path: string): Promise<string>
+  /**
+   * P12-T10 — xóa bill: gọi EF `delete-bills` (admin + mật khẩu admin xác minh
+   * server-side). Trả về mã bill đã xóa để UI báo thành công.
+   */
+  deleteBill(params: { id: string; password: string }): Promise<{ code: string }>
 }
+
+type DeleteBillResponse = { ok?: boolean; code?: string; error?: string }
 
 class ApiError extends Error {
   constructor(message: string) {
@@ -37,6 +43,33 @@ function toVietnamese(error: unknown): string {
   if (/Failed to fetch|fetch failed|NetworkError|network/i.test(raw)) return NETWORK_ERROR
   if (/row-level security|permission denied/i.test(raw)) return 'Bạn không có quyền thao tác này.'
   return SERVER_ERROR
+}
+
+/** Gọi EF `delete-bills`, không ném — trả về {data, invokeError} để trên tự chọn. */
+async function invokeDeleteBills(
+  client: SupabaseClient,
+  body: { bill_id: string; password: string },
+): Promise<{ data: DeleteBillResponse | null; invokeError: unknown }> {
+  try {
+    const result = await client.functions.invoke('delete-bills', { body })
+    return { data: (result.data ?? null) as DeleteBillResponse | null, invokeError: result.error ?? null }
+  } catch (caught) {
+    return { data: null, invokeError: caught }
+  }
+}
+
+/** Đọc `{error}` trong body 4xx của EF (FunctionsHttpError.context là Response). */
+async function functionsErrorMessage(error: unknown): Promise<string> {
+  const context = (error as { context?: Response } | null)?.context
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = (await context.json()) as { error?: unknown }
+      if (typeof body?.error === 'string' && body.error) return body.error
+    } catch {
+      /* body không phải JSON — rơi xuống dưới */
+    }
+  }
+  return toVietnamese(error)
 }
 
 function throwOnError(result: { error: unknown }): void {
@@ -72,18 +105,16 @@ type BillDbRow = {
 export const defaultBillsApi: BillsApi = {
   async list(params) {
     return withClient(async (client) => {
-      const { fromIso, toIso } = dateFilterIso(params.from ?? '', params.to ?? '')
       const offset = params.page * PAGE_SIZE
       const code = (params.code ?? '').trim()
 
+      // P12-T10: bỏ lọc "Từ ngày/Đến ngày" — chỉ còn tìm theo mã.
       let query = client
         .from('bills')
         .select('id,code,total,created_at,expires_at,image_path,profiles(username)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1)
       if (code) query = query.ilike('code', `%${escapeLike(code)}%`)
-      if (fromIso) query = query.gte('created_at', fromIso)
-      if (toIso) query = query.lte('created_at', toIso)
 
       const { data, error, count } = await query
       throwOnError({ error })
@@ -114,6 +145,20 @@ export const defaultBillsApi: BillsApi = {
       })
 
       return { rows: mapped, total: count ?? 0 }
+    })
+  },
+
+  async deleteBill({ id, password }) {
+    return withClient(async (client) => {
+      const { data, invokeError } = await invokeDeleteBills(client, { bill_id: id, password })
+      if (invokeError) {
+        const message = await functionsErrorMessage(invokeError)
+        console.error('[bills api] delete-bills', invokeError)
+        throw new ApiError(message)
+      }
+      if (data?.error) throw new ApiError(data.error)
+      if (!data?.ok) throw new ApiError(SERVER_ERROR)
+      return { code: data.code ?? '' }
     })
   },
 

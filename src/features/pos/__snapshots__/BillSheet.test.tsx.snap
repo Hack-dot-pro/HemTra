@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`P6-T4 — BillSheet đúng 7 khối (design §6.1) > snapshot: layout khóa theo thứ tự logo → mã/SĐT → bảng → tổng → QR → lời chúc → địa chỉ 1`] = `
+exports[`P6-T4 + P12-T7 — BillSheet đúng thứ tự khối (design §6.1 mới) > snapshot: layout khóa theo thứ tự logo → SĐT → mã/tg → địa chỉ → bảng → tổng → QR → lời chúc 1`] = `
 <div>
   <div
     class="mx-auto flex flex-col items-center px-10 py-8 text-center"
@@ -10,8 +10,13 @@ exports[`P6-T4 — BillSheet đúng 7 khối (design §6.1) > snapshot: layout k
     <img
       alt="Hẻm Trà"
       class="h-16 w-auto object-contain"
-      src="/src/assets/logo.png"
+      src="/src/assets/logo.webp"
     />
+    <p
+      class="mt-4 text-sm"
+    >
+      ☎️ 0338525677 (Vi) - 0362335733 (Linh)
+    </p>
     <p
       class="mt-4 text-lg font-bold"
     >
@@ -25,9 +30,14 @@ exports[`P6-T4 — BillSheet đúng 7 khối (design §6.1) > snapshot: layout k
       14:15 03/10/2026
     </p>
     <p
+      class="mt-4 text-sm font-semibold"
+    >
+      Địa chỉ:
+    </p>
+    <p
       class="text-sm"
     >
-      0338525677 (Vi) - 0362335733 (Linh)
+      Phường Long Nguyên, Thành Phố Hồ Chí Minh (Gần KCN Bàu bàng)
     </p>
     <table
       class="mt-4 w-full border-collapse text-sm"
@@ -175,12 +185,7 @@ exports[`P6-T4 — BillSheet đúng 7 khối (design §6.1) > snapshot: layout k
     <p
       class="mt-4 text-sm"
     >
-      Cảm ơn khách hàng thân yêu của Hẻm
-    </p>
-    <p
-      class="mt-1 text-sm"
-    >
-      Phường Long Nguyên, Thành Phố Hồ Chí Minh
+      Cảm Ơn khách hàng thân yêu của hẽm 💕
     </p>
   </div>
 </div>

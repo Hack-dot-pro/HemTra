@@ -56,6 +56,8 @@ function ToggleButton({ active, busy, label, onClick }: { active: boolean; busy?
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       aria-pressed={active}
       className={`glass-btn flex items-center gap-1 !px-2 !py-1 text-xs ${active ? '' : 'opacity-70'}`}
       disabled={busy}
@@ -63,7 +65,6 @@ function ToggleButton({ active, busy, label, onClick }: { active: boolean; busy?
     >
       {active ? <Eye aria-hidden="true" className="h-3.5 w-3.5" /> : <EyeOff aria-hidden="true" className="h-3.5 w-3.5" />}
       <span className="hidden sm:inline">{active ? 'Đang bán' : 'Đã ẩn'}</span>
-      <span className="sr-only sm:hidden">{label}</span>
     </button>
   )
 }
@@ -117,11 +118,28 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     setNotice({ tone, text })
   }
 
-  async function runOutcome(action: () => Promise<SaveOutcome>, successText: string): Promise<SaveOutcome> {
+  // P12-T4 — cập nhật list CỤC BỘ sau khi lưu thay vì refetch toàn bộ 4 bảng
+  // (categories/products/toppings/product_toppings): giữ nguyên thứ tự hiển thị,
+  // chỉ refetch ở lần mở trang / nút "Thử lại" khi lỗi mạng.
+  const patch = (fn: (prev: ProductLists) => ProductLists): void => {
+    setLists((prev) => (prev ? fn(prev) : prev))
+  }
+
+  const upsert = <T extends { id: string }>(rows: T[], row: T): T[] =>
+    rows.some((item) => item.id === row.id) ? rows.map((item) => (item.id === row.id ? row : item)) : [...rows, row]
+
+  const byName = <T extends { name: string }>(a: T, b: T): number => a.name.localeCompare(b.name, 'vi')
+  const bySort = (a: CategoryRow, b: CategoryRow): number => a.sort_order - b.sort_order
+
+  async function runOutcome(
+    action: () => Promise<SaveOutcome>,
+    successText: string,
+    applyLocal?: () => void,
+  ): Promise<SaveOutcome> {
     const result = await action()
     if (result.ok) {
       flash(successText)
-      await load()
+      if (applyLocal) applyLocal()
     } else {
       flash(result.message, 'error')
     }
@@ -134,7 +152,9 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
       return
     }
     setBusyId(row.id)
-    void runOutcome(() => api.setActive(kind, row.id, true), 'Đã bật bán trở lại.').finally(() => setBusyId(null))
+    void runOutcome(() => api.setActive(kind, row.id, true), 'Đã bật bán trở lại.', () =>
+      patch((prev) => setActiveLocal(prev, kind, row.id, true)),
+    ).finally(() => setBusyId(null))
   }
 
   async function applyConfirm() {
@@ -152,7 +172,11 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     if (!result.ok) flash(result.message, 'error')
     else {
       flash(action === 'hide' ? 'Đã ẩn khỏi menu bán.' : 'Đã xóa.')
-      await load()
+      patch((prev) =>
+        action === 'hide'
+          ? setActiveLocal(prev, kind, id, false)
+          : removeLocal(prev, kind as 'product' | 'topping', id),
+      )
     }
   }
 
@@ -171,9 +195,22 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     setBusyId(null)
     if (!second.ok) {
       flash(second.message, 'error')
+      // Lần 1 đã ghi DB → đồng bộ theo server (refetch) thay vì đoán cục bộ.
+      await load()
       return
     }
-    await load()
+    patch((prev) => ({
+      ...prev,
+      categories: prev.categories
+        .map((item) =>
+          item.id === targets.self.id
+            ? { ...item, sort_order: targets.other.sort_order }
+            : item.id === targets.other.id
+              ? { ...item, sort_order: targets.self.sort_order }
+              : item,
+        )
+        .sort(bySort),
+    }))
   }
 
   async function submitCategory(values: CategoryValues): Promise<SaveOutcome> {
@@ -183,7 +220,16 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     if (result.ok) {
       setModal(null)
       flash('Đã lưu nhóm.')
-      await load()
+      const id = values.id ?? result.id
+      if (!id) return result
+      const row: CategoryRow = {
+        id,
+        name: values.name.trim(),
+        icon: values.icon.trim(),
+        sort_order: values.sort_order,
+        is_active: values.is_active,
+      }
+      patch((prev) => ({ ...prev, categories: upsert(prev.categories, row).sort(bySort) }))
     }
     return result
   }
@@ -195,7 +241,24 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     if (result.ok) {
       setModal(null)
       flash('Đã lưu sản phẩm.')
-      await load()
+      const id = values.id ?? result.id
+      if (!id) return result
+      const row: ProductRow = {
+        id,
+        category_id: values.category_id,
+        name: values.name.trim(),
+        price: values.price,
+        icon: values.icon.trim(),
+        is_active: values.is_active,
+      }
+      patch((prev) => ({
+        ...prev,
+        products: upsert(prev.products, row).sort(byName),
+        links: [
+          ...prev.links.filter((link) => link.product_id !== id),
+          ...values.topping_ids.map((topping_id) => ({ product_id: id, topping_id })),
+        ],
+      }))
     }
     return result
   }
@@ -207,9 +270,33 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
     if (result.ok) {
       setModal(null)
       flash('Đã lưu topping.')
-      await load()
+      const id = values.id ?? result.id
+      if (!id) return result
+      const row: ToppingRow = {
+        id,
+        name: values.name.trim(),
+        price: values.price,
+        icon: values.icon.trim(),
+        is_active: values.is_active,
+      }
+      patch((prev) => ({ ...prev, toppings: upsert(prev.toppings, row).sort(byName) }))
     }
     return result
+  }
+
+  function setActiveLocal(prev: ProductLists, kind: ConfirmState['kind'], id: string, active: boolean): ProductLists {
+    const key = kind === 'category' ? 'categories' : kind === 'product' ? 'products' : 'toppings'
+    return { ...prev, [key]: prev[key].map((item) => (item.id === id ? { ...item, is_active: active } : item)) }
+  }
+
+  function removeLocal(prev: ProductLists, kind: 'product' | 'topping', id: string): ProductLists {
+    return kind === 'product'
+      ? {
+          ...prev,
+          products: prev.products.filter((item) => item.id !== id),
+          links: prev.links.filter((link) => link.product_id !== id),
+        }
+      : { ...prev, toppings: prev.toppings.filter((item) => item.id !== id) }
   }
 
   if (!lists && loadError) {

@@ -39,12 +39,8 @@
   height: 100%;
   left: min(0px, calc(100% - var(--sw) * 0.96));
   /* Ảnh gốc do user cung cấp (login-hero.png) — không dùng bản trích từ template.html (bị nhòe).
-     image-set() tải webp khi hỗ trợ, jpeg chỉ là dự phòng. */
-  background: url("../../assets/login-stage.jpg") center / 100% 100% no-repeat;
-  background-image: image-set(
-    url("../../assets/login-stage.webp") type("image/webp"),
-    url("../../assets/login-stage.jpg") type("image/jpeg")
-  );
+     P12-T4: chỉ webp (hỗ trợ phổ biến từ 2020+) — bỏ fallback jpeg 282KB khỏi build. */
+  background: url("../../assets/login-stage.webp") center / 100% 100% no-repeat;
 }
 
 .login-page .logo {
@@ -53,7 +49,7 @@
   top: 29.5%;
   width: 27.4%;
   aspect-ratio: 820 / 594;
-  background: url("../../assets/login-logo.png") center / contain no-repeat;
+  background: url("../../assets/login-logo.webp") center / contain no-repeat;
   filter: drop-shadow(0 4px 8px rgb(8 60 120 / 0.18));
 }
 

@@ -110,17 +110,24 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
   expect(linkCalls[0].p_path).toMatch(/^\d{4}\/\d{2}\/HT-261003-0001\.png$/)
   expect(uploads[0].endsWith(`/bills/${linkCalls[0].p_path}`)).toBe(true)
 
-  // PNG tải về: đúng tên mã + magic bytes + bề rộng 720×2 (pixelRatio 2)
+  // P12-T8 — modal preview ảnh bill 2K tự mở sau thanh toán (≥ 2048px)
+  await expect(page.getByTestId('bill-preview')).toBeVisible()
+  await expect(page.getByTestId('bill-preview-size')).toContainText('2160')
+  await expect(page.getByTestId('bill-preview-size')).toContainText('2K')
+
+  // PNG tải về từ modal preview: đúng tên mã + magic bytes + bề rộng 720×3 = 2160
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByTestId('save-btn').click(),
+    page.getByTestId('preview-save-btn').click(),
   ])
   expect(download.suggestedFilename()).toBe('HT-261003-0001.png')
   const filePath = await download.path()
   expect(filePath).toBeTruthy()
   const buf = await readFile(filePath as string)
   expect([...buf.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-  expect(buf.readUInt32BE(16)).toBe(1440)
+  expect(buf.readUInt32BE(16)).toBe(2160)
+  await page.getByTestId('preview-close-btn').click()
+  await expect(page.getByTestId('bill-preview')).toHaveCount(0)
 
   // Ảnh 2 viewport (uiux skill §4) + không lỗi trang
   for (const viewport of VIEWPORTS) {

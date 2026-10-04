@@ -1,10 +1,18 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { KeyRound, Mail } from 'lucide-react'
+import { Suspense, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { NAV_ITEMS } from './nav'
+import { prefetchRoute } from './prefetch'
 import { useAuthProfile } from './authProfileContext'
 import NetworkBanner from '../components/ui/NetworkBanner.tsx'
 import PwaUpdateBar from '../components/ui/PwaUpdateBar.tsx'
-import { useMenuSync } from '../lib/useMenu'
+import ErrorBoundary from '../components/ui/ErrorBoundary.tsx'
+import { useMenuSync, useOnlineStatus } from '../lib/useMenu'
+import { formatClockTime } from '../lib/format'
+import ProfileModal from '../features/profile/ProfileModal'
+import { avatarInitials } from '../features/profile/profileLogic'
+import { useAvatarUrl, useMyProfile } from '../features/profile/useMyProfile'
+import logoUrl from '../assets/logo.webp'
 
 function navLinkClass(isActive: boolean): string {
   return [
@@ -22,13 +30,22 @@ function bottomLinkClass(isActive: boolean): string {
 
 // Layout sau đăng nhập — design.md §7.2 (nền + overlay tối + backdrop-blur),
 // sidebar desktop / bottom-nav mobile (uiux/skill.md §3).
+// P12-T9: thanh HEADER mới — avatar (mở modal hồ sơ) + chấm online/offline +
+// nút Đồng bộ ở góc TRÁI, logo ở góc PHẢI; bỏ 2 link Đổi mật khẩu /
+// Đổi email khôi phục khỏi nav (vào qua modal hồ sơ — yêu cầu user 2026-10-04).
 export default function AppLayout() {
-  // P3-T8: đổi email khôi phục là việc của admin (design §4.4) — staff không thấy link.
-  // Role lấy từ RequireAuth đã kiểm tra (không đọc lại profiles, không tin claim).
+  // P3-T8: role lấy từ RequireAuth đã kiểm tra (không đọc lại profiles).
   const profile = useAuthProfile()
   const isAdmin = profile?.role === 'admin'
   // P4-T3: 4 điểm chạm đồng bộ menu sống trong suốt thời gian người dùng ở layout.
-  useMenuSync()
+  const sync = useMenuSync()
+  const online = useOnlineStatus()
+  // P12-T9: hồ sơ CỦA MÌNH (tên + avatar) — làm mới sau khi modal lưu xong.
+  const { profile: myProfile, setProfile: setMyProfile } = useMyProfile()
+  const [showProfile, setShowProfile] = useState(false)
+
+  const displayName = myProfile?.display_name || myProfile?.username || profile?.role || ''
+  const lastSync = sync.outcome?.fetchedAt ? formatClockTime(sync.outcome.fetchedAt) : null
 
   return (
     <div className="relative min-h-dvh">
@@ -38,9 +55,58 @@ export default function AppLayout() {
       {/* P4-T6: thanh xác nhận cập nhật SW/version.json — luôn chờ người dùng bấm (design §8.6). */}
       <PwaUpdateBar />
 
+      {/* P12-T9: header — avatar + trạng thái mạng + Đồng bộ (trái), logo (phải). */}
+      <header
+        className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/20 bg-dark-glass/80 px-3 py-2 backdrop-blur-xl"
+        data-testid="app-header"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            data-testid="profile-btn"
+            aria-label="Mở hồ sơ tài khoản"
+            className="flex min-w-0 items-center gap-2 rounded-full border border-white/30 bg-white/15 py-1 pl-1 pr-3 transition-colors hover:bg-white/25"
+            onClick={() => setShowProfile(true)}
+          >
+            <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-white/25 text-[11px] font-bold">
+              {avatarInitials(myProfile?.display_name ?? '', myProfile?.username ?? '')}
+              {myProfile?.avatar_path ? <AvatarLayer path={myProfile.avatar_path} /> : null}
+            </span>
+            <span className="hidden max-w-[9rem] truncate text-xs font-medium sm:inline">
+              {displayName}
+            </span>
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${online ? 'bg-emerald-400' : 'bg-red-400'}`}
+              title={online ? 'Đang online' : 'Đang offline'}
+              aria-label={online ? 'Đang online' : 'Đang offline'}
+              data-testid="online-dot"
+            />
+          </button>
+
+          <button
+            type="button"
+            data-testid="sync-btn"
+            className="glass-btn flex items-center gap-1.5 !px-2.5 !py-1.5 text-xs"
+            disabled={!online || sync.syncing}
+            title={online ? 'Đồng bộ menu với server' : 'Đang offline — chờ có mạng'}
+            onClick={() => void sync.syncNow()}
+          >
+            <RefreshCw size={14} aria-hidden="true" className={sync.syncing ? 'animate-spin' : ''} />
+            {sync.syncing ? 'Đang đồng bộ…' : 'Đồng bộ'}
+          </button>
+          {lastSync && (
+            <span className="hidden text-[11px] text-white/60 lg:inline" data-testid="last-sync">
+              Đã đồng bộ {lastSync}
+            </span>
+          )}
+        </div>
+
+        <img src={logoUrl} alt="Hẻm Trà" className="h-9 w-auto shrink-0" />
+      </header>
+
       <div className="relative flex min-h-dvh">
         <aside className="hidden w-60 shrink-0 md:block">
-          <div className="sticky top-0 flex h-dvh flex-col gap-4 p-4">
+          <div className="sticky top-[57px] flex h-[calc(100dvh-57px)] flex-col gap-4 p-4">
             <div className="glass-card px-4 py-3 text-lg font-bold tracking-wide">Hẻm Trà</div>
             <nav className="flex flex-col gap-1" aria-label="Menu chính">
               {NAV_ITEMS.map(({ to, label, Icon }) => (
@@ -48,6 +114,8 @@ export default function AppLayout() {
                   key={to}
                   to={to}
                   className={({ isActive }) => navLinkClass(isActive)}
+                  onMouseEnter={() => prefetchRoute(to)}
+                  onFocus={() => prefetchRoute(to)}
                 >
                   <Icon size={18} aria-hidden="true" />
                   <span>{label}</span>
@@ -55,51 +123,28 @@ export default function AppLayout() {
               ))}
             </nav>
 
-            {/* P3-T7: đổi mật khẩu bản thân — không phải 1 trong 5 menu (§7.3)
-                P3-T8: đổi email khôi phục — chỉ admin (design §4.4) */}
-            <div className="mt-auto flex flex-col gap-1">
-              <NavLink
-                to="/change-password"
-                className={({ isActive }) => navLinkClass(isActive)}
-              >
-                <KeyRound size={18} aria-hidden="true" />
-                <span>Đổi mật khẩu</span>
-              </NavLink>
-              {isAdmin && (
-                <NavLink
-                  to="/change-recovery-email"
-                  className={({ isActive }) => navLinkClass(isActive)}
-                >
-                  <Mail size={18} aria-hidden="true" />
-                  <span>Đổi email khôi phục</span>
-                </NavLink>
-              )}
+            <div className="mt-auto text-[11px] leading-relaxed text-white/55">
+              Đổi mật khẩu / email khôi phục / hồ sơ: bấm avatar ở thanh trên cùng.
             </div>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-8 md:pt-8">
+        <main className="min-w-0 flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-8 md:pt-6">
           <div className="mx-auto w-full max-w-5xl">
-            {/* Mobile: bottom-nav chỉ có 5 menu → lối vào đổi mật khẩu ở đây (§4.1) */}
-            <div className="mb-3 flex justify-end gap-4 md:hidden">
-              <NavLink
-                to="/change-password"
-                className="text-xs text-white/75 underline underline-offset-4"
-              >
-                Đổi mật khẩu
-              </NavLink>
-              {isAdmin && (
-                <NavLink
-                  to="/change-recovery-email"
-                  className="text-xs text-white/75 underline underline-offset-4"
-                >
-                  Đổi email khôi phục
-                </NavLink>
-              )}
-            </div>
             {/* P4-T4: offline / giá cập nhật lúc … / cache quá 24 giờ */}
             <NetworkBanner />
-            <Outlet />
+            {/* P12-T4: 5 menu page là lazy chunk → Suspense giữ nguyên header/nav. */}
+            <ErrorBoundary>
+              <Suspense
+                fallback={
+                  <p role="status" className="py-10 text-center text-sm text-white/80">
+                    Đang tải…
+                  </p>
+                }
+              >
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
@@ -110,12 +155,35 @@ export default function AppLayout() {
         aria-label="Menu chính"
       >
         {NAV_ITEMS.map(({ to, label, Icon }) => (
-          <NavLink key={to} to={to} className={({ isActive }) => bottomLinkClass(isActive)}>
+          <NavLink
+            key={to}
+            className={({ isActive }) => bottomLinkClass(isActive)}
+            to={to}
+            onMouseEnter={() => prefetchRoute(to)}
+            onFocus={() => prefetchRoute(to)}
+          >
             <Icon size={20} aria-hidden="true" />
             <span className="whitespace-nowrap">{label}</span>
           </NavLink>
         ))}
       </nav>
+
+      {showProfile ? (
+        <ProfileModal
+          initial={myProfile}
+          isAdmin={isAdmin}
+          onClose={() => setShowProfile(false)}
+          onUpdated={(fresh) => setMyProfile(fresh)}
+        />
+      ) : null}
     </div>
   )
+}
+
+// Ảnh avatar chồng lên chữ viết tắt (signed URL 10 phút; lỗi → giữ nguyên chữ).
+// Component riêng để hook useEffect không nằm trong render có điều kiện.
+function AvatarLayer({ path }: { path: string }) {
+  const { avatarUrl } = useAvatarUrl(path)
+  if (!avatarUrl) return null
+  return <img src={avatarUrl} alt="" className="absolute inset-0 h-full w-full rounded-full object-cover" />
 }
