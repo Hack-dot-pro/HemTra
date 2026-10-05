@@ -4,7 +4,6 @@ import {
   computeChartAData,
   computeKpi,
   computeMonthlyRank,
-  getMonthDateRange,
   getVnCurrentMonthString,
   getVnTodayString,
 } from './logic'
@@ -29,15 +28,18 @@ export async function fetchDashboardData(selectedMonth: string): Promise<Dashboa
 
   const todayStr = getVnTodayString()
   const currentMonthStr = getVnCurrentMonthString()
-  const { startDate, endDate } = getMonthDateRange(selectedMonth)
+  const [yearStr] = selectedMonth.split('-')
+  const year = yearStr || '2026'
+  const yearStart = `${year}-01-01`
+  const yearEnd = `${year}-12-31`
   const monthDate = `${selectedMonth}-01`
 
-  // Tải song song: stats_daily (của tháng được chọn + hôm nay), stats_product_monthly, stats_product_alltime
+  // Tải song song: stats_daily (của cả năm được chọn + hôm nay), stats_product_monthly, stats_product_alltime
   const [dailyRes, monthlyRes, allTimeRes] = await Promise.all([
     supabase
       .from('stats_daily')
       .select('date, revenue, bill_count')
-      .or(`and(date.gte.${startDate},date.lte.${endDate}),date.eq.${todayStr}`)
+      .or(`and(date.gte.${yearStart},date.lte.${yearEnd}),date.eq.${todayStr}`)
       .order('date', { ascending: true }),
     supabase
       .from('stats_product_monthly')

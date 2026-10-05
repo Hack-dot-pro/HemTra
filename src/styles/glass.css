@@ -154,4 +154,23 @@
 .glass-btn-primary:hover {
   background: linear-gradient(180deg, #fff, #e9f3ff);
 }
+
+/* ApexCharts toolbar icon styling for glass theme */
+.apexcharts-toolbar {
+  z-index: 10 !important;
+  padding: 2px 6px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.apexcharts-toolbar svg {
+  fill: #e2e8f0 !important;
+}
+.apexcharts-toolbar svg:hover {
+  fill: #38bdf8 !important;
+}
+.apexcharts-selected svg {
+  fill: #38bdf8 !important;
+}
 }

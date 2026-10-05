@@ -81,7 +81,7 @@ export function computeKpi(
   }
 }
 
-/** Chuẩn bị dữ liệu cho Chart A (đường spline doanh thu theo ngày trong tháng) */
+/** Chuẩn bị dữ liệu cho Chart A (doanh thu theo từng tháng trong năm, mỗi cột 1 tháng) */
 export function computeChartAData(
   dailyStats: StatsDaily[],
   monthStr: string,
@@ -90,28 +90,28 @@ export function computeChartAData(
   categories: string[]
   series: number[]
 } {
-  const { daysInMonth, year, month } = getMonthDateRange(monthStr)
-  const map = new Map<string, number>()
-  for (const item of dailyStats) {
-    if (item.date.startsWith(monthStr)) {
-      map.set(item.date, item.revenue)
-    }
-  }
+  const [yearStr] = monthStr.split('-')
+  const year = Number(yearStr) || 2026
 
   const points: ChartAPoint[] = []
   const categories: string[] = []
   const series: number[] = []
 
-  const monthPad = String(month).padStart(2, '0')
+  for (let m = 1; m <= 12; m++) {
+    const monthPad = String(m).padStart(2, '0')
+    const monthPrefix = `${year}-${monthPad}`
+    const label = `Tháng ${m}`
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dayPad = String(day).padStart(2, '0')
-    const dateStr = `${year}-${monthPad}-${dayPad}`
-    const revenue = map.get(dateStr) ?? 0
+    let monthRevenue = 0
+    for (const item of dailyStats) {
+      if (item.date.startsWith(monthPrefix)) {
+        monthRevenue += item.revenue
+      }
+    }
 
-    points.push({ day, date: dateStr, revenue })
-    categories.push(dayPad)
-    series.push(revenue)
+    points.push({ month: m, label, revenue: monthRevenue })
+    categories.push(label)
+    series.push(monthRevenue)
   }
 
   return { points, categories, series }

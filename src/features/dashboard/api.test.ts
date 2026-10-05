@@ -108,7 +108,8 @@ describe('dashboard/api', () => {
 
     const data = await defaultDashboardApi.fetchDashboardData('2026-10')
     expect(data.selectedMonth).toBe('2026-10')
-    expect(data.chartA.categories).toHaveLength(31)
+    expect(data.chartA.categories).toHaveLength(12)
+    expect(data.chartA.categories[0]).toBe('Tháng 1')
     expect(data.chartB.items).toHaveLength(1)
     expect(data.chartB.items[0].name).toBe('Trà đào cam sả')
     expect(data.allTime.topBest).toHaveLength(1)

@@ -236,13 +236,13 @@ export default function DashboardPage({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>Doanh thu theo ngày trong tháng</span>
+                  <span>Doanh thu theo từng tháng</span>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">
-                    {selectedMonth}
+                    Năm {selectedMonth.slice(0, 4)}
                   </span>
                 </h2>
                 <p className="text-xs text-white/50 mt-0.5">
-                  Đường cong spline phát sáng, hiển thị số trên điểm & thanh brush điều hướng bên dưới
+                  Biểu đồ cột thể hiện doanh thu 12 tháng, hỗ trợ zoom in/out và di chuyển qua lại
                 </p>
               </div>
             </div>

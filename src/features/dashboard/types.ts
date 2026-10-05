@@ -26,8 +26,8 @@ export type DashboardKpi = {
 }
 
 export type ChartAPoint = {
-  day: number
-  date: string
+  month: number
+  label: string
   revenue: number
 }
 

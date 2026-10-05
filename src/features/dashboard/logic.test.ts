@@ -78,22 +78,22 @@ describe('dashboard/logic', () => {
   })
 
   describe('computeChartAData', () => {
-    it('điền đủ 31 ngày trong tháng 10, ngày không bán có revenue = 0', () => {
+    it('điền đủ 12 tháng trong năm, tháng không bán có revenue = 0', () => {
       const dailyData: StatsDaily[] = [
-        { date: '2026-10-01', revenue: 30000, bill_count: 1 },
+        { date: '2026-01-01', revenue: 30000, bill_count: 1 },
         { date: '2026-10-15', revenue: 90000, bill_count: 3 },
       ]
       const chartA = computeChartAData(dailyData, '2026-10')
-      expect(chartA.categories).toHaveLength(31)
-      expect(chartA.series).toHaveLength(31)
-      expect(chartA.categories[0]).toBe('01')
+      expect(chartA.categories).toHaveLength(12)
+      expect(chartA.series).toHaveLength(12)
+      expect(chartA.categories[0]).toBe('Tháng 1')
       expect(chartA.series[0]).toBe(30000)
-      expect(chartA.categories[1]).toBe('02')
+      expect(chartA.categories[1]).toBe('Tháng 2')
       expect(chartA.series[1]).toBe(0)
-      expect(chartA.categories[14]).toBe('15')
-      expect(chartA.series[14]).toBe(90000)
-      expect(chartA.categories[30]).toBe('31')
-      expect(chartA.series[30]).toBe(0)
+      expect(chartA.categories[9]).toBe('Tháng 10')
+      expect(chartA.series[9]).toBe(90000)
+      expect(chartA.categories[11]).toBe('Tháng 12')
+      expect(chartA.series[11]).toBe(0)
     })
   })
 

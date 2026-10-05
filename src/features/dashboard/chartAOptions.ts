@@ -18,16 +18,16 @@ export function buildChartAOptions(categories: string[]): ApexOptions {
       background: 'transparent',
       stacked: false,
       toolbar: {
-        show: false,
+        show: true,
         autoSelected: 'pan',
         tools: {
           download: false,
           selection: false,
-          zoom: false,
-          zoomin: false,
-          zoomout: false,
-          pan: false,
-          reset: false,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          pan: true,
+          reset: true,
         },
       },
       zoom: {

@@ -115,7 +115,7 @@ export default function BillSheet({ code, createdAt, items, total, qrDataUrl }: 
                   ) : null}
                 </td>
                 <td className="py-1 pr-2 text-center tabular-nums">{item.qty}</td>
-                <td className="py-1 pr-2 text-right tabular-nums">{formatVndNumber(lineUnitPrice)}</td>
+                <td className="py-1 pr-2 text-right tabular-nums">{formatVndNumber(item.unit_price)}</td>
                 <td className="py-1 text-right tabular-nums">{formatVndNumber(lineTotal)}</td>
               </tr>
             )
