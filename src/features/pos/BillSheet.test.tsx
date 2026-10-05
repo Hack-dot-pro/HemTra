@@ -99,7 +99,7 @@ describe('P6-T4 + P12-T7 — BillSheet đúng thứ tự khối (design §6.1 m�
     expect(rows).toHaveLength(2) // 2 sản phẩm (topping nằm inline cùng sản phẩm, không thêm dòng)
     // dòng 1: (35.000 + 5.000) × 2 = 80.000
     expect(rows[0]).toHaveTextContent('Trà sữa đào')
-    expect(rows[0]).toHaveTextContent('+ Trân châu')
+    expect(rows[0]).toHaveTextContent('+ Trân châu (+5.000)')
     expect(rows[0]).toHaveTextContent('40.000')
     expect(rows[0]).toHaveTextContent('80.000')
     // tổng cộng: 80.000 + 30.000 = 110.000 = prop total

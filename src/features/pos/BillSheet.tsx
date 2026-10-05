@@ -102,7 +102,12 @@ export default function BillSheet({ code, createdAt, items, total, qrDataUrl }: 
                   <span className="font-medium">{item.name}</span>
                   {hasToppings ? (
                     <span className="ml-1.5 text-xs font-normal text-black/60">
-                      {item.toppings!.map((t) => `+ ${t.name}`).join(' ')}
+                      {item
+                        .toppings!.map(
+                          (t) =>
+                            `+ ${t.name}${t.unit_price > 0 ? ` (+${formatVndNumber(t.unit_price)})` : ''}`,
+                        )
+                        .join(' ')}
                     </span>
                   ) : null}
                   {item.note ? (
