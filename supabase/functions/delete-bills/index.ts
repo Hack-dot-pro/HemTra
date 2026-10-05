@@ -63,19 +63,15 @@ function env(name: string): string {
   return value;
 }
 
-function makeClients(): { admin: SupabaseClient; anon: SupabaseClient } {
+function makeClients(): { admin: SupabaseClient; verifier: SupabaseClient } {
   const url = env("SUPABASE_URL");
   const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
-  const publishableKeys = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
   const serviceKey = secretKeys
     ? JSON.parse(secretKeys)["default"]
     : env("SUPABASE_SERVICE_ROLE_KEY");
-  const publishableKey = publishableKeys
-    ? JSON.parse(publishableKeys)["default"]
-    : (Deno.env.get("SUPABASE_ANON_KEY") ?? serviceKey);
   return {
-    admin: createClient(url, serviceKey, { auth: { persistSession: false } }),
-    anon: createClient(url, publishableKey, { auth: { persistSession: false } }),
+    admin: createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } }),
+    verifier: createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } }),
   };
 }
 
@@ -95,7 +91,7 @@ type BillTarget = { id: string; code: string; image_path: string };
 async function handleDelete(
   req: Request,
   admin: SupabaseClient,
-  _anon: SupabaseClient,
+  verifier: SupabaseClient,
   raw: unknown,
 ): Promise<Response> {
   // 1) Xác thực phiên của CHÍNH người gọi bằng admin.auth.getUser
@@ -138,8 +134,9 @@ async function handleDelete(
     return json(req, { error: MSG.forbidden }, 403);
   }
 
-  // 3) Xác minh mật khẩu ADMIN server-side (dùng admin client để tránh rate-limit IP public)
-  const { error: pwdErr } = await admin.auth.signInWithPassword({
+  // 3) Xác minh mật khẩu ADMIN server-side (dùng client verifier riêng biệt,
+  //    tuyệt đối KHÔNG gọi trên `admin` để tránh làm đè session service_role của admin client).
+  const { error: pwdErr } = await verifier.auth.signInWithPassword({
     email,
     password,
   });
@@ -173,7 +170,7 @@ async function handleDelete(
     }
   }
 
-  // 6) RPC service_role — trừ stats rồi xóa bill + bill_items (ON DELETE CASCADE).
+  // 6) RPC service_role — admin giữ nguyên service_role token, không bị đè bởi user session.
   const { data: rpcData, error: rpcErr } = await admin.rpc("admin_delete_bill", {
     p_bill_id: bill_id,
   });
@@ -205,8 +202,8 @@ Deno.serve(async (req) => {
   if (!body || typeof body !== "object") return json(req, { error: MSG.bad }, 400);
 
   try {
-    const { admin, anon } = makeClients();
-    return await handleDelete(req, admin, anon, body);
+    const { admin, verifier } = makeClients();
+    return await handleDelete(req, admin, verifier, body);
   } catch (e) {
     console.error("delete-bills: unhandled:", e instanceof Error ? e.message : "unknown");
     return json(req, { error: e instanceof Error ? e.message : MSG.generic }, 500);
