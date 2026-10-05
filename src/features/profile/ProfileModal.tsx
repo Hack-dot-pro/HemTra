@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
+import { LogOut } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { applyProfileChanges, requestProfileOtp, type MyProfile, type ProfileChanges } from './api'
 import { avatarInitials, changedProfileFields, fileToAvatarDataUrl, type ProfileForm } from './profileLogic'
 import { useAvatarUrl } from './useMyProfile'
+import { endAuthSession } from '../../lib/session'
 
 export type ProfileModalProps = {
   /** Dòng profiles của chính mình (điền sẵn form + avatar). */
@@ -240,21 +242,35 @@ export default function ProfileModal({ initial, isAdmin, onClose, onUpdated }: P
           </p>
         ) : null}
 
-        <div className="mt-1 flex justify-end gap-2">
-          <button type="button" className="glass-btn" onClick={onClose}>
-            Đóng
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            data-testid="modal-logout-btn"
+            className="glass-btn flex items-center gap-1.5 !border-red-400/30 !bg-red-500/20 text-xs font-medium text-red-200 hover:!bg-red-500/35 hover:text-white"
+            onClick={async () => {
+              await endAuthSession()
+              window.location.href = '/login'
+            }}
+          >
+            <LogOut size={14} aria-hidden="true" />
+            <span>Đăng xuất</span>
           </button>
-          {isAdmin ? (
-            <button
-              type="button"
-              data-testid="profile-submit-btn"
-              className="glass-btn !bg-emerald-500/80"
-              disabled={busy || !hasChanges}
-              onClick={() => void submit()}
-            >
-              {busy && otp ? 'Đang lưu…' : 'Xác nhận'}
+          <div className="flex gap-2">
+            <button type="button" className="glass-btn" onClick={onClose}>
+              Đóng
             </button>
-          ) : null}
+            {isAdmin ? (
+              <button
+                type="button"
+                data-testid="profile-submit-btn"
+                className="glass-btn !bg-emerald-500/80"
+                disabled={busy || !hasChanges}
+                onClick={() => void submit()}
+              >
+                {busy && otp ? 'Đang lưu…' : 'Xác nhận'}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </Modal>

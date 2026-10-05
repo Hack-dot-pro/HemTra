@@ -38,13 +38,19 @@ async function preflight(route: Route): Promise<void> {
 }
 
 // Giả lập tháng hiện tại: 2026-10 (khớp VN time)
-const MONTH_STR = '2026-10'
+const TODAY_STR = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date())
+const MONTH_STR = TODAY_STR.slice(0, 7)
 
 const SEED_STATS_DAILY = [
   { date: '2026-10-01', revenue: 150000, bill_count: 5 },
   { date: '2026-10-02', revenue: 200000, bill_count: 8 },
   { date: '2026-10-03', revenue: 120000, bill_count: 4 },
-  { date: '2026-10-04', revenue: 85000, bill_count: 3 },
+  { date: TODAY_STR, revenue: 85000, bill_count: 3 },
 ]
 
 const SEED_PRODUCT_MONTHLY = [
@@ -213,7 +219,7 @@ test.describe('P8 — Dashboard & Báo cáo', () => {
           { date: '2026-10-01', revenue: 150000, bill_count: 5 },
           { date: '2026-10-02', revenue: 200000, bill_count: 8 },
           { date: '2026-10-03', revenue: 120000, bill_count: 4 },
-          { date: '2026-10-04', revenue: currentRevenue, bill_count: currentBills },
+          { date: TODAY_STR, revenue: currentRevenue, bill_count: currentBills },
         ]),
       )
     })

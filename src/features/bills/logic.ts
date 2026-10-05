@@ -13,10 +13,10 @@ export const PAGE_SIZE = 20
 export const SIGNED_URL_TTL_SECONDS = 120
 
 /**
- * Số ngày giữ bill trước khi job `cleanup-bills` tự xóa (design §5 cột
- * `bills.expires_at` default +15 ngày, §6.4 vòng đời). Dùng cho tag "tự xóa sau N ngày".
+ * P13-T8: Số ngày giữ bill trước khi job `cleanup-bills` tự xóa (giảm từ 15 ngày
+ * xuống còn 7 ngày). Dùng cho tag "tự xóa sau N ngày".
  */
-export const BILL_RETENTION_DAYS = 15
+export const BILL_RETENTION_DAYS = 7
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -106,4 +106,18 @@ export function retentionTagText(daysLeft: number | null): string {
   if (daysLeft === null) return '—'
   if (daysLeft <= 0) return 'Tự xóa hôm nay'
   return `Tự xóa sau ${daysLeft} ngày`
+}
+
+let cachedBillsPage: { rows: BillRow[]; total: number } | null = null
+
+export function getCachedBillsPage(): { rows: BillRow[]; total: number } | null {
+  return cachedBillsPage
+}
+
+export function setCachedBillsPage(val: { rows: BillRow[]; total: number } | null): void {
+  cachedBillsPage = val
+}
+
+export function resetBillsPageCache(): void {
+  cachedBillsPage = null
 }

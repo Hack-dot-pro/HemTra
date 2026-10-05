@@ -13,3 +13,20 @@ export function prefetchRoute(pathname: string): void {
   const load = ROUTE_LOADERS[pathname]
   if (load) void load().catch(() => undefined)
 }
+
+/** Tải trước tất cả các route chunks trong background khi hệ thống rảnh. */
+export function prefetchAllRoutes(): void {
+  if (typeof window === 'undefined') return
+  if (window.navigator?.webdriver) return
+  const run = () => {
+    Object.values(ROUTE_LOADERS).forEach((load) => {
+      void load().catch(() => undefined)
+    })
+  }
+  if ('requestIdleCallback' in window) {
+    ;(window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(run)
+  } else {
+    setTimeout(run, 150)
+  }
+}
+

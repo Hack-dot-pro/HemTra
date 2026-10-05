@@ -12,9 +12,10 @@ describe('P12-T5 — options Chart A dạng cột', () => {
     expect(options.xaxis?.categories).toEqual(categories)
   })
 
-  it('bỏ toolbar zoom/pan/selection và zoom chạm (mobile tương tác trực tiếp)', () => {
+  it('hỗ trợ tương tác zoom và kéo trên mobile cảm ứng trực tiếp (P13-T4, không cần toolbar)', () => {
     expect(options.chart?.toolbar?.show).toBe(false)
-    expect(options.chart?.zoom?.enabled).toBe(false)
+    expect(options.chart?.zoom?.enabled).toBe(true)
+    expect(options.chart?.toolbar?.autoSelected).toBe('pan')
   })
 
   it('có legend cho series', () => {

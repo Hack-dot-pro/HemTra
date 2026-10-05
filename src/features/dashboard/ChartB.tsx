@@ -31,14 +31,14 @@ export default function ChartB({ items, series, labels }: ChartBProps) {
           startAngle: -90,
           endAngle: 90,
           hollow: {
-            margin: 5,
-            size: '35%',
+            margin: 3,
+            size: '25%',
             background: 'transparent',
           },
           track: {
             background: 'rgba(255, 255, 255, 0.08)',
             strokeWidth: '100%',
-            margin: 5,
+            margin: 3,
           },
           dataLabels: {
             name: {

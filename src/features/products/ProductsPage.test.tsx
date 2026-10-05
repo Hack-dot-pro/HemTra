@@ -6,6 +6,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ProductsPage from './ProductsPage'
+import { resetProductListsCache } from './logic'
 import type { ProductLists, ProductsApi } from './api'
 
 function makeLists(): ProductLists {
@@ -41,6 +42,7 @@ async function openCategoryTab(user: ReturnType<typeof userEvent.setup>) {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  resetProductListsCache()
 })
 
 describe('P5-T1 — sắp xếp nhóm bằng ↑/↓', () => {

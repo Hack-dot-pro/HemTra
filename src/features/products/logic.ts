@@ -3,13 +3,11 @@
 // Không đụng Supabase ở đây — tách để unit test (testing skill §2).
 
 import { z } from 'zod'
+import { EMOJI_ITEMS } from '../../lib/emojiUtils'
 
 export const NAME_MAX = 80
 
-export const EMOJI_SUGGESTIONS = [
-  '🧋', '🍑', '🥤', '🧉', '☕', '🍵', '🥛', '🍹',
-  '🍧', '🍰', '🫧', '🍓', '🥭', '🍋', '🍯', '🥄',
-] as const
+export const EMOJI_SUGGESTIONS = EMOJI_ITEMS
 
 const nameSchema = z
   .string('Vui lòng nhập tên.')
@@ -22,7 +20,7 @@ const priceSchema = z
   .int('Đơn giá phải là số nguyên.')
   .positive('Đơn giá phải lớn hơn 0.')
 
-const iconSchema = z.string().trim().max(16, 'Emoji quá dài.')
+const iconSchema = z.string().trim().max(100, 'Emoji quá dài.')
 
 const categoryIdSchema = z
   .string('Vui lòng chọn nhóm.')
@@ -164,4 +162,20 @@ export function swapTargets<T extends SortRow>(
   const otherIndex = dir === 'up' ? index - 1 : index + 1
   if (otherIndex < 0 || otherIndex >= sortedRows.length) return null
   return { self: sortedRows[index], other: sortedRows[otherIndex] }
+}
+
+import type { ProductLists } from './api'
+
+let cachedProductLists: ProductLists | null = null
+
+export function getCachedProductLists(): ProductLists | null {
+  return cachedProductLists
+}
+
+export function setCachedProductLists(val: ProductLists | null): void {
+  cachedProductLists = val
+}
+
+export function resetProductListsCache(): void {
+  cachedProductLists = null
 }

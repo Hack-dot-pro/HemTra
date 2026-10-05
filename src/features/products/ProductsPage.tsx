@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucid
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { SERVER_ERROR } from '../../lib/http'
 import { formatVnd } from '../../lib/format'
+import { ProductIcon } from '../../lib/emojiAssets'
 import {
   defaultProductsApi,
   type CategoryRow,
@@ -18,7 +19,15 @@ import {
   type ToppingRow,
 } from './api'
 import { CategoryModal, ProductModal, ToppingModal } from './forms'
-import { filterProducts, swapTargets, type CategoryValues, type ProductValues, type ToppingValues } from './logic'
+import {
+  filterProducts,
+  getCachedProductLists,
+  setCachedProductLists,
+  swapTargets,
+  type CategoryValues,
+  type ProductValues,
+  type ToppingValues,
+} from './logic'
 
 export type ProductsPageProps = { api?: ProductsApi }
 
@@ -85,7 +94,7 @@ function IconButton({ label, onClick, disabled, children }: { label: string; onC
 }
 
 export default function ProductsPage({ api = defaultProductsApi }: ProductsPageProps) {
-  const [lists, setLists] = useState<ProductLists | null>(null)
+  const [lists, setLists] = useState<ProductLists | null>(() => getCachedProductLists())
   const [loadError, setLoadError] = useState('')
   const [tab, setTab] = useState<Tab>('products')
   const [query, setQuery] = useState('')
@@ -99,6 +108,7 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
   const load = useCallback(async () => {
     try {
       const data = await api.load()
+      setCachedProductLists(data)
       setLists(data)
       setLoadError('')
     } catch (error) {
@@ -122,7 +132,12 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
   // (categories/products/toppings/product_toppings): giữ nguyên thứ tự hiển thị,
   // chỉ refetch ở lần mở trang / nút "Thử lại" khi lỗi mạng.
   const patch = (fn: (prev: ProductLists) => ProductLists): void => {
-    setLists((prev) => (prev ? fn(prev) : prev))
+    setLists((prev) => {
+      if (!prev) return prev
+      const next = fn(prev)
+      setCachedProductLists(next)
+      return next
+    })
   }
 
   const upsert = <T extends { id: string }>(rows: T[], row: T): T[] =>
@@ -433,7 +448,9 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
               <tbody>
                 {visibleProducts.map((product) => (
                   <tr key={product.id} className="border-t border-white/10">
-                    <td className="py-2 pr-2 text-lg" aria-hidden="true">{product.icon || '—'}</td>
+                    <td className="py-2 pr-2" aria-hidden="true">
+                      <ProductIcon icon={product.icon} className="h-6 w-6 object-contain" fallbackEmoji="—" />
+                    </td>
                     <td className="py-2 pr-2 font-medium">{product.name}</td>
                     <td className="py-2 pr-2 text-white/70">{categoryName(product.category_id)}</td>
                     <td className="py-2 pr-2 whitespace-nowrap">{formatVnd(product.price)}</td>
@@ -485,7 +502,9 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
               .sort((a, b) => a.sort_order - b.sort_order)
               .map((category, index, sorted) => (
                 <li key={category.id} className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-                  <span className="text-xl" aria-hidden="true">{category.icon || '—'}</span>
+                  <span className="flex h-7 w-7 items-center justify-center shrink-0" aria-hidden="true">
+                    <ProductIcon icon={category.icon} className="h-6 w-6 object-contain" fallbackEmoji="—" />
+                  </span>
                   <div className="min-w-0">
                     <p className="truncate font-medium">{category.name}</p>
                     <p className="text-xs text-white/50">Thứ tự {category.sort_order}</p>
@@ -537,7 +556,9 @@ export default function ProductsPage({ api = defaultProductsApi }: ProductsPageP
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {lists.toppings.map((topping) => (
               <div key={topping.id} className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-                <span className="text-xl" aria-hidden="true">{topping.icon || '—'}</span>
+                <span className="flex h-7 w-7 items-center justify-center shrink-0" aria-hidden="true">
+                  <ProductIcon icon={topping.icon} className="h-6 w-6 object-contain" fallbackEmoji="—" />
+                </span>
                 <div className="min-w-0">
                   <p className="truncate font-medium">{topping.name}</p>
                   <p className="text-xs text-white/50">+{formatVnd(topping.price)}</p>

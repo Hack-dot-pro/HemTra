@@ -23,7 +23,7 @@ vi.mock('../features/auth/accessGuard', async (importOriginal) => {
 })
 
 // P12-T4: không nạp chunk route thật trong unit test — spy hàm prefetch.
-vi.mock('./prefetch', () => ({ prefetchRoute: vi.fn() }))
+vi.mock('./prefetch', () => ({ prefetchRoute: vi.fn(), prefetchAllRoutes: vi.fn() }))
 // Header đọc profiles của chính mình qua fake client (không có auth) → mock hook.
 vi.mock('../features/profile/useMyProfile', () => ({
   useMyProfile: () => ({ profile: null, loading: false, refresh: vi.fn() }),

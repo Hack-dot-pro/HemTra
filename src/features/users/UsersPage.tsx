@@ -20,6 +20,8 @@ import {
   canManageUserPassword,
   createUserSchema,
   formatUserCreatedAt,
+  getCachedUsersList,
+  setCachedUsersList,
   setPasswordSchema,
 } from './logic'
 import type { CreateUserParams, UserProfile, UserRole } from './types'
@@ -34,8 +36,8 @@ export default function UsersPage({ api = defaultUsersApi, currentUserId: propUs
   const authProfile = useAuthProfile()
   const [sessionUserId, setSessionUserId] = useState<string | null>(null)
   const currentUserId = propUserId ?? sessionUserId
-  const [users, setUsers] = useState<UserProfile[]>([])
-  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState<UserProfile[]>(() => getCachedUsersList() ?? [])
+  const [loading, setLoading] = useState(() => !getCachedUsersList())
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -90,11 +92,12 @@ export default function UsersPage({ api = defaultUsersApi, currentUserId: propUs
 
   const loadUsers = useCallback(
     async (isBackground = false) => {
-      if (!isBackground) setLoading(true)
+      if (!isBackground && !getCachedUsersList()) setLoading(true)
       else setRefreshing(true)
       setError(null)
       try {
         const list = await api.fetchUsers()
+        setCachedUsersList(list)
         setUsers(list)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không thể tải danh sách người dùng')
@@ -357,7 +360,7 @@ export default function UsersPage({ api = defaultUsersApi, currentUserId: propUs
                       data-testid={`user-row-${u.username}`}
                       className="hover:bg-white/5 transition"
                     >
-                      <td className="py-3.5 px-4 font-mono font-medium text-white flex items-center gap-2">
+                      <td className="py-3.5 px-4 font-mono font-medium text-white flex items-center gap-2 whitespace-nowrap">
                         {isUserAdmin ? (
                           <Shield className="w-4 h-4 text-purple-400 shrink-0" aria-label="Admin" />
                         ) : (
@@ -366,43 +369,43 @@ export default function UsersPage({ api = defaultUsersApi, currentUserId: propUs
                         <span>{u.username}</span>
                       </td>
 
-                      <td className="py-3.5 px-4 font-medium text-white/90">
+                      <td className="py-3.5 px-4 font-medium text-white/90 whitespace-nowrap">
                         {u.displayName}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {isUserAdmin ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30 whitespace-nowrap">
                             Admin
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/30">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/30 whitespace-nowrap">
                             Nhân viên
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {u.mustChangePassword ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/30 whitespace-nowrap">
                             Chờ đổi MK
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
                             Hoạt động
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-white/70 text-xs font-mono">
+                      <td className="py-3.5 px-4 text-white/70 text-xs font-mono whitespace-nowrap">
                         {u.creatorUsername ? `@${u.creatorUsername}` : isUserAdmin ? 'Hệ thống' : '—'}
                       </td>
 
-                      <td className="py-3.5 px-4 text-white/60 text-xs">
+                      <td className="py-3.5 px-4 text-white/60 text-xs whitespace-nowrap">
                         {formatUserCreatedAt(u.createdAt)}
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         {isUserAdmin ? (
                           <span className="text-xs text-white/40 italic">Admin hệ thống</span>
                         ) : isAdmin ? (
@@ -527,39 +530,23 @@ export default function UsersPage({ api = defaultUsersApi, currentUserId: propUs
 
             <div>
               <label htmlFor={passwordId} className="block text-xs font-semibold text-white/80 mb-1">
-                Mật khẩu ban đầu
+                Mật khẩu (bắt buộc)
               </label>
               <input
                 id={passwordId}
                 data-testid="create-user-password"
                 type="password"
+                required
+                minLength={6}
                 value={createForm.password}
                 onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                placeholder="Để trống để tự động sinh mật khẩu tạm thời"
+                placeholder="Tối thiểu 6 ký tự (bắt buộc)"
                 className="glass-input w-full"
               />
               <p className="text-[11px] text-white/50 mt-1">
-                Nếu để trống, hệ thống sẽ sinh mật khẩu ngẫu nhiên 8 ký tự và yêu cầu đổi ở lần đầu.
+                Mật khẩu bắt buộc tối thiểu 6 ký tự.
               </p>
             </div>
-
-            {isAdmin && (
-              <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">Vai trò</label>
-                <select
-                  value={createForm.role}
-                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
-                  className="glass-input w-full bg-slate-900/80 text-white"
-                >
-                  <option value="staff" className="bg-slate-900 text-white">
-                    Nhân viên (staff)
-                  </option>
-                  <option value="admin" className="bg-slate-900 text-white">
-                    Quản trị viên (admin)
-                  </option>
-                </select>
-              </div>
-            )}
           </form>
         </Modal>
       )}

@@ -39,7 +39,8 @@ vi.mock('./exportBillPng', () => ({
   isSafariCapture: () => false,
   preloadBillPngLib: vi.fn(async () => undefined),
   warmBillImage: vi.fn(async () => 'data:image/png;base64,AA=='),
-  pngDataUrlSize: vi.fn(() => ({ width: 2160, height: 3600 })), // 720 × 3 — P12-T8
+  pngDataUrlSize: vi.fn(() => ({ width: 1440, height: 2400 })),
+  getDataUrlByteSize: vi.fn(() => 42 * 1024),
 }))
 
 let testDb: DBType
@@ -194,7 +195,7 @@ describe('P6-T2/T3 — panel bill realtime', () => {
     expect(screen.getByTestId('bill-total')).toHaveTextContent('35.000 ₫')
   })
 
-  it('topping: chỉ SP có link mới thấy topping; chọn → dòng con + tổng cộng dồn', async () => {
+  it('P13: topping tự do — mọi món chính đều có thể chọn topping; chọn → dòng con + tổng cộng dồn', async () => {
     const user = await renderPos()
     await user.click(screen.getByRole('button', { name: 'Thêm Trà sữa đào' }))
     await user.click(screen.getByRole('button', { name: 'Chọn topping cho Trà sữa đào' }))
@@ -211,10 +212,11 @@ describe('P6-T2/T3 — panel bill realtime', () => {
     expect(within(line).getByText(/\+ Trân châu 5\.000 ₫/)).toBeInTheDocument()
     expect(screen.getByTestId('bill-total')).toHaveTextContent('40.000 ₫')
 
-    // SP không có link topping → modal báo rỗng
+    // Món khác (Matcha sữa) cũng chọn được topping (topping tự do, không khóa cứng)
     await user.click(screen.getByRole('button', { name: 'Thêm Matcha sữa' }))
     await user.click(screen.getByRole('button', { name: 'Chọn topping cho Matcha sữa' }))
-    expect(screen.getByText('Món này chưa có topping.')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Topping cho Matcha sữa' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Topping Trân châu' })).toBeInTheDocument()
   })
 
   it('số món, ghi chú đơn cập nhật theo bill (P12-T6: bỏ gợi ý SĐT)', async () => {
@@ -534,9 +536,9 @@ describe('P12-T8 — preview ảnh bill 2K sau thanh toán', () => {
 
     const img = screen.getByTestId('bill-preview-img')
     expect(img).toHaveAttribute('src', 'data:image/png;base64,iVBORw0KGgo=')
-    expect(screen.getByTestId('bill-preview-size')).toHaveTextContent('2160')
-    expect(screen.getByTestId('bill-preview-size')).toHaveTextContent('2K')
-    // modal rộng (max-w-3xl) — preview 2K không bị bóp trong max-w-md
+    expect(screen.getByTestId('bill-preview-size')).toHaveTextContent('1440')
+    expect(screen.getByTestId('bill-preview-size')).toHaveTextContent('42.0 KB (< 50KB)')
+    // modal rộng (max-w-3xl) — preview không bị bóp trong max-w-md
     expect(screen.getByRole('dialog').className).toContain('max-w-3xl')
   })
 

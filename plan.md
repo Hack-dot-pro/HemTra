@@ -163,6 +163,26 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 - [x] **P12-T11** 📖 `testing`, `release` Test: unit + Playwright (overflow mobile, chart cột, preview PNG ≥2K, xóa bill có mật khẩu, đồng bộ topping, OTP profile, header/offline) + `lint`/`typecheck`/`build`.
 - **Gate:** QC ☑ PASS (2026-10-04, 535/535 unit test xanh, 62/62 Playwright e2e xanh qua Chromium/Mobile, typecheck + lint 0 lỗi, bundle build sạch) · SEC ☑ PASS (mật khẩu admin verify server-side qua Edge Function, OTP email cho hồ sơ, không lộ secret)
 
+## P13 — Nâng cấp toàn diện hệ thống theo yêu cầu (2026-10-05)
+📖 Đọc toàn bộ skill trước khi code (ma trận §12.1): `uiux`, `backend`, `pos-bill`, `auth`, `dashboard`, `security`, `frontend-stack`, `testing`.
+- [x] **P13-T1** 📖 `uiux`, `pos-bill` Thay toàn bộ emoji hệ thống thành bộ hình ảnh `/workspaces/HemTra/emoji`: copy vào `public/emojis/`, tạo `ProductIcon` và emoji image picker cho sản phẩm, nhóm, topping, POS, bảng bill → xong 2026-10-05 (39 PNG emoji, `ProductIcon`, helper `resolveEmojiUrl`, emoji picker 39 ảnh, modal POS và print bill hỗ trợ đầy đủ)
+- [x] **P13-T2** 📖 `uiux` Xóa thẻ header "Hẻm Trà" ở sidebar góc trái bên dưới avatar trong cụm slide (ảnh tham chiếu `image copy 2.png`) → xong 2026-10-05 (đã dọn bỏ thẻ Hẻm Trà khỏi `AppLayout.tsx`)
+- [x] **P13-T3** 📖 `backend`, `dashboard` Sửa lỗi dashboard "Tỷ lệ sản phẩm bán chạy trong tháng" và "Top 5 bán chạy nhất" vẫn còn dữ liệu khi đã xóa hết bill; dọn dẹp stats mồ côi trên cloud và cập nhật RPC xóa bill → xong 2026-10-05 (migration `20261005030000`, xóa stats mồ côi khi total_quantity <= 0 hoặc bill_count = 0, safeguards ở API FE)
+- [x] **P13-T4** 📖 `dashboard`, `uiux` Chart "Doanh thu theo ngày trong tháng" (Chart A) hỗ trợ tương tác cảm ứng trên điện thoại: zoom & kéo/pan mượt mà → xong 2026-10-05 (`chartAOptions.ts`: zoom enabled, autoSelected pan, toolbar ẩn để vuốt chạm trực tiếp)
+- [x] **P13-T5** 📖 `dashboard`, `uiux` Chart "Tỷ lệ sản phẩm bán chạy trong tháng" (Chart B): giảm độ mỏng của chart xuống 20% (tăng độ dày vòng tròn) → xong 2026-10-05 (`ChartB.tsx`: hollow size giảm từ 32% xuống 25%, margin 3px tăng độ dày 20%)
+- [x] **P13-T6** 📖 `auth`, `backend` Kiểm tra và khắc phục lỗi gửi OTP về Gmail admin: chuyển cấu hình SMTP từ port 465 sang 587 STARTTLS chuẩn của GoTrue → xong 2026-10-05 (PATCH port 587 STARTTLS lên Supabase config, gửi OTP thành công)
+- [x] **P13-T7** 📖 `pos-bill`, `testing` Nén ảnh hóa đơn xuất ra / preview xuống dưới 50KB nhưng vẫn đảm bảo độ nét cao → xong 2026-10-05 (`exportBillPng.ts`: canvas quantization & color flattening, nén xuống 12KB - 44.7KB strictly < 50KB, nét chuẩn Retina 2x)
+- [x] **P13-T8** 📖 `backend`, `auth`, `pos-bill` Thay đổi thời hạn tự xóa bill từ 15 ngày xuống 7 ngày; quản lý user: chỉ user chính là admin, khi thêm từ admin luôn là user client (không chọn vai trò), bắt buộc mật khẩu ≥ 6 ký tự → xong 2026-10-05 (migration `20261005040000` 7 days retention, `createUserSchema` role cố định staff, password required min 6 chars, deploy EF `admin-users`)
+- [x] **P13-T9** 📖 `uiux` Bỏ dòng chữ "Đổi mật khẩu / email khôi phục / hồ sơ: bấm avatar ở thanh trên cùng." trong sidebar → xong 2026-10-05 (đã bỏ trong `AppLayout.tsx`)
+- [x] **P13-T10** 📖 `frontend-stack`, `uiux` Tăng tốc độ load menu realtime: prefetch chunks và áp dụng SWR memory cache khi chuyển menu, loại bỏ view "đang tải" chặn màn hình → xong 2026-10-05 (`prefetch.ts` + in-memory SWR cache ở Bills, Products, Dashboard, Users)
+- [x] **P13-T11** 📖 `pos-bill`, `uiux` Sửa lỗi "Ảnh bill chưa xuất được — bill vẫn đã ghi nhận": luôn hiện modal preview bill kể cả khi upload ảnh ngầm thất bại; thêm fallback xem/tải lại bill từ Quản lý bill nếu thiết bị lỗi ảnh → xong 2026-10-05 (`PosPage.tsx` tách biệt render bill PNG khỏi upload ngầm; `BillsPage.tsx` render live BillSheet fallback tải lại và xem bill khi thiếu file storage)
+- [x] **P13-T12** 📖 `pos-bill`, `backend` Topping không khóa cứng theo sản phẩm: thêm trong danh sách 1 lần là có thể chọn cho bất kỳ sản phẩm chính nào ở menu POS; cập nhật RPC create_bill → xong 2026-10-05 (`toppingsForProduct` trả về toàn bộ topping hoạt động, RPC `create_bill` mở khóa universal toppings)
+- [x] **P13-T13** 📖 `uiux` Tối ưu góc nhìn mobile: thêm whitespace-nowrap cho cột trạng thái "Hoạt động", "Chờ đổi MK" và bảo đảm không tràn view trên màn hình hẹp → xong 2026-10-05 (`UsersPage.tsx` whitespace-nowrap các badge trạng thái, username, ngày tạo, thao tác)
+- [x] **P13-T14** 📖 `auth`, `uiux` Thêm tính năng đăng xuất trên avatar để linh hoạt thay đổi user → xong 2026-10-05 (`AppLayout.tsx` nút đăng xuất nhanh bên cạnh avatar và trong `ProfileModal.tsx`)
+- [x] **P13-T15** 📖 `uiux`, `auth` Thêm bản quyền "ENGINEERED BY VINH © 2026" ở dưới cùng màn hình đăng nhập căn giữa, làm mờ tinh tế → xong 2026-10-05 (`LoginStage.tsx` + `login-stage.css` footer mờ tinh tế căn giữa)
+- [x] **P13-T16** 📖 `testing`, `release` Chạy kiểm thử tự động toàn diện: typecheck, lint, unit tests, e2e Playwright và ghi nhận báo cáo → xong 2026-10-05 (543/543 unit tests passed, 186/186 Playwright E2E tests passed, typecheck 0, lint 0)
+- **Gate:** QC ☑ PASS (2026-10-05, 543/543 unit test xanh, 186/186 Playwright e2e xanh qua Chromium/WebKit/Mobile Safari, typecheck + lint 0 lỗi) · SEC ☑ PASS (2026-10-05, password min 6 chars, role staff enforce server-side, SMTP 587 STARTTLS, RLS & RPC verified)
+
 ---
 
 ## Định nghĩa hoàn thành (DoD) mỗi task
@@ -170,3 +190,4 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ## Backlog (agent ghi thêm, không tự làm)
 - _(trống)_
+

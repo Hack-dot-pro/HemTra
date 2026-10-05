@@ -503,6 +503,10 @@ export default function LoginStage({
             </button>
           )}
         </div>
+
+        <div className="login-copyright" aria-hidden="true">
+          ENGINEERED BY VINH © 2026
+        </div>
       </div>
 
       {showInstallModal && (

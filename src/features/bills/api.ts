@@ -19,10 +19,23 @@ import {
   type BillRow,
 } from './logic'
 
+export type BillItemDetail = {
+  id: string
+  bill_id: string
+  parent_item_id: string | null
+  name_snapshot: string
+  unit_price_snapshot: number
+  qty: number
+  note: string
+  sort_order: number
+}
+
 export type BillsApi = {
   list(params: BillListParams): Promise<BillPage>
   /** Signed URL ngắn hạn cho ảnh PNG trong bucket `bills` (P7-T2). */
   signedImageUrl(path: string): Promise<string>
+  /** Lấy danh sách món để tái tạo BillSheet khi bill chưa có ảnh hoặc lỗi ảnh (P13-T11). */
+  fetchBillItems(billId: string): Promise<BillItemDetail[]>
   /**
    * P12-T10 — xóa bill: gọi EF `delete-bills` (admin + mật khẩu admin xác minh
    * server-side). Trả về mã bill đã xóa để UI báo thành công.
@@ -171,6 +184,18 @@ export const defaultBillsApi: BillsApi = {
       const url = (data as { signedUrl?: string } | null)?.signedUrl
       if (!url) throw new ApiError(SERVER_ERROR)
       return url
+    })
+  },
+
+  async fetchBillItems(billId) {
+    return withClient(async (client) => {
+      const { data, error } = await client
+        .from('bill_items')
+        .select('id,bill_id,parent_item_id,name_snapshot,unit_price_snapshot,qty,note,sort_order')
+        .eq('bill_id', billId)
+        .order('sort_order', { ascending: true })
+      throwOnError({ error })
+      return (data ?? []) as BillItemDetail[]
     })
   },
 }

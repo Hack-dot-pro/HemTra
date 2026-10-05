@@ -189,8 +189,8 @@ test('P7-T1/P12-T10: bảng bill — dữ liệu, tìm theo mã, phân trang, ad
   await expect(firstRow).toContainText('3') // 2 + 1 ly, không tính topping
   await expect(firstRow).toContainText('14:05') // giờ VN, không phải 07:05 UTC
 
-  // P7-T4 — tag "tự xóa sau N ngày": policy 15 ngày ở đầu trang + đếm ngược theo expires_at ở dòng
-  await expect(page.getByTestId('retention-policy-tag')).toHaveText('Tự xóa sau 15 ngày')
+  // P7-T4 / P13-T8 — tag "tự xóa sau N ngày": policy 7 ngày ở đầu trang + đếm ngược theo expires_at ở dòng
+  await expect(page.getByTestId('retention-policy-tag')).toHaveText('Tự xóa sau 7 ngày')
   await expect(table.getByRole('columnheader', { name: 'Tự dọn' })).toBeVisible()
   await expect(firstRow).toContainText(/Tự xóa (hôm nay|sau \d+ ngày)/)
   await expect(page.getByText('Trang 1/2 · 21 bill · 20 dòng/trang')).toBeVisible()
@@ -295,7 +295,7 @@ test('P7-T2: modal ảnh bill — signed URL ngắn hạn, ảnh hiện, Esc đ�
   await expect(dialog).not.toBeVisible()
 })
 
-test('P7-T2: bill chưa có ảnh → hiện "Chưa có ảnh", không có nút Xem Bill (admin vẫn Xóa)', async ({
+test('P13-T11: bill chưa có ảnh trong storage → vẫn có nút Xem Bill để xem và tải lại theo fallback (admin vẫn Xóa)', async ({
   page,
 }) => {
   await injectAuth(page)
@@ -308,8 +308,8 @@ test('P7-T2: bill chưa có ảnh → hiện "Chưa có ảnh", không có nút 
     .getByRole('region', { name: 'Danh sách bill' })
     .getByRole('row', { name: /HT-261002-0005/ })
   await row.waitFor()
-  await expect(row.getByText('Chưa có ảnh')).toBeVisible()
-  await expect(row.getByRole('button', { name: /xem bill/i })).toHaveCount(0)
+  // P13-T11: fallback cho phép vào Quản lý bill để xem và tải lại kể cả khi chưa có ảnh storage
+  await expect(row.getByRole('button', { name: /xem bill/i })).toHaveCount(1)
   // P12-T10 — admin thấy nút Xóa kể cả khi bill chưa có ảnh
   await expect(row.getByRole('button', { name: /xóa/i })).toHaveCount(1)
 })

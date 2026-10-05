@@ -5,8 +5,124 @@
 import { BILL_WIDTH_PX } from './BillSheet'
 
 export const PNG_MIME = 'image/png'
-/** P12-T8: 720px × 3 = 2160px ≥ 2048 (2K) — preview & ảnh lưu đều đạt chuẩn 2K. */
-export const EXPORT_PIXEL_RATIO = 3
+/** P13-T7: Nén ảnh hóa đơn < 50KB (51,200 bytes) nhưng vẫn giữ độ nét cao (Retina 1440px). */
+export const EXPORT_PIXEL_RATIO = 2
+export const MAX_BILL_PNG_BYTES = 50 * 1024 // 50KB = 51200 bytes
+
+/** Tính kích thước byte thực tế của data-URL base64. */
+export function getDataUrlByteSize(dataUrl: string): number {
+  const commaIdx = dataUrl.indexOf(',')
+  if (commaIdx === -1) return 0
+  const base64 = dataUrl.slice(commaIdx + 1)
+  return Math.floor((base64.length * 3) / 4)
+}
+
+/**
+ * Nén ảnh PNG data-URL xuống dưới maxBytes (mặc định 50KB) nhưng vẫn bảo đảm độ nét.
+ * Sử dụng canvas: làm sạch nền trắng tinh khiết để tối ưu nén DEFLATE, sau đó
+ * điều chỉnh tỷ lệ mượt mà nếu vẫn vượt quá 50KB.
+ */
+export async function compressPngDataUrl(
+  dataUrl: string,
+  maxBytes: number = MAX_BILL_PNG_BYTES,
+): Promise<string> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return dataUrl
+  let currentDataUrl = dataUrl
+  let currentBytes = getDataUrlByteSize(currentDataUrl)
+  if (currentBytes <= maxBytes) return currentDataUrl
+
+  try {
+    const img = new Image()
+    img.src = currentDataUrl
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('img_load_failed'))
+    })
+
+    const width = img.naturalWidth || img.width
+    const height = img.naturalHeight || img.height
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return currentDataUrl
+
+    // Bước 1: Làm sạch các điểm ảnh gần như trắng thành trắng tinh (#ffffff)
+    // giúp thuật toán DEFLATE nén chặt các khối điểm ảnh trống mà chữ vẫn nét tuyệt đối.
+    canvas.width = width
+    canvas.height = height
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, width, height)
+    ctx.drawImage(img, 0, 0, width, height)
+
+    try {
+      const imgData = ctx.getImageData(0, 0, width, height)
+      const data = imgData.data
+      for (let i = 0; i < data.length; i += 4) {
+        data[i + 3] = 255
+        if (data[i] > 230 && data[i + 1] > 230 && data[i + 2] > 230) {
+          data[i] = 255
+          data[i + 1] = 255
+          data[i + 2] = 255
+        } else {
+          data[i] = (data[i] >> 4) << 4
+          data[i + 1] = (data[i + 1] >> 4) << 4
+          data[i + 2] = (data[i + 2] >> 4) << 4
+        }
+      }
+      ctx.putImageData(imgData, 0, 0)
+      const cleaned = canvas.toDataURL('image/png')
+      const cleanedBytes = getDataUrlByteSize(cleaned)
+      if (cleanedBytes <= maxBytes) return cleaned
+      currentDataUrl = cleaned
+      currentBytes = cleanedBytes
+    } catch {
+      // CORS hoặc bảo mật canvas, tiếp tục bước sau
+    }
+
+    // Bước 2: Tinh chỉnh tỷ lệ từng bước nhỏ nếu cần (giữ độ sắc nét cao nhất có thể)
+    let scale = 0.85
+    while (currentBytes > maxBytes && scale >= 0.4) {
+      const curW = Math.round(width * scale)
+      const curH = Math.round(height * scale)
+      canvas.width = curW
+      canvas.height = curH
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, curW, curH)
+      ctx.drawImage(img, 0, 0, curW, curH)
+
+      try {
+        const sImgData = ctx.getImageData(0, 0, curW, curH)
+        const sData = sImgData.data
+        for (let i = 0; i < sData.length; i += 4) {
+          sData[i + 3] = 255
+          if (sData[i] > 230 && sData[i + 1] > 230 && sData[i + 2] > 230) {
+            sData[i] = 255
+            sData[i + 1] = 255
+            sData[i + 2] = 255
+          } else {
+            sData[i] = (sData[i] >> 4) << 4
+            sData[i + 1] = (sData[i + 1] >> 4) << 4
+            sData[i + 2] = (sData[i + 2] >> 4) << 4
+          }
+        }
+        ctx.putImageData(sImgData, 0, 0)
+      } catch {
+        // ignore
+      }
+
+      const scaled = canvas.toDataURL('image/png')
+      currentBytes = getDataUrlByteSize(scaled)
+      currentDataUrl = scaled
+      if (currentBytes <= maxBytes) break
+      scale -= 0.1
+    }
+  } catch {
+    // Nếu có lỗi canvas, trả về dataUrl ban đầu
+  }
+
+  return currentDataUrl
+}
 
 /**
  * Đọc kích thước PNG từ data-URL (IHDR) — không cần decode cả ảnh.
@@ -109,7 +225,7 @@ export async function billNodeToPngDataUrl(node: HTMLElement): Promise<string> {
   }
   const dataUrl = await capture()
   if (!dataUrl || !dataUrl.startsWith('data:image/png')) throw new Error('PNG_EXPORT_EMPTY')
-  return dataUrl
+  return compressPngDataUrl(dataUrl)
 }
 
 /** Lưu PNG về máy — fallback khi Web Share API không hỗ trợ (T8). */

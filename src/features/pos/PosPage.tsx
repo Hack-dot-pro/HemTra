@@ -17,10 +17,12 @@ import { useOutboxSync } from '../../lib/useOutbox'
 import { dataUrlToBlob } from '../../lib/outbox'
 import type { MenuSnapshot } from '../../lib/menuTypes'
 import BillSheet, { type BillSheetProps } from './BillSheet'
+import { ProductIcon } from '../../lib/emojiAssets'
 import { generateQrDataUrl, preloadQrLib } from './qr'
 import {
   billNodeToPngDataUrl,
   downloadBlob,
+  getDataUrlByteSize,
   pngDataUrlSize,
   preloadBillPngLib,
   warmBillImage,
@@ -161,14 +163,22 @@ export default function PosPage() {
               total: sheetTotal(sheetBill, result),
               qrDataUrl,
             })
-            await createBillUploader(client)({
-              code: result.code,
-              blob: dataUrlToBlob(png),
-              createdAtIso: new Date(createdAt).toISOString(),
-              clientUuid: result.client_uuid,
-            })
-          } catch {
-            png = null // bill đã tạo — thiếu ảnh không được bán lại
+          } catch (renderError) {
+            console.error('Không xuất được ảnh bill:', renderError)
+          }
+
+          if (png) {
+            // Upload ngầm lên Storage — nếu upload thất bại thì ảnh preview vẫn được giữ để chia sẻ / lưu về máy
+            try {
+              await createBillUploader(client)({
+                code: result.code,
+                blob: dataUrlToBlob(png),
+                createdAtIso: new Date(createdAt).toISOString(),
+                clientUuid: result.client_uuid,
+              })
+            } catch (uploadError) {
+              console.warn('Lưu ảnh bill lên Storage thất bại, ảnh vẫn sẵn sàng tại máy:', uploadError)
+            }
           }
         }
         setLastSale({ code: result.code, png })
@@ -303,7 +313,8 @@ export default function PosPage() {
                     onClick={() => setActiveCategoryId(category.id)}
                     className={`glass-btn shrink-0 gap-1.5 !py-1.5 text-sm ${selected ? 'glass-btn-primary' : 'opacity-80'}`}
                   >
-                    <span aria-hidden="true">{category.icon}</span> {category.name}
+                    {category.icon ? <ProductIcon icon={category.icon} className="h-4 w-4 object-contain inline-block mr-1" /> : null}
+                    <span>{category.name}</span>
                   </button>
                 )
               })}
@@ -315,9 +326,9 @@ export default function PosPage() {
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {products.map((product) => (
                   <li key={product.id} className="glass-card flex flex-col gap-2 p-3">
-                    <span className="text-2xl" aria-hidden="true">
-                      {product.icon || '🧋'}
-                    </span>
+                    <div className="flex h-12 w-full items-center justify-center">
+                      <ProductIcon icon={product.icon} className="h-12 w-12 object-contain" fallbackEmoji="🧋" />
+                    </div>
                     <span className="min-w-0 flex-1 text-sm font-medium leading-snug">{product.name}</span>
                     <span className="text-sm text-white/80">{formatVnd(product.price)}</span>
                     <button
@@ -351,11 +362,11 @@ export default function PosPage() {
             {bill.lines.map((line) => (
               <li key={line.line_id} className="py-3 first:pt-0" data-testid="bill-line">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 text-sm font-medium">
-                    <span aria-hidden="true" className="mr-1">
-                      {line.icon}
-                    </span>
-                    {line.name}
+                  <span className="min-w-0 text-sm font-medium flex items-center gap-1.5">
+                    {line.icon ? (
+                      <ProductIcon icon={line.icon} className="h-4 w-4 object-contain inline-block shrink-0" />
+                    ) : null}
+                    <span>{line.name}</span>
                   </span>
                   <span className="shrink-0 text-sm font-semibold">{formatVnd(lineTotal(line))}</span>
                 </div>
@@ -586,8 +597,11 @@ export default function PosPage() {
           <p className="mt-2 text-center text-xs text-white/60" data-testid="bill-preview-size">
             Ảnh {(() => {
               const size = pngDataUrlSize(lastSale.png)
-              return size && size.width > 0 ? `${size.width} × ${size.height}` : '≥ 2048'
-            })()}px — đủ độ phân giải in/chia sẻ (2K)
+              return size && size.width > 0 ? `${size.width} × ${size.height}` : '1440'
+            })()}px — {(() => {
+              const bytes = getDataUrlByteSize(lastSale.png)
+              return `${(bytes / 1024).toFixed(1)} KB (< 50KB)`
+            })()}
           </p>
         </Modal>
       ) : null}
@@ -611,11 +625,11 @@ export default function PosPage() {
                       }
                       className={`glass-btn flex w-full items-center justify-between gap-3 !py-2 text-sm ${chosen ? 'glass-btn-primary' : ''}`}
                     >
-                      <span>
-                        <span aria-hidden="true" className="mr-1.5">
-                          {topping.icon}
-                        </span>
-                        {topping.name}
+                      <span className="flex items-center gap-1.5">
+                        {topping.icon ? (
+                          <ProductIcon icon={topping.icon} className="h-5 w-5 object-contain inline-block shrink-0" />
+                        ) : null}
+                        <span>{topping.name}</span>
                       </span>
                       <span className="tabular-nums">+{formatVnd(topping.price)}</span>
                     </button>

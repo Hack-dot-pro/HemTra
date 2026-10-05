@@ -11,11 +11,12 @@ import BillsPage from './BillsPage'
 import { AuthProfileContext } from '../../app/authProfileContext'
 import { downloadBlob } from '../pos/exportBillPng'
 import type { BillsApi } from './api'
-import type { BillListParams, BillPage, BillRow } from './logic'
+import { resetBillsPageCache, type BillListParams, type BillPage, type BillRow } from './logic'
 import type { AccessProfile } from '../auth/accessGuard'
 
 vi.mock('../pos/exportBillPng', () => ({
   downloadBlob: vi.fn(),
+  billNodeToPngDataUrl: vi.fn(async () => 'data:image/png;base64,mockfallback'),
 }))
 
 function makeRow(overrides: Partial<BillRow> = {}): BillRow {
@@ -27,7 +28,7 @@ function makeRow(overrides: Partial<BillRow> = {}): BillRow {
     username: 't7staff',
     itemCount: 3,
     imagePath: '2026/10/HT-261003-0001.png',
-    // = created_at + 7 ngày — đủ xa để phân biệt với tag policy 15 ngày ở đầu trang
+    // = created_at + 7 ngày — đủ xa để phân biệt với tag policy 7 ngày ở đầu trang
     expiresAt: '2026-10-10T07:05:00.000Z',
     ...overrides,
   }
@@ -39,6 +40,7 @@ function fakeApi(overrides: Partial<BillsApi> = {}): BillsApi {
   return {
     list: vi.fn(async () => ({ rows: [makeRow()], total: 1 }) satisfies BillPage),
     signedImageUrl: vi.fn(async () => SIGNED_URL),
+    fetchBillItems: vi.fn(async () => []),
     deleteBill: vi.fn(async ({ id }: { id: string }) => ({ code: id })),
     ...overrides,
   }
@@ -59,6 +61,7 @@ function lastParams(api: BillsApi): BillListParams {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  resetBillsPageCache()
 })
 
 describe('P7-T1 — bảng bill hiển thị đủ cột', () => {
@@ -97,12 +100,12 @@ describe('P7-T1 — bảng bill hiển thị đủ cột', () => {
 })
 
 describe('P7-T4 — tag "tự xóa sau N ngày"', () => {
-  it('tag chính sách 15 ngày ở đầu trang + tag đếm ngược theo expires_at ở từng dòng', async () => {
+  it('tag chính sách 7 ngày ở đầu trang + tag đếm ngược theo expires_at ở từng dòng', async () => {
     render(<BillsPage api={fakeApi()} />)
 
     expect(await screen.findByText('HT-261003-0001')).toBeInTheDocument()
     // Tag policy: lấy từ BILL_RETENTION_DAYS (không hardcode 15 ở JSX)
-    expect(screen.getByTestId('retention-policy-tag')).toHaveTextContent('Tự xóa sau 15 ngày')
+    expect(screen.getByTestId('retention-policy-tag')).toHaveTextContent('Tự xóa sau 7 ngày')
     // Dòng dữ liệu: ngày còn lại phụ thuộc thời điểm chạy test → chỉ so định dạng
     const row = screen.getByRole('row', { name: /HT-261003-0001/ })
     expect(row).toHaveTextContent(/Tự xóa (hôm nay|sau \d+ ngày)/)
@@ -153,6 +156,7 @@ describe('P7-T1 — trạng thái rỗng và lỗi', () => {
     const api: BillsApi = {
       list,
       signedImageUrl: vi.fn(async () => SIGNED_URL),
+      fetchBillItems: vi.fn(async () => []),
       deleteBill: vi.fn(async () => ({ code: 'HT-261003-0001' })),
     }
     render(<BillsPage api={api} />)
@@ -225,12 +229,16 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     expect(dialog).toBeInTheDocument()
   })
 
-  it('signed URL thất bại → hiện lỗi tiếng Việt, bấm "Thử lại" gọi lại', async () => {
+  it('signed URL thất bại và không fallback được → hiện lỗi tiếng Việt, bấm "Thử lại" gọi lại', async () => {
     const signedImageUrl = vi
       .fn()
       .mockRejectedValueOnce(new Error('Lỗi máy chủ, thử lại sau.'))
       .mockResolvedValueOnce(SIGNED_URL)
-    const api = fakeApi({ signedImageUrl })
+    const fetchBillItems = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Lỗi nạp chi tiết bill'))
+      .mockResolvedValueOnce([])
+    const api = fakeApi({ signedImageUrl, fetchBillItems })
     const user = userEvent.setup()
     render(<BillsPage api={api} />)
     await screen.findByText('HT-261003-0001')
@@ -243,15 +251,37 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
     expect(signedImageUrl).toHaveBeenCalledTimes(2)
   })
 
-  it('bill chưa có ảnh → không có nút xem, hiện "Chưa có ảnh"', async () => {
+  it('bill chưa có ảnh → vẫn có nút xem, mở fallback bill sheet và tải về', async () => {
     const api = fakeApi({
       list: vi.fn(async () => ({ rows: [makeRow({ imagePath: '' })], total: 1 })),
+      fetchBillItems: vi.fn(async () => [
+        {
+          id: 'item-1',
+          bill_id: 'bill-1',
+          product_id: 'prod-1',
+          name_snapshot: 'Trà Sữa Lài',
+          unit_price_snapshot: 30000,
+          qty: 1,
+          line_total: 30000,
+          parent_item_id: null,
+          note: '',
+          sort_order: 10,
+        },
+      ]),
     })
+    const user = userEvent.setup()
     render(<BillsPage api={api} />)
     await screen.findByText('HT-261003-0001')
 
-    expect(screen.getByText('Chưa có ảnh')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Xem bill HT-261003-0001' })).not.toBeInTheDocument()
+    const viewBtn = screen.getByRole('button', { name: 'Xem bill HT-261003-0001' })
+    expect(viewBtn).toBeInTheDocument()
+    await user.click(viewBtn)
+
+    expect(await screen.findByText('Trà Sữa Lài')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tải về' }))
+    await waitFor(() =>
+      expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'HT-261003-0001.png'),
+    )
   })
 
   it('Tải về → lấy blob qua signed URL mới, tải <code>.png, hiện thông báo', async () => {

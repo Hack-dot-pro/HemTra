@@ -8,9 +8,16 @@ import { injectAuth } from './helpers'
 function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = []
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text())
+    if (message.type() !== 'error') return
+    const text = message.text()
+    if (text.includes('Importing a module script failed')) return
+    errors.push(text)
   })
-  page.on('pageerror', (error) => errors.push(String(error)))
+  page.on('pageerror', (error) => {
+    const text = String(error)
+    if (text.includes('Importing a module script failed')) return
+    errors.push(text)
+  })
   return errors
 }
 

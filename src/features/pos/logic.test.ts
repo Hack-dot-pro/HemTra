@@ -206,14 +206,15 @@ describe('toppingsForProduct / activeCategories / productsOfCategory', () => {
     ],
   }
 
-  it('happy: chỉ topping được áp dụng cho SP đó', () => {
-    expect(toppingsForProduct(snapshot, 'p1').map((t) => t.id)).toEqual(['t1'])
+  it('P13: topping tự do — trả về toàn bộ topping active cho bất kỳ sản phẩm nào', () => {
+    expect(toppingsForProduct(snapshot, 'p1').map((t) => t.id)).toEqual(['t1', 't2'])
     expect(toppingsForProduct(snapshot, 'p2').map((t) => t.id)).toEqual(['t1', 't2'])
+    expect(toppingsForProduct(snapshot, 'p9').map((t) => t.id)).toEqual(['t1', 't2'])
   })
 
-  it('lỗi: SP không có link → mảng rỗng; cache cũ thiếu product_toppings → []', () => {
-    expect(toppingsForProduct(snapshot, 'p9')).toEqual([])
-    expect(toppingsForProduct({ toppings: [tranChau] }, 'p1')).toEqual([])
+  it('topping bị ẩn (is_active: false) không xuất hiện trong danh sách', () => {
+    const hiddenTopping = { ...tranChau, id: 't-hidden', is_active: false }
+    expect(toppingsForProduct({ toppings: [tranChau, hiddenTopping] }, 'p1').map((t) => t.id)).toEqual(['t1'])
   })
 
   it('happy: nhóm lọc is_active + sắp sort_order; SP lọc is_active + theo tên', () => {

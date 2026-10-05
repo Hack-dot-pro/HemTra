@@ -6,10 +6,18 @@ import { syncOutbox, type SyncSummary } from './outbox'
 import { createBillUploader } from './billUpload'
 import { getSupabase } from './supabase'
 
+let isSyncing = false
+
 export async function syncOutboxNow(): Promise<SyncSummary | null> {
+  if (isSyncing) return null
   const client = getSupabase()
   if (!client || typeof navigator === 'undefined' || !navigator.onLine) return null
-  return syncOutbox({ client, uploadPng: createBillUploader(client) })
+  isSyncing = true
+  try {
+    return await syncOutbox({ client, uploadPng: createBillUploader(client) })
+  } finally {
+    isSyncing = false
+  }
 }
 
 export function useOutboxSync(): () => Promise<SyncSummary | null> {

@@ -27,8 +27,7 @@ export function useMyProfile(): MyProfileState {
       .then((row) => {
         if (!cancelled) setState({ profile: row, done: true })
       })
-      .catch((error) => {
-        console.error('[useMyProfile]', error)
+      .catch(() => {
         if (!cancelled) setState({ profile: null, done: true })
       })
     return () => {

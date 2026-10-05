@@ -12,7 +12,11 @@ import { formatVnd, formatVndNumber } from '../../lib/format'
 import { defaultDashboardApi, type DashboardApi } from './api'
 import ChartA, { type ChartAProps } from './ChartA'
 import ChartB, { type ChartBProps } from './ChartB'
-import { getVnCurrentMonthString } from './logic'
+import {
+  getCachedDashboardData,
+  getVnCurrentMonthString,
+  setCachedDashboardData,
+} from './logic'
 import type { DashboardData } from './types'
 
 export type DashboardPageProps = {
@@ -27,18 +31,27 @@ export default function DashboardPage({
   ChartBComponent = ChartB,
 }: DashboardPageProps) {
   const [selectedMonth, setSelectedMonth] = useState<string>(() => getVnCurrentMonthString())
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+  const [data, setData] = useState<DashboardData | null>(() => {
+    const cached = getCachedDashboardData()
+    return cached?.month === selectedMonth ? cached.data : null
+  })
+  const [loading, setLoading] = useState<boolean>(() => {
+    const cached = getCachedDashboardData()
+    return !cached || cached.month !== selectedMonth
+  })
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState<boolean>(false)
 
   const loadData = useCallback(
     async (month: string, isSilent = false) => {
-      if (!isSilent) setLoading(true)
+      const cached = getCachedDashboardData()
+      const hasFreshCache = cached?.month === month
+      if (!isSilent && !hasFreshCache) setLoading(true)
       else setRefreshing(true)
       setError(null)
       try {
         const result = await api.fetchDashboardData(month)
+        setCachedDashboardData({ month, data: result })
         setData(result)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Lỗi không xác định khi tải dữ liệu.')

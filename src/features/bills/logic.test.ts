@@ -84,17 +84,17 @@ describe('P7-T2 — signed URL và tên file ảnh bill', () => {
 describe('P7-T4 — tag "tự xóa sau N ngày" (bills.expires_at)', () => {
   const now = new Date('2026-10-03T07:05:00.000Z')
 
-  it('thời hạn giữ bill = 15 ngày (bất biến AGENT.md §11.4)', () => {
-    expect(BILL_RETENTION_DAYS).toBe(15)
+  it('thời hạn giữ bill = 7 ngày (P13-T8 nâng cấp từ 15 ngày)', () => {
+    expect(BILL_RETENTION_DAYS).toBe(7)
   })
 
-  it('bill mới bán → đúng 15 ngày (làm tròn lên, không phải 14)', () => {
-    // expires_at = created_at + 15 ngày → còn tròn 15 ngày
-    expect(retentionDaysLeft('2026-10-18T07:05:00.000Z', now)).toBe(15)
-    // còn 15 ngày 1 phút → làm tròn lên 16 (qua hạn mới chắc chắn bị xóa)
-    expect(retentionDaysLeft('2026-10-18T07:06:00.000Z', now)).toBe(16)
-    // còn đúng 14 ngày
-    expect(retentionDaysLeft('2026-10-17T07:05:00.000Z', now)).toBe(14)
+  it('bill mới bán → đúng 7 ngày (làm tròn lên, không phải 6)', () => {
+    // expires_at = created_at + 7 ngày → còn tròn 7 ngày
+    expect(retentionDaysLeft('2026-10-10T07:05:00.000Z', now)).toBe(7)
+    // còn 7 ngày 1 phút → làm tròn lên 8 (qua hạn mới chắc chắn bị xóa)
+    expect(retentionDaysLeft('2026-10-10T07:06:00.000Z', now)).toBe(8)
+    // còn đúng 6 ngày
+    expect(retentionDaysLeft('2026-10-09T07:05:00.000Z', now)).toBe(6)
   })
 
   it('đã quá hạn → 0 (không hiện số âm), hết hạn trong hôm nay → "Tự xóa hôm nay"', () => {

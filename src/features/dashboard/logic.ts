@@ -1,6 +1,7 @@
 import type {
   AllTimeRanks,
   ChartAPoint,
+  DashboardData,
   DashboardKpi,
   MonthlyRankItem,
   StatsDaily,
@@ -201,4 +202,18 @@ export function computeAllTimeRanks(
   }))
 
   return { topBest, topLeast }
+}
+
+let cachedDashboardData: { month: string; data: DashboardData } | null = null
+
+export function getCachedDashboardData(): { month: string; data: DashboardData } | null {
+  return cachedDashboardData
+}
+
+export function setCachedDashboardData(val: { month: string; data: DashboardData } | null): void {
+  cachedDashboardData = val
+}
+
+export function resetDashboardCache(): void {
+  cachedDashboardData = null
 }

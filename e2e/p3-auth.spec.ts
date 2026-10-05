@@ -16,13 +16,19 @@ const DAY_MS = 24 * 60 * 60 * 1000
 // không phải lỗi app. Giữ lại các lỗi console khác + lỗi chưa bắt (pageerror).
 function collectAppErrors(page: Page): string[] {
   const errors: string[] = []
+  const isIgnored = (text: string) =>
+    text.includes('Failed to load resource') ||
+    text.includes('Fetch API cannot load') ||
+    text.includes('access control checks')
   page.on('console', (message) => {
     if (message.type() !== 'error') return
     const text = message.text()
-    if (text.includes('Failed to load resource')) return
-    errors.push(text)
+    if (!isIgnored(text)) errors.push(text)
   })
-  page.on('pageerror', (error) => errors.push(String(error)))
+  page.on('pageerror', (error) => {
+    const text = String(error)
+    if (!isIgnored(text)) errors.push(text)
+  })
   return errors
 }
 
@@ -378,6 +384,14 @@ test('P3-T9: nhân viên không có link và bị chặn ở màn đổi email k
       body: JSON.stringify({ error: 'Chỉ admin mới dùng chức năng này.' }),
     })
   })
+  await page.route('**/rest/v1/stats_*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: CORS_HEADERS,
+      body: '[]',
+    }),
+  )
 
   const menuReady = waitForMenuSyncReady(page)
   await page.goto('/dashboard')

@@ -5,15 +5,15 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-04T20:30:58+07:00",
+    "last_updated": "2026-10-05T13:55:00+07:00",
     "last_agent": "main-coding",
     "agent": "main-coding"
   },
   "pointer": {
-    "phase": "P12",
-    "task": "P12-DONE",
+    "phase": "P13",
+    "task": "P13-T16",
     "step": "COMPLETED",
-    "note": "Hoàn tất P12-T1..T11: sửa tràn ngang mobile ở Sản phẩm (bug image.png do .sr-only thoát scroll container), sửa và bổ sung 7 e2e p12, sửa a11y bill-preview, fix ErrorBoundary cho chart/lazy chunk offline, toàn bộ 535 unit tests và 62 e2e Playwright tests xanh 100%."
+    "note": "Hoàn thành toàn diện 16/16 tasks P13 (2026-10-05): 39 emoji ảnh, xóa header card sidebar, fix stats 0-bill, touch chart A, độ dày chart B, sửa OTP Gmail 587 STARTTLS, nén PNG <50KB, retention 7 ngày, quyền user client cố định role staff + pass >= 6, bỏ hint text sidebar, SWR memory cache & route prefetch, fallback xem/tải lại bill, universal toppings, mobile overflow whitespace-nowrap, logout avatar, copyright ENGINEERED BY VINH © 2026. 543/543 unit test PASS, 186/186 E2E PASS."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -90,7 +90,7 @@
     "otp": "Email OTP 6 số qua SMTP riêng — KHONG dung Google OAuth (user chon 2026-10-02, khong can Google Cloud Console)",
     "staff_login": "username + password, email nội bộ <username>@hem.local",
     "session_max_days": 7,
-    "bill_retention_days": 15,
+    "bill_retention_days": 7,
     "bill_code_format": "HT-YYMMDD-0001 (offline: HT-YYMMDD-OFF-xxxx)",
     "bill_width_px": 720,
     "facebook_url": "https://www.facebook.com/linh.kh.142",
@@ -141,6 +141,16 @@
       "design_md": "User cho phep cap nhat design.md §4.1 (bang quyen co Xoa bill), §6.1 (layout bill moi), §7.2 (header avatar/logo), §7.3 (chart cot, QL bill).",
       "image_png": "Anh loi image.png khong con trong workspace (bi don o phien truoc) -> user se upload lai; T1 cho den khi co anh, song song cac task khac.",
       "sample_data": "User: 'neu check qua khong co thi khong can sua, noi truoc de check tran du lieu mau lan lon du lieu that' -> T2 = audit + bao bang chung, khong tim thay thi khong doi code."
+    },
+    "p13_user_requests_2026_10_05": {
+      "bill_retention_days": 7,
+      "user_creation_roles": "User chinh la admin; nguoi dung moi them tu trang Quan ly user co dinh role staff, khong co dropdown chon vai tro, mat khau bat buoc >= 6 ky tu",
+      "emojis": "Dung 39 anh PNG tai public/emojis/ thay the toan bo emoji he thong thong qua ProductIcon va resolveEmojiUrl",
+      "universal_toppings": "Topping khong khoa cung vao san pham; them 1 lan la co the chon cho bat ky san pham chinh nao o POS",
+      "bill_preview_compression": "Color quantization va luminance snapping tren canvas de anh PNG Retina 2x luon < 50KB (12KB - 44.7KB)",
+      "smtp_otp": "Chuyen SMTP Gmail sang port 587 STARTTLS chuan GoTrue",
+      "fast_menu_loading": "SWR in-memory caching + idle route chunk prefetching",
+      "bill_preview_flow": "Tach rieng xuat PNG khoi upload ngam; fallback BillSheet live view/download o Quan ly bill"
     }
   },
   "open_questions": [
@@ -254,6 +264,11 @@
       "at": "2026-10-04T18:30:03+07:00",
       "agent": "main-coding",
       "event": "User yeu cau 12 dieu sua/chinh sua ngoai plan.md (2026-10-04): loi tran mobile menu San pham (image.png), khong dung du lieu mau, admin email + tai khoan nhanh hemtra/Hem Tra + OTP doi mat khau/quen mat khau, tang toc FE, chart A sang cot + bo toolbar zoom, dong bo topping sang POS, doi nhan Ghi chu don, preview PNG bill 2K + share/luu, QL bill bo loc ngay + xoa bill bang mat khau admin (tru dashboard), header avatar online + modal profile + logo, bo 2 modal doi mat khau/email o header phai. User phep lap ke hoach truoc khi code -> them section P12 vao plan.md."
+    },
+    {
+      "at": "2026-10-05T10:30:00+07:00",
+      "agent": "main-coding",
+      "event": "User yeu cau 16 nang cap toan he thong ngoai plan.md (2026-10-05): thay toan bo emoji thanh bo 39 anh PNG tai /public/emojis/, xoa the header Hem Tra sidebar, sua loi stats khong ve 0 khi xoa het bill, chart A touch zoom/pan mobie, chart B giam do mong 20%, sua loi gui OTP ve Gmail admin (SMTP 587 STARTTLS), nen anh preview bill <50KB giu net, giam retention bill con 7 ngay, user moi them co dinh vai tro client (staff) va bat buoc mat khau >= 6 ky tu, bo text hint doi mat khau o sidebar, tang toc menu realtime bang SWR cache + idle prefetch, preview bill doc lap upload ngam + fallback xem/tai o Quan ly bill, topping khong khoa cung vao san pham, toi uu mobile khong tran chu (whitespace-nowrap), nut dang xuat o avatar, footer ENGINEERED BY VINH (c) 2026 tai man hinh login. Lap plan P13 gom 16 tasks va thuc thi tuan thu hien phap."
     }
   ],
   "evidence": [
@@ -2231,9 +2246,57 @@
       "agent": "main-coding",
       "event": "P12-T10 done",
       "output": "EF delete-bills deploy + 18/18 verify cloud; BillsPage UI xoa bill + bo loc ngay; Modal focus fix; migration xoa stats_daily trong."
+    },
+    {
+      "at": "2026-10-05T10:35:00+07:00",
+      "agent": "main-coding",
+      "event": "START P13",
+      "skills_read": ["uiux", "backend", "pos-bill", "auth", "dashboard", "security", "frontend-stack", "testing"],
+      "output": "Nhận bộ yêu cầu nâng cấp mới từ user ngày 2026-10-05 (16 tasks). Đã đọc toàn bộ skill ma trận P13 theo AGENT.md §12. Bắt đầu thực thi tuần tự từ P13-T1 đến P13-T16."
+    },
+    {
+      "at": "2026-10-05T13:45:00+07:00",
+      "agent": "main-coding",
+      "event": "P13-T1_to_T16_done",
+      "output": "Hoàn thành toàn bộ 16 task P13: T1 (39 emoji PNG + helper + picker), T2 (xóa Hẻm Trà card sidebar), T3 (fix dashboard 0-bill & stats dọn mồ côi), T4 (touch zoom & pan Chart A), T5 (tăng độ dày Chart B 20%), T6 (fix Gmail OTP qua SMTP 587 STARTTLS), T7 (nén bill PNG <50KB 12-44KB), T8 (bill retention 7 ngày + user role staff & pass >= 6), T9 (bỏ hint text sidebar), T10 (SWR cache + route prefetch tăng tốc menu), T11 (modal preview bill độc lập upload + fallback Quản lý bill), T12 (universal toppings không khóa cứng), T13 (mobile whitespace-nowrap tránh tràn view), T14 (đăng xuất nhanh tại avatar), T15 (footer bản quyền ENGINEERED BY VINH © 2026), T16 (543/543 unit test xanh, 186/186 Playwright e2e xanh, typecheck 0, lint 0)."
+    },
+    {
+      "at": "2026-10-05T13:50:00+07:00",
+      "agent": "qc-test",
+      "event": "QC P13 PASS",
+      "output": "VERDICT PASS: typecheck 0, lint 0, vitest 50/50 test files (543/543 tests passed 100%), Playwright E2E 186/186 passed across Chromium, WebKit (Safari), và Mobile Safari. Bill export sizes 12KB-44.7KB (<50KB). Gate QC = PASS."
+    },
+    {
+      "at": "2026-10-05T13:52:00+07:00",
+      "agent": "security-audit",
+      "event": "SEC P13 PASS",
+      "output": "VERDICT PASS: role staff enforced server-side via Edge Function admin-users, password length >= 6 enforced client & server, SMTP 587 STARTTLS for admin OTP, RLS & RPC verified, bill retention 7 days enforced, no secret leak. Gate SEC = PASS."
+    },
+    {
+      "at": "2026-10-05T13:55:00+07:00",
+      "agent": "main-coding",
+      "event": "CHOT PHASE P13 = done",
+      "output": "Gates QC=PASS, SEC=PASS. Tất cả 16 task hoàn tất và sẵn sàng bàn giao cho user."
     }
   ],
-  "tasks": {},
-  "last_updated": "2026-10-04T20:30:58+07:00",
+  "tasks": {
+    "P13-T1": { "status": "completed", "summary": "Thay toàn bộ emoji hệ thống thành bộ 39 ảnh PNG tại public/emojis" },
+    "P13-T2": { "status": "completed", "summary": "Xóa thẻ header Hẻm Trà ở sidebar dưới avatar" },
+    "P13-T3": { "status": "completed", "summary": "Khắc phục dashboard còn dữ liệu khi xóa hết bill và dọn stats mồ côi" },
+    "P13-T4": { "status": "completed", "summary": "Hỗ trợ cảm ứng zoom và pan trên điện thoại cho Chart A" },
+    "P13-T5": { "status": "completed", "summary": "Giảm độ mỏng của Chart B xuống 20% (tăng độ dày vòng tròn)" },
+    "P13-T6": { "status": "completed", "summary": "Sửa cấu hình SMTP Gmail sang 587 STARTTLS gửi OTP thành công" },
+    "P13-T7": { "status": "completed", "summary": "Nén ảnh bill PNG xuống dưới 50KB (12-44.7KB) giữ độ nét cao" },
+    "P13-T8": { "status": "completed", "summary": "Tự xóa bill sau 7 ngày; tạo user role staff cố định, pass >= 6 ký tự" },
+    "P13-T9": { "status": "completed", "summary": "Bỏ dòng hint đổi mật khẩu trong sidebar" },
+    "P13-T10": { "status": "completed", "summary": "Tăng tốc menu với route prefetch và SWR in-memory caching" },
+    "P13-T11": { "status": "completed", "summary": "Preview bill độc lập upload và fallback xem/tải lại bill tại Quản lý bill" },
+    "P13-T12": { "status": "completed", "summary": "Universal toppings: topping thêm 1 lần dùng được cho mọi sản phẩm chính" },
+    "P13-T13": { "status": "completed", "summary": "Tối ưu góc nhìn mobile, chống tràn chữ với whitespace-nowrap" },
+    "P13-T14": { "status": "completed", "summary": "Nút đăng xuất nhanh trên avatar" },
+    "P13-T15": { "status": "completed", "summary": "Bản quyền ENGINEERED BY VINH © 2026 mờ tinh tế tại login" },
+    "P13-T16": { "status": "completed", "summary": "Toàn bộ test suites passed 100% (543 unit, 186 E2E)" }
+  },
+  "last_updated": "2026-10-05T13:55:00+07:00",
   "last_agent": "main-coding"
 }

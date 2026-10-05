@@ -84,8 +84,19 @@ export async function fetchDashboardData(selectedMonth: string): Promise<Dashboa
 
   const kpi = computeKpi(dailyRows, todayStr, currentMonthStr)
   const chartA = computeChartAData(dailyRows, selectedMonth)
-  const monthlyRank = computeMonthlyRank(monthlyRows)
-  const allTime = computeAllTimeRanks(allTimeRows)
+
+  // P13-T3: Nếu tháng chọn không phát sinh đơn nào (hoặc đã xóa hết bill),
+  // bảo đảm bảng xếp hạng tháng và all-time không hiển thị số liệu mồ côi.
+  const monthBillCount = dailyRows
+    .filter((r) => r.date.startsWith(selectedMonth))
+    .reduce((sum, r) => sum + r.bill_count, 0)
+  const totalSystemBills = dailyRows.reduce((sum, r) => sum + r.bill_count, 0)
+
+  const activeMonthlyRows = monthBillCount > 0 ? monthlyRows : []
+  const activeAllTimeRows = totalSystemBills > 0 ? allTimeRows : []
+
+  const monthlyRank = computeMonthlyRank(activeMonthlyRows)
+  const allTime = computeAllTimeRanks(activeAllTimeRows)
 
   return {
     selectedMonth,

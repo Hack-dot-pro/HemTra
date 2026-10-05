@@ -84,6 +84,7 @@ describe('User Management Logic', () => {
       const res = createUserSchema.safeParse({
         username: 'nhanvien_01',
         displayName: 'Nhân viên 01',
+        password: 'password123',
       })
       expect(res.success).toBe(true)
       if (res.success) {
@@ -93,14 +94,15 @@ describe('User Management Logic', () => {
     })
 
     it('từ chối username có ký tự đặc biệt hoặc quá ngắn', () => {
-      expect(createUserSchema.safeParse({ username: 'a' }).success).toBe(false)
-      expect(createUserSchema.safeParse({ username: 'nhanvien@123' }).success).toBe(false)
-      expect(createUserSchema.safeParse({ username: 'nhan vien' }).success).toBe(false)
+      expect(createUserSchema.safeParse({ username: 'a', password: 'password123' }).success).toBe(false)
+      expect(createUserSchema.safeParse({ username: 'nhanvien@123', password: 'password123' }).success).toBe(false)
+      expect(createUserSchema.safeParse({ username: 'nhan vien', password: 'password123' }).success).toBe(false)
     })
 
-    it('từ chối mật khẩu dưới 6 ký tự nếu nhập', () => {
+    it('bắt buộc mật khẩu từ 6 ký tự trở lên (không được bỏ trống)', () => {
       expect(createUserSchema.safeParse({ username: 'testuser', password: '123' }).success).toBe(false)
-      expect(createUserSchema.safeParse({ username: 'testuser', password: '' }).success).toBe(true)
+      expect(createUserSchema.safeParse({ username: 'testuser', password: '' }).success).toBe(false)
+      expect(createUserSchema.safeParse({ username: 'testuser' }).success).toBe(false)
       expect(createUserSchema.safeParse({ username: 'testuser', password: '123456' }).success).toBe(true)
     })
   })

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DashboardApi } from './api'
 import DashboardPage from './DashboardPage'
+import { resetDashboardCache } from './logic'
 import type { DashboardData } from './types'
 
 const MOCK_DATA: DashboardData = {
@@ -101,6 +102,7 @@ describe('DashboardPage', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    resetDashboardCache()
   })
 
   it('hiển thị trạng thái đang tải ban đầu và sau đó hiển thị 3 thẻ KPI', async () => {

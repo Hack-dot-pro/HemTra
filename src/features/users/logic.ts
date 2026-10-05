@@ -18,11 +18,9 @@ export const createUserSchema = z.object({
     .optional(),
   password: z
     .string()
-    .refine((val) => !val || val.length >= 6, {
-      message: 'Mật khẩu phải từ 6 ký tự trở lên (hoặc để trống để sinh ngẫu nhiên)',
-    })
-    .optional(),
-  role: z.enum(['admin', 'staff']).default('staff'),
+    .min(6, 'Mật khẩu bắt buộc tối thiểu 6 ký tự')
+    .max(256, 'Mật khẩu quá dài'),
+  role: z.literal('staff').default('staff'),
 })
 
 export const setPasswordSchema = z.object({
@@ -82,4 +80,18 @@ export function formatUserCreatedAt(isoDate: string): string {
   } catch {
     return isoDate
   }
+}
+
+let cachedUsersList: UserProfile[] | null = null
+
+export function getCachedUsersList(): UserProfile[] | null {
+  return cachedUsersList
+}
+
+export function setCachedUsersList(list: UserProfile[] | null): void {
+  cachedUsersList = list
+}
+
+export function resetUsersCache(): void {
+  cachedUsersList = null
 }

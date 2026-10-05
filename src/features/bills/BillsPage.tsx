@@ -4,21 +4,25 @@
 // "Xóa bill" → nhập mật khẩu admin → EF `delete-bills` xác minh server-side
 // (quyết định user 2026-10-04, design §4.1); staff không thấy nút.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, Trash2 } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { useAuthProfile } from '../../app/authProfileContext'
 import { SERVER_ERROR } from '../../lib/http'
 import { formatVnd } from '../../lib/format'
-import { downloadBlob } from '../pos/exportBillPng'
-import { defaultBillsApi, type BillsApi } from './api'
+import { dataUrlToBlob } from '../../lib/outbox'
+import BillSheet, { type BillSheetItem } from '../pos/BillSheet'
+import { billNodeToPngDataUrl, downloadBlob } from '../pos/exportBillPng'
+import { defaultBillsApi, type BillsApi, type BillItemDetail } from './api'
 import {
   BILL_RETENTION_DAYS,
   PAGE_SIZE,
   billImageFileName,
   formatBillDateTime,
+  getCachedBillsPage,
   retentionDaysLeft,
   retentionTagText,
+  setCachedBillsPage,
   totalPages,
   type BillRow,
 } from './logic'
@@ -28,19 +32,40 @@ export type BillsPageProps = { api?: BillsApi }
 type BillModal = {
   row: BillRow
   url: string
-  status: 'loading' | 'ready' | 'error'
+  sheetItems?: BillSheetItem[]
+  status: 'loading' | 'ready' | 'fallback' | 'error'
   notice: { tone: 'ok' | 'warn' | 'error'; text: string }
+}
+
+function toBillSheetItems(details: BillItemDetail[]): BillSheetItem[] {
+  const parents = details.filter((d) => !d.parent_item_id)
+  const children = details.filter((d) => !!d.parent_item_id)
+  return parents.map((p) => ({
+    key: p.id,
+    name: p.name_snapshot,
+    qty: p.qty,
+    unit_price: p.unit_price_snapshot,
+    note: p.note || undefined,
+    toppings: children
+      .filter((c) => c.parent_item_id === p.id)
+      .map((c) => ({
+        key: c.id,
+        name: c.name_snapshot,
+        unit_price: c.unit_price_snapshot,
+      })),
+  }))
 }
 
 export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
   const authProfile = useAuthProfile()
   const isAdmin = authProfile?.role === 'admin'
-  const [rows, setRows] = useState<BillRow[]>([])
-  const [total, setTotal] = useState(0)
+  const fallbackHostRef = useRef<HTMLDivElement | null>(null)
+  const [rows, setRows] = useState<BillRow[]>(() => getCachedBillsPage()?.rows ?? [])
+  const [total, setTotal] = useState(() => getCachedBillsPage()?.total ?? 0)
   const [page, setPage] = useState(0)
   const [codeInput, setCodeInput] = useState('')
   const [appliedCode, setAppliedCode] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !getCachedBillsPage())
   const [error, setError] = useState('')
   const [modal, setModal] = useState<BillModal | null>(null)
   /** P12-T10 — modal xóa bill (admin, mật khẩu xác minh server-side). */
@@ -55,15 +80,18 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
   const pages = totalPages(total)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    if (!getCachedBillsPage()) setLoading(true)
     try {
       const result = await api.list({ page, code: appliedCode })
       setRows(result.rows)
       setTotal(result.total)
+      setCachedBillsPage({ rows: result.rows, total: result.total })
       setError('')
     } catch (loadError) {
-      setRows([])
-      setTotal(0)
+      if (!getCachedBillsPage()) {
+        setRows([])
+        setTotal(0)
+      }
       setError(loadError instanceof Error && loadError.message ? loadError.message : SERVER_ERROR)
     } finally {
       setLoading(false)
@@ -86,9 +114,21 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
 
   async function openImage(row: BillRow): Promise<void> {
     setModal({ row, url: '', status: 'loading', notice: { tone: 'ok', text: '' } })
+    if (row.imagePath) {
+      try {
+        const url = await api.signedImageUrl(row.imagePath)
+        setModal((current) => (current ? { ...current, url, status: 'ready' } : current))
+        return
+      } catch {
+        // Fallback sang nạp items render sheet
+      }
+    }
     try {
-      const url = await api.signedImageUrl(row.imagePath)
-      setModal((current) => (current ? { ...current, url, status: 'ready' } : current))
+      const items = await api.fetchBillItems(row.id)
+      const sheetItems = toBillSheetItems(items)
+      setModal((current) =>
+        current ? { ...current, sheetItems, status: 'fallback' } : current,
+      )
     } catch {
       setModal((current) => (current ? { ...current, status: 'error' } : current))
     }
@@ -98,12 +138,26 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
     setModal((current) => (current ? { ...current, notice: { tone, text } } : current))
   }
 
-  /** Signed URL mới mỗi lần chia sẻ/tải — link cũ có thể đã hết hạn (TTL 120s). */
+  /** Signed URL mới mỗi lần chia sẻ/tải hoặc fallback chụp BillSheet. */
   async function fetchImageBlob(row: BillRow): Promise<Blob> {
-    const url = await api.signedImageUrl(row.imagePath)
-    const response = await fetch(url)
-    if (!response.ok) throw new Error(SERVER_ERROR)
-    return response.blob()
+    if (modal?.status === 'fallback' && fallbackHostRef.current) {
+      const dataUrl = await billNodeToPngDataUrl(fallbackHostRef.current)
+      return dataUrlToBlob(dataUrl)
+    }
+    if (row.imagePath) {
+      try {
+        const url = await api.signedImageUrl(row.imagePath)
+        const response = await fetch(url)
+        if (response.ok) return response.blob()
+      } catch {
+        // Fallback chụp BillSheet
+      }
+    }
+    if (fallbackHostRef.current) {
+      const dataUrl = await billNodeToPngDataUrl(fallbackHostRef.current)
+      return dataUrlToBlob(dataUrl)
+    }
+    throw new Error(SERVER_ERROR)
   }
 
   async function handleShare(): Promise<void> {
@@ -142,6 +196,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
     setDeleting((current) => (current ? { ...current, busy: true, error: '' } : current))
     try {
       await api.deleteBill({ id: row.id, password })
+      setCachedBillsPage(null)
       setDeleting(null)
       setDoneNotice(`Đã xóa bill ${row.code} (ảnh + thống kê đã cập nhật).`)
       await load()
@@ -243,18 +298,14 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
                 </td>
                 <td className="py-2 text-right">
                   <div className="flex justify-end gap-1.5">
-                    {row.imagePath ? (
-                      <button
-                        type="button"
-                        className="glass-btn !px-2 !py-1 text-xs"
-                        aria-label={`Xem bill ${row.code}`}
-                        onClick={() => void openImage(row)}
-                      >
-                        Xem Bill
-                      </button>
-                    ) : (
-                      <span className="text-xs text-white/50">Chưa có ảnh</span>
-                    )}
+                    <button
+                      type="button"
+                      className="glass-btn !px-2 !py-1 text-xs"
+                      aria-label={`Xem bill ${row.code}`}
+                      onClick={() => void openImage(row)}
+                    >
+                      Xem Bill
+                    </button>
                     {isAdmin ? (
                       <button
                         type="button"
@@ -354,10 +405,41 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
               src={modal.url}
               alt={`Ảnh bill ${modal.row.code}`}
               className="w-full rounded-lg bg-white/95"
-              onError={() =>
-                setModal((current) => (current ? { ...current, status: 'error' } : current))
-              }
+              onError={async () => {
+                try {
+                  const items = await api.fetchBillItems(modal.row.id)
+                  setModal((current) =>
+                    current
+                      ? {
+                          ...current,
+                          sheetItems: toBillSheetItems(items),
+                          status: 'fallback',
+                        }
+                      : current,
+                  )
+                } catch {
+                  setModal((current) =>
+                    current ? { ...current, status: 'error' } : current,
+                  )
+                }
+              }}
             />
+          ) : null}
+
+          {modal.status === 'fallback' && modal.sheetItems ? (
+            <div className="flex flex-col items-center">
+              <div
+                ref={fallbackHostRef}
+                className="w-full max-w-[360px] overflow-hidden rounded-lg bg-white shadow-xl"
+              >
+                <BillSheet
+                  code={modal.row.code}
+                  createdAt={Date.parse(modal.row.created_at) || 0}
+                  items={modal.sheetItems}
+                  total={modal.row.total}
+                />
+              </div>
+            </div>
           ) : null}
 
           {modal.notice.text ? (

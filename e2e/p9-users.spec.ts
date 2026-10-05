@@ -214,6 +214,7 @@ test.describe('P9 — Menu Quản lý user', () => {
     // Điền form
     await page.getByTestId('create-user-username').fill('nhanvientest')
     await page.getByTestId('create-user-display-name').fill('Nhân Viên Mới')
+    await page.getByTestId('create-user-password').fill('mock_temp_pass_123')
 
     // Bấm Tạo tài khoản
     await page.getByRole('button', { name: 'Tạo tài khoản' }).click()

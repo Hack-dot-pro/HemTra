@@ -3,7 +3,7 @@
 // Tiền là số nguyên VND; giá trong bill là SNAPSHOT tại thời điểm thêm (server
 // tự tính lại ở create_bill — backend/skill.md §4, design §8.3).
 
-import type { MenuSnapshot, MenuProduct, MenuTopping, ProductToppingLink } from '../../lib/menuTypes'
+import type { MenuSnapshot, MenuProduct, MenuTopping } from '../../lib/menuTypes'
 
 export const MAX_LINE_QTY = 99
 export const MAX_NOTE_LENGTH = 100
@@ -215,14 +215,12 @@ export function repriceBill(
   return { bill: { ...state, lines }, missing }
 }
 
-/** Topping được áp dụng cho SP (theo product_toppings; cache cũ thiếu → []). */
+/** Topping được áp dụng cho SP (P13: topping tự do, áp dụng cho mọi sản phẩm đang bán). */
 export function toppingsForProduct(
   snapshot: Pick<MenuSnapshot, 'toppings' | 'product_toppings'>,
-  productId: string,
+  _productId?: string,
 ): MenuTopping[] {
-  const links: ProductToppingLink[] = snapshot.product_toppings ?? []
-  const ids = new Set(links.filter((l) => l.product_id === productId).map((l) => l.topping_id))
-  return snapshot.toppings.filter((t) => ids.has(t.id))
+  return (snapshot.toppings ?? []).filter((t) => t.is_active !== false)
 }
 
 /** Danh sách tab nhóm: chỉ nhóm đang bán, giữ sort_order (defensive với cache cũ). */

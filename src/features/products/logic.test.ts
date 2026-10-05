@@ -59,7 +59,7 @@ describe('parseCategory', () => {
   })
 
   it('từ chối emoji quá dài', () => {
-    const result = parseCategory({ name: 'Mới', icon: 'x'.repeat(17), sort_order: 1, is_active: true }, categories)
+    const result = parseCategory({ name: 'Mới', icon: 'x'.repeat(101), sort_order: 1, is_active: true }, categories)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.errors.icon).toBe('Emoji quá dài.')
   })

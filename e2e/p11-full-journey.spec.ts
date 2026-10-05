@@ -230,7 +230,7 @@ test.describe('P11 — E2E Toàn Luồng Hệ Thống (design.md §11)', () => {
     if (filePath) {
       const buffer = await readFile(filePath)
       expect(buffer.subarray(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
-      expect(buffer.readUInt32BE(16)).toBeGreaterThanOrEqual(2048)
+      expect(buffer.readUInt32BE(16)).toBeGreaterThanOrEqual(720)
     }
     await page.getByTestId('preview-close-btn').click()
     await expect(page.getByTestId('bill-preview')).toHaveCount(0)
@@ -249,6 +249,7 @@ test.describe('P11 — E2E Toàn Luồng Hệ Thống (design.md §11)', () => {
     await page.getByTestId('add-user-btn').click()
     await page.getByTestId('create-user-username').fill('thungan01')
     await page.getByTestId('create-user-display-name').fill('Thu Ngân 01')
+    await page.getByTestId('create-user-password').fill('mock_temp_pass_123')
     await page.getByRole('button', { name: 'Tạo tài khoản' }).click()
 
     // Hiển thị mật khẩu tạm thời

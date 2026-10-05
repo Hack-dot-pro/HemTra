@@ -5,6 +5,7 @@ import type { AccessProfile } from '../auth/accessGuard'
 import type { UsersApi } from './api'
 import type { UserProfile } from './types'
 import UsersPage from './UsersPage'
+import { resetUsersCache } from './logic'
 
 const MOCK_USERS: UserProfile[] = [
   {
@@ -85,6 +86,7 @@ describe('UsersPage', () => {
 
   afterEach(() => {
     cleanup()
+    resetUsersCache()
   })
 
   it('hiển thị danh sách người dùng với đầy đủ vai trò và trạng thái', async () => {
@@ -155,6 +157,7 @@ describe('UsersPage', () => {
 
     fireEvent.change(screen.getByTestId('create-user-username'), { target: { value: 'nhanvienmoi' } })
     fireEvent.change(screen.getByTestId('create-user-display-name'), { target: { value: 'Mới' } })
+    fireEvent.change(screen.getByTestId('create-user-password'), { target: { value: 'password123' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
 
@@ -162,7 +165,7 @@ describe('UsersPage', () => {
       expect(api.createUser).toHaveBeenCalledWith({
         username: 'nhanvienmoi',
         displayName: 'Mới',
-        password: undefined,
+        password: 'password123',
         role: 'staff',
       })
     })

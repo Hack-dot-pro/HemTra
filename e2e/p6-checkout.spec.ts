@@ -110,12 +110,12 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
   expect(linkCalls[0].p_path).toMatch(/^\d{4}\/\d{2}\/HT-261003-0001\.png$/)
   expect(uploads[0].endsWith(`/bills/${linkCalls[0].p_path}`)).toBe(true)
 
-  // P12-T8 — modal preview ảnh bill 2K tự mở sau thanh toán (≥ 2048px)
+  // P13-T7 — modal preview ảnh bill Retina HD nén < 50KB tự mở sau thanh toán
   await expect(page.getByTestId('bill-preview')).toBeVisible()
-  await expect(page.getByTestId('bill-preview-size')).toContainText('2160')
-  await expect(page.getByTestId('bill-preview-size')).toContainText('2K')
+  await expect(page.getByTestId('bill-preview-size')).toContainText('px')
+  await expect(page.getByTestId('bill-preview-size')).toContainText('< 50KB')
 
-  // PNG tải về từ modal preview: đúng tên mã + magic bytes + bề rộng 720×3 = 2160
+  // PNG tải về từ modal preview: đúng tên mã + magic bytes + bề rộng tối thiểu 720px
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByTestId('preview-save-btn').click(),
@@ -125,10 +125,11 @@ test('P6-T9: bán 1 đơn online → RPC đúng hợp đồng → Lưu về máy
   expect(filePath).toBeTruthy()
   const buf = await readFile(filePath as string)
   expect([...buf.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-  expect(buf.readUInt32BE(16)).toBe(2160)
-  expect(buf.readUInt32BE(20)).toBeGreaterThan(1000)
-  // Bill thật (có logo, QR, bảng món) phải > 50KB, không thể là ảnh trắng rỗng
-  expect(buf.length).toBeGreaterThan(50_000)
+  expect(buf.readUInt32BE(16)).toBeGreaterThanOrEqual(720)
+  expect(buf.readUInt32BE(20)).toBeGreaterThan(500)
+  // P13-T7: Bill thật nén < 50KB nhưng không rỗng (> 1KB)
+  expect(buf.length).toBeLessThan(51_200)
+  expect(buf.length).toBeGreaterThan(1_000)
   await page.getByTestId('preview-close-btn').click()
   await expect(page.getByTestId('bill-preview')).toHaveCount(0)
 

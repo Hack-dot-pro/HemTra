@@ -1,8 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Suspense, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { Suspense, useEffect, useState } from 'react'
+import { RefreshCw, LogOut } from 'lucide-react'
 import { NAV_ITEMS } from './nav'
-import { prefetchRoute } from './prefetch'
+import { prefetchAllRoutes, prefetchRoute } from './prefetch'
 import { useAuthProfile } from './authProfileContext'
 import NetworkBanner from '../components/ui/NetworkBanner.tsx'
 import PwaUpdateBar from '../components/ui/PwaUpdateBar.tsx'
@@ -12,6 +12,7 @@ import { formatClockTime } from '../lib/format'
 import ProfileModal from '../features/profile/ProfileModal'
 import { avatarInitials } from '../features/profile/profileLogic'
 import { useAvatarUrl, useMyProfile } from '../features/profile/useMyProfile'
+import { endAuthSession } from '../lib/session'
 import logoUrl from '../assets/logo.webp'
 
 function navLinkClass(isActive: boolean): string {
@@ -47,6 +48,10 @@ export default function AppLayout() {
   const displayName = myProfile?.display_name || myProfile?.username || profile?.role || ''
   const lastSync = sync.outcome?.fetchedAt ? formatClockTime(sync.outcome.fetchedAt) : null
 
+  useEffect(() => {
+    prefetchAllRoutes()
+  }, [])
+
   return (
     <div className="relative min-h-dvh">
       <div aria-hidden="true" className="app-bg absolute inset-0" />
@@ -61,27 +66,42 @@ export default function AppLayout() {
         data-testid="app-header"
       >
         <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            data-testid="profile-btn"
-            aria-label="Mở hồ sơ tài khoản"
-            className="flex min-w-0 items-center gap-2 rounded-full border border-white/30 bg-white/15 py-1 pl-1 pr-3 transition-colors hover:bg-white/25"
-            onClick={() => setShowProfile(true)}
-          >
-            <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-white/25 text-[11px] font-bold">
-              {avatarInitials(myProfile?.display_name ?? '', myProfile?.username ?? '')}
-              {myProfile?.avatar_path ? <AvatarLayer path={myProfile.avatar_path} /> : null}
-            </span>
-            <span className="hidden max-w-[9rem] truncate text-xs font-medium sm:inline">
-              {displayName}
-            </span>
-            <span
-              className={`h-2 w-2 shrink-0 rounded-full ${online ? 'bg-emerald-400' : 'bg-red-400'}`}
-              title={online ? 'Đang online' : 'Đang offline'}
-              aria-label={online ? 'Đang online' : 'Đang offline'}
-              data-testid="online-dot"
-            />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              data-testid="profile-btn"
+              aria-label="Mở hồ sơ tài khoản"
+              className="flex min-w-0 items-center gap-2 rounded-full border border-white/30 bg-white/15 py-1 pl-1 pr-3 transition-colors hover:bg-white/25"
+              onClick={() => setShowProfile(true)}
+            >
+              <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-white/25 text-[11px] font-bold">
+                {avatarInitials(myProfile?.display_name ?? '', myProfile?.username ?? '')}
+                {myProfile?.avatar_path ? <AvatarLayer path={myProfile.avatar_path} /> : null}
+              </span>
+              <span className="hidden max-w-[9rem] truncate text-xs font-medium sm:inline">
+                {displayName}
+              </span>
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${online ? 'bg-emerald-400' : 'bg-red-400'}`}
+                title={online ? 'Đang online' : 'Đang offline'}
+                aria-label={online ? 'Đang online' : 'Đang offline'}
+                data-testid="online-dot"
+              />
+            </button>
+            <button
+              type="button"
+              data-testid="avatar-logout-btn"
+              title="Đăng xuất"
+              aria-label="Đăng xuất"
+              onClick={async () => {
+                await endAuthSession()
+                window.location.href = '/login'
+              }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/80 transition-colors hover:bg-red-500/30 hover:border-red-400/50 hover:text-red-200"
+            >
+              <LogOut size={14} aria-hidden="true" />
+            </button>
+          </div>
 
           <button
             type="button"
@@ -107,7 +127,6 @@ export default function AppLayout() {
       <div className="relative flex min-h-dvh">
         <aside className="hidden w-60 shrink-0 md:block">
           <div className="sticky top-[57px] flex h-[calc(100dvh-57px)] flex-col gap-4 p-4">
-            <div className="glass-card px-4 py-3 text-lg font-bold tracking-wide">Hẻm Trà</div>
             <nav className="flex flex-col gap-1" aria-label="Menu chính">
               {NAV_ITEMS.map(({ to, label, Icon }) => (
                 <NavLink
@@ -122,10 +141,6 @@ export default function AppLayout() {
                 </NavLink>
               ))}
             </nav>
-
-            <div className="mt-auto text-[11px] leading-relaxed text-white/55">
-              Đổi mật khẩu / email khôi phục / hồ sơ: bấm avatar ở thanh trên cùng.
-            </div>
           </div>
         </aside>
 

@@ -250,7 +250,7 @@ test('P12-T3: bump menu_version → topping mới gắn cho SP hiện ngay ở m
 }) => {
   const state = {
     menuVersion: 7,
-    links: [] as { product_id: string; topping_id: string }[],
+    toppings: [] as { id: string; name: string; price: number; icon: string; is_active: boolean }[],
   }
   const page = await context.newPage()
   await injectAuth(page)
@@ -272,9 +272,9 @@ test('P12-T3: bump menu_version → topping mới gắn cho SP hiện ngay ở m
     ),
   )
   await page.route('**/rest/v1/toppings*', (route) =>
-    route.fulfill(json([{ id: 't1', name: 'Trân châu', price: 5000, icon: '', is_active: true }])),
+    route.fulfill(json(state.toppings)),
   )
-  await page.route('**/rest/v1/product_toppings*', (route) => route.fulfill(json(state.links)))
+  await page.route('**/rest/v1/product_toppings*', (route) => route.fulfill(json([])))
 
   await page.goto('/pos')
   await page.getByRole('button', { name: 'Thêm Trà sữa đào' }).click()
@@ -283,9 +283,9 @@ test('P12-T3: bump menu_version → topping mới gắn cho SP hiện ngay ở m
   await expect(modal).toBeVisible()
   await expect(modal.getByText('Món này chưa có topping.')).toBeVisible()
 
-  // Admin ở tab khác gán topping cho SP → bump menu_version (trigger P12-T3)
+  // Admin ở tab khác tạo topping mới → bump menu_version (trigger P12-T3 / P13-T12)
   state.menuVersion = 8
-  state.links = [{ product_id: 'p1', topping_id: 't1' }]
+  state.toppings = [{ id: 't1', name: 'Trân châu', price: 5000, icon: '', is_active: true }]
   await page.bringToFront()
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
 

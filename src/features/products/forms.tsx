@@ -32,6 +32,9 @@ function Field({ label, id, error, children }: { label: string; id: string; erro
   )
 }
 
+import { ProductIcon } from '../../lib/emojiAssets'
+import { resolveEmojiUrl } from '../../lib/emojiUtils'
+
 function EmojiField({
   id,
   value,
@@ -45,35 +48,57 @@ function EmojiField({
 }) {
   return (
     <div className="text-sm">
-      <label htmlFor={id} className="mb-1 block text-white/80">
-        Emoji (tùy chọn)
+      <label htmlFor={id} className="mb-1 flex items-center justify-between text-white/80">
+        <span>Hình ảnh icon / Emoji (tùy chọn)</span>
+        {value ? (
+          <button
+            type="button"
+            className="text-xs text-sky-300 hover:underline"
+            onClick={() => onChange('')}
+          >
+            Xóa icon
+          </button>
+        ) : null}
       </label>
-      <input
-        id={id}
-        className="glass-input"
-        value={value}
-        maxLength={16}
-        placeholder="🧋"
-        aria-invalid={error ? true : undefined}
-        onChange={(event) => onChange(event.target.value)}
-      />
+      <div className="flex items-center gap-3 mb-2">
+        <div className="h-10 w-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center p-1 shrink-0">
+          <ProductIcon icon={value} className="h-8 w-8 object-contain" />
+        </div>
+        <input
+          id={id}
+          className="glass-input flex-1 text-xs"
+          value={value}
+          maxLength={100}
+          placeholder="/emojis/emoji-01.png"
+          aria-label="Emoji (tùy chọn)"
+          aria-invalid={error ? true : undefined}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
       {error ? (
         <span role="alert" className="mt-1 block text-xs text-red-300">
           {error}
         </span>
       ) : null}
-      <div className="mt-2 flex flex-wrap gap-1">
-        {EMOJI_SUGGESTIONS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            aria-label={`Chọn emoji ${emoji}`}
-            className="glass-btn !px-2 !py-1"
-            onClick={() => onChange(emoji)}
-          >
-            {emoji}
-          </button>
-        ))}
+      <div className="mt-2 grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-36 overflow-y-auto p-2 rounded-lg bg-black/25 border border-white/10">
+        {EMOJI_SUGGESTIONS.map((emoji) => {
+          const isSelected = value === emoji || resolveEmojiUrl(value) === emoji
+          return (
+            <button
+              key={emoji}
+              type="button"
+              aria-label={`Chọn emoji ${emoji}`}
+              className={`flex items-center justify-center p-1 rounded-lg transition ${
+                isSelected
+                  ? 'bg-sky-500/40 border border-sky-400 ring-2 ring-sky-400/50'
+                  : 'bg-white/5 border border-white/10 hover:bg-white/20'
+              }`}
+              onClick={() => onChange(emoji)}
+            >
+              <ProductIcon icon={emoji} className="w-6 h-6 object-contain" />
+            </button>
+          )
+        })}
       </div>
     </div>
   )

@@ -85,8 +85,8 @@ const createUserSchema = z.object({
     .toLowerCase()
     .regex(/^[a-z0-9._-]{2,30}$/, "Tên đăng nhập từ 2-30 ký tự (chữ thường, số, ., _, -)"),
   display_name: z.string().trim().max(50).optional(),
-  password: z.string().min(6).max(256).optional(),
-  role: z.enum(["admin", "staff"]).optional().default("staff"),
+  password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự").max(256),
+  role: z.literal("staff").optional().default("staff"),
 });
 
 const resetPasswordSchema = z.object({
@@ -171,16 +171,11 @@ export default async function handler(req: Request): Promise<Response> {
         return json(req, { error: parsed.error.issues[0]?.message ?? MSG.bad }, 400);
       }
 
-      // Chỉ admin mới có thể tạo admin; staff chỉ được tạo staff (§4.1)
-      if (parsed.data.role === "admin" && caller.role !== "admin") {
-        return json(req, { error: MSG.staffCannotCreateAdmin }, 403);
-      }
-
       const username = parsed.data.username;
       const displayName = parsed.data.display_name?.trim() || username;
-      const initialPassword = parsed.data.password || generateTemporaryPassword(8);
-      const isTemporary = !parsed.data.password;
-      const targetRole = parsed.data.role || "staff";
+      const initialPassword = parsed.data.password;
+      const isTemporary = false;
+      const targetRole = "staff";
 
       // Kiểm tra username trùng lặp
       const { data: dup } = await admin

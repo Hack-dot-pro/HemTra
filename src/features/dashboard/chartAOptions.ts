@@ -17,8 +17,24 @@ export function buildChartAOptions(categories: string[]): ApexOptions {
       type: 'bar',
       background: 'transparent',
       stacked: false,
-      toolbar: { show: false },
-      zoom: { enabled: false },
+      toolbar: {
+        show: false,
+        autoSelected: 'pan',
+        tools: {
+          download: false,
+          selection: false,
+          zoom: false,
+          zoomin: false,
+          zoomout: false,
+          pan: false,
+          reset: false,
+        },
+      },
+      zoom: {
+        enabled: true,
+        type: 'x',
+        autoScaleYaxis: true,
+      },
       animations: { easing: 'easeout', speed: 300 },
       dropShadow: {
         enabled: true,
