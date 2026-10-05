@@ -1,4 +1,5 @@
 {
+  "toolPermission": "always-proceed",
   "approvalMode": "yolo",
   "permissionPreset": "AGENT_PERMISSION_PRESET_AUTO",
   "permission_preset": "AGENT_PERMISSION_PRESET_AUTO",
@@ -6,6 +7,7 @@
   "skipPermissions": true,
   "autoApprove": true,
   "auto_approve": true,
+  "allowNonWorkspaceAccess": true,
   "model": "Gemini 3.8 Flash (High)",
   "permissions": {
     "allow": [
@@ -13,8 +15,11 @@
       "command(*)",
       "read_file(*)",
       "write_file(*)",
+      "edit_file(*)",
       "mcp(*)",
       "read_url(*)",
+      "execute_url(*)",
+      "tool(*)",
       "command(bash)",
       "command(sh)",
       "command(npm)",
@@ -38,7 +43,9 @@
       "command(echo)",
       "command(touch)",
       "command(agy)"
-    ]
+    ],
+    "deny": [],
+    "ask": []
   },
   "trustedWorkspaces": [
     "/workspaces/HemTra"

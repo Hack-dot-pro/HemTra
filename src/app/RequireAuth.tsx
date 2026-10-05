@@ -3,13 +3,14 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import {
   evaluateAccess,
   loadAccessProfile,
-  type AccessDecision,
   type AccessProfile,
 } from '../features/auth/accessGuard'
 import { AuthProfileContext } from './authProfileContext'
 
-type Status = 'checking' | 'error' | AccessDecision
-type Loaded = { path: string; status: Status; profile: AccessProfile | null }
+type ProfileState =
+  | { status: 'checking' }
+  | { status: 'error' }
+  | { status: 'ready'; profile: AccessProfile | null }
 
 export type RequireAuthProps = {
   /** DI cho test — mặc định đọc profiles thật (accessGuard.loadAccessProfile). */
@@ -22,11 +23,10 @@ export type RequireAuthProps = {
 //   - lỗi mạng khi đọc profiles → màn "thử lại" (không đá ra login vì mạng chập chờn)
 // P3-T8: profiles đã kiểm được chia sẻ cho subtree (AuthProfileContext) —
 //   link admin-only ở AppLayout không phải đọc lại bảng profiles.
+// Giữ profile đã tải trong state để chuyển menu/route mượt mà không chớp màn hình Đang tải...
 export default function RequireAuth({ loadProfile = loadAccessProfile }: RequireAuthProps) {
   const location = useLocation()
-  // Kết quả gắn với pathname đã kiểm — đổi route mà chưa có kết quả mới (kể cả
-  // kết quả cũ của route khác) → "đang kiểm tra", không chớp nhoáng trang cũ.
-  const [result, setResult] = useState<Loaded | null>(null)
+  const [profileState, setProfileState] = useState<ProfileState>({ status: 'checking' })
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
@@ -34,26 +34,18 @@ export default function RequireAuth({ loadProfile = loadAccessProfile }: Require
     loadProfile()
       .then((profile) => {
         if (cancelled) return
-        setResult({
-          path: location.pathname,
-          status: evaluateAccess(profile, location.pathname),
-          profile,
-        })
+        setProfileState({ status: 'ready', profile })
       })
       .catch(() => {
         if (cancelled) return
-        setResult({ path: location.pathname, status: 'error', profile: null })
+        setProfileState({ status: 'error' })
       })
     return () => {
       cancelled = true
     }
-  }, [loadProfile, location.pathname, attempt])
+  }, [loadProfile, attempt])
 
-  const loaded: Loaded | null =
-    result && result.path === location.pathname ? result : null
-  const status: Status = loaded ? loaded.status : 'checking'
-
-  if (status === 'checking') {
+  if (profileState.status === 'checking') {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <p role="status" className="text-sm text-white/80">
@@ -63,14 +55,21 @@ export default function RequireAuth({ loadProfile = loadAccessProfile }: Require
     )
   }
 
-  if (status === 'error') {
+  if (profileState.status === 'error') {
     return (
       <div className="flex min-h-dvh items-center justify-center px-4">
         <div className="glass-card w-full max-w-sm p-6 text-center">
           <p role="alert" className="text-sm text-white/90">
             Không tải được thông tin tài khoản, thử lại.
           </p>
-          <button type="button" className="glass-btn mt-4 w-full" onClick={() => setAttempt((a) => a + 1)}>
+          <button
+            type="button"
+            className="glass-btn mt-4 w-full"
+            onClick={() => {
+              setProfileState({ status: 'checking' })
+              setAttempt((a) => a + 1)
+            }}
+          >
             Thử lại
           </button>
         </div>
@@ -78,14 +77,17 @@ export default function RequireAuth({ loadProfile = loadAccessProfile }: Require
     )
   }
 
+  const status = evaluateAccess(profileState.profile, location.pathname)
+
   if (status === 'login') return <Navigate to="/login" replace />
   if (status === 'change-password') {
     return <Navigate to="/change-password" replace state={{ forced: true }} />
   }
+
   // Cho qua → chia sẻ profiles đã kiểm cho con (P3-T8: link admin-only, trang
   // đổi email khôi phục) — AppLayout KHÔNG phải đọc lại profiles một lần nữa.
   return (
-    <AuthProfileContext.Provider value={loaded?.profile ?? null}>
+    <AuthProfileContext.Provider value={profileState.profile}>
       <Outlet />
     </AuthProfileContext.Provider>
   )

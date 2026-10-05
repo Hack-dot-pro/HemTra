@@ -55,6 +55,7 @@ function toVietnamese(error: unknown): string {
   const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : String(error ?? '')
   if (/Failed to fetch|fetch failed|NetworkError|network/i.test(raw)) return NETWORK_ERROR
   if (/row-level security|permission denied/i.test(raw)) return 'Bạn không có quyền thao tác này.'
+  if (raw && !raw.includes('non-2xx status code') && !raw.includes('[object Object]')) return raw
   return SERVER_ERROR
 }
 
@@ -74,12 +75,22 @@ async function invokeDeleteBills(
 /** Đọc `{error}` trong body 4xx của EF (FunctionsHttpError.context là Response). */
 async function functionsErrorMessage(error: unknown): Promise<string> {
   const context = (error as { context?: Response } | null)?.context
-  if (context && typeof context.json === 'function') {
-    try {
-      const body = (await context.json()) as { error?: unknown }
-      if (typeof body?.error === 'string' && body.error) return body.error
-    } catch {
-      /* body không phải JSON — rơi xuống dưới */
+  if (context) {
+    if (typeof context.json === 'function') {
+      try {
+        const body = (await context.json()) as { error?: unknown; message?: unknown }
+        if (typeof body?.error === 'string' && body.error) return body.error
+        if (typeof body?.message === 'string' && body.message) return body.message
+      } catch {
+        if (typeof context.text === 'function') {
+          try {
+            const text = await context.text()
+            if (text && !text.includes('<!DOCTYPE') && !text.includes('<html')) return text
+          } catch {
+            /* ignore */
+          }
+        }
+      }
     }
   }
   return toVietnamese(error)

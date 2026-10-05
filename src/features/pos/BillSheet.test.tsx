@@ -92,15 +92,17 @@ describe('P6-T4 + P12-T7 — BillSheet đúng thứ tự khối (design §6.1 m�
     expect(screen.queryByTestId('bill-qr-placeholder')).not.toBeInTheDocument()
   })
 
-  it('bảng tính đúng: thành tiền dòng = đơn giá × SL; tổng = Σ (giá + topping) × SL', () => {
+  it('bảng tính đúng: thành tiền dòng = (đơn giá + topping) × SL; tổng = Σ dòng', () => {
     render(<BillSheet {...props()} />)
     const table = screen.getByRole('table')
     const rows = within(table).getAllByRole('row').slice(1) // bỏ thead
-    expect(rows).toHaveLength(3) // món 1 + topping + món 2
-    // dòng topping: 5000 × 2 = 10.000
-    expect(rows[1]).toHaveTextContent('+ Trân châu')
-    expect(rows[1]).toHaveTextContent('10.000')
-    // tổng cột: 70.000 (món) + 10.000 (topping) + 30.000 = 110.000 = prop total
+    expect(rows).toHaveLength(2) // 2 sản phẩm (topping nằm inline cùng sản phẩm, không thêm dòng)
+    // dòng 1: (35.000 + 5.000) × 2 = 80.000
+    expect(rows[0]).toHaveTextContent('Trà sữa đào')
+    expect(rows[0]).toHaveTextContent('+ Trân châu')
+    expect(rows[0]).toHaveTextContent('40.000')
+    expect(rows[0]).toHaveTextContent('80.000')
+    // tổng cộng: 80.000 + 30.000 = 110.000 = prop total
     expect(screen.getByTestId('bill-sheet')).toHaveTextContent('110.000 ₫')
   })
 })

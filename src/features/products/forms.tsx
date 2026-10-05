@@ -4,7 +4,6 @@
 
 import { useState, type FormEvent, type ReactNode } from 'react'
 import Modal from '../../components/ui/Modal'
-import { formatVnd } from '../../lib/format'
 import type { CategoryRow, ProductRow, SaveOutcome, ToppingRow } from './api'
 import {
   EMOJI_SUGGESTIONS,
@@ -136,7 +135,6 @@ export type CategoryModalProps = {
 
 export function CategoryModal({ initial, categories, saving, onCancel, onSubmit }: CategoryModalProps) {
   const [name, setName] = useState(initial?.name ?? '')
-  const [icon, setIcon] = useState(initial?.icon ?? '')
   const [sortRaw, setSortRaw] = useState(String(initial?.sort_order ?? nextSortOrder(categories)))
   const [isHidden, setIsHidden] = useState(initial ? !initial.is_active : false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -145,7 +143,7 @@ export function CategoryModal({ initial, categories, saving, onCancel, onSubmit 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const parsed = parseCategory(
-      { name, icon, sort_order: Number(sortRaw), is_active: !isHidden, id: initial?.id },
+      { name, icon: initial?.icon ?? '', sort_order: Number(sortRaw), is_active: !isHidden, id: initial?.id },
       categories,
     )
     if (!parsed.ok) {
@@ -174,7 +172,6 @@ export function CategoryModal({ initial, categories, saving, onCancel, onSubmit 
               onChange={(event) => setName(event.target.value)}
             />
           </Field>
-          <EmojiField id="category-icon" value={icon} onChange={setIcon} error={errors.icon} />
           <Field label="Thứ tự hiển thị" id="category-sort" error={errors.sort_order}>
             <input
               id="category-sort"
@@ -202,11 +199,11 @@ export function CategoryModal({ initial, categories, saving, onCancel, onSubmit 
 
 export type ProductModalProps = {
   initial?: ProductRow
-  initialToppingIds: string[]
+  initialToppingIds?: string[]
   categories: CategoryRow[]
   /** Danh sách mọi sản phẩm (cả nhóm khác) để check trùng tên trong cùng nhóm. */
   products: ProductRow[]
-  toppings: ToppingRow[]
+  toppings?: ToppingRow[]
   saving: boolean
   onCancel: () => void
   onSubmit: (values: ProductValues) => Promise<SaveOutcome>
@@ -214,10 +211,9 @@ export type ProductModalProps = {
 
 export function ProductModal({
   initial,
-  initialToppingIds,
+  initialToppingIds = [],
   categories,
   products,
-  toppings,
   saving,
   onCancel,
   onSubmit,
@@ -226,16 +222,11 @@ export function ProductModal({
   const [priceRaw, setPriceRaw] = useState(initial ? String(initial.price) : '')
   const [categoryId, setCategoryId] = useState(initial?.category_id ?? (categories[0]?.id ?? ''))
   const [icon, setIcon] = useState(initial?.icon ?? '')
-  const [toppingIds, setToppingIds] = useState<string[]>(initialToppingIds)
   const [isHidden, setIsHidden] = useState(initial ? !initial.is_active : false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
 
   const hasCategory = categories.length > 0
-
-  function toggleTopping(id: string) {
-    setToppingIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -246,7 +237,7 @@ export function ProductModal({
         category_id: categoryId,
         icon,
         is_active: !isHidden,
-        topping_ids: toppingIds,
+        topping_ids: initialToppingIds,
         id: initial?.id,
       },
       products,
@@ -311,34 +302,6 @@ export function ProductModal({
             </Field>
           </div>
           <EmojiField id="product-icon" value={icon} onChange={setIcon} error={errors.icon} />
-          <fieldset>
-            <legend className="mb-1 text-sm text-white/80">Topping áp dụng</legend>
-            {toppings.length === 0 ? (
-              <p className="text-xs text-white/60">Chưa có topping nào.</p>
-            ) : (
-              <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg bg-white/5 p-2">
-                {toppings.map((topping) => {
-                  const linked = toppingIds.includes(topping.id)
-                  const disabled = !topping.is_active && !linked
-                  return (
-                    <label key={topping.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={linked}
-                        disabled={disabled}
-                        onChange={() => toggleTopping(topping.id)}
-                      />
-                      <span>
-                        {topping.icon ? `${topping.icon} ` : ''}
-                        {topping.name} · +{formatVnd(topping.price)}
-                      </span>
-                      {!topping.is_active ? <span className="text-xs text-white/50">(đã ẩn)</span> : null}
-                    </label>
-                  )
-                })}
-              </div>
-            )}
-          </fieldset>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={!isHidden} onChange={(event) => setIsHidden(!event.target.checked)} />
             Đang bán

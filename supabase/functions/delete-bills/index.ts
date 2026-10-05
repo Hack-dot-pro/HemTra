@@ -72,9 +72,9 @@ function makeClients(): { admin: SupabaseClient; anon: SupabaseClient } {
     : env("SUPABASE_SERVICE_ROLE_KEY");
   const publishableKey = publishableKeys
     ? JSON.parse(publishableKeys)["default"]
-    : env("SUPABASE_ANON_KEY");
+    : (Deno.env.get("SUPABASE_ANON_KEY") ?? serviceKey);
   return {
-    admin: createClient(url, serviceKey),
+    admin: createClient(url, serviceKey, { auth: { persistSession: false } }),
     anon: createClient(url, publishableKey, { auth: { persistSession: false } }),
   };
 }
@@ -95,15 +95,26 @@ type BillTarget = { id: string; code: string; image_path: string };
 async function handleDelete(
   req: Request,
   admin: SupabaseClient,
-  anon: SupabaseClient,
+  _anon: SupabaseClient,
   raw: unknown,
 ): Promise<Response> {
-  // 1) Xác thực phiên của CHÍNH người gọi.
+  // 1) Xác thực phiên của CHÍNH người gọi bằng admin.auth.getUser
   const token = bearerToken(req);
   if (!token) return json(req, { error: MSG.noSession }, 401);
-  const { data: authData, error: userErr } = await anon.auth.getUser(token);
+  const { data: authData, error: userErr } = await admin.auth.getUser(token);
   const user = authData?.user;
-  if (userErr || !user?.email) return json(req, { error: MSG.noSession }, 401);
+  if (userErr || !user) {
+    console.error("delete-bills: getUser:", userErr?.message);
+    return json(req, { error: MSG.noSession }, 401);
+  }
+
+  const email =
+    user.email ||
+    (await admin.auth.admin.getUserById(user.id)).data.user?.email;
+  if (!email) {
+    console.error("delete-bills: missing email for user:", user.id);
+    return json(req, { error: MSG.noSession }, 401);
+  }
 
   const body = raw as Record<string, unknown>;
   const parsed = deleteSchema.safeParse({
@@ -118,22 +129,25 @@ async function handleDelete(
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
   if (profileErr) {
     console.error("delete-bills: profiles:", profileErr.message);
     return json(req, { error: MSG.generic }, 500);
   }
-  if ((profile as { role: string } | null)?.role !== "admin") {
+  if (!profile || (profile as { role: string }).role !== "admin") {
     return json(req, { error: MSG.forbidden }, 403);
   }
 
-  // 3) Xác minh mật khẩu ADMIN server-side (password grant — không đổi phiên client).
-  const { error: pwdErr } = await anon.auth.signInWithPassword({
-    email: user.email,
+  // 3) Xác minh mật khẩu ADMIN server-side (dùng admin client để tránh rate-limit IP public)
+  const { error: pwdErr } = await admin.auth.signInWithPassword({
+    email,
     password,
   });
   if (pwdErr) {
-    if (pwdErr.status === 429) return json(req, { error: MSG.generic }, 429);
+    console.error("delete-bills: signInWithPassword status:", pwdErr.status, pwdErr.message);
+    if (pwdErr.status === 429) {
+      return json(req, { error: "Thao tác quá nhanh, vui lòng thử lại sau giây lát" }, 429);
+    }
     return json(req, { error: MSG.wrongPassword }, 401);
   }
 
@@ -150,7 +164,7 @@ async function handleDelete(
   if (!billRow) return json(req, { error: MSG.notFound }, 404);
   const bill = billRow as BillTarget;
 
-  // 5) Ảnh Storage TRƯỚC — lỗi → không xóa dòng (idempotent, lần sau thử lại).
+  // 5) Ảnh Storage TRƯỚC — lỗi mạng thì log và trả lỗi rõ ràng.
   if (bill.image_path) {
     const { error: removeErr } = await admin.storage.from(BILL_BUCKET).remove([bill.image_path]);
     if (removeErr) {
@@ -165,10 +179,12 @@ async function handleDelete(
   });
   if (rpcErr) {
     console.error("delete-bills: rpc:", rpcErr.message);
-    return json(req, { error: MSG.generic }, 500);
+    return json(req, { error: rpcErr.message || MSG.generic }, 500);
   }
-  const result = (rpcData ?? {}) as { ok?: boolean; rows?: number };
-  if (!result.ok || !result.rows) return json(req, { error: MSG.notFound }, 404);
+  const result = (rpcData ?? {}) as { ok?: boolean; rows?: number; error?: string };
+  if (!result.ok || !result.rows) {
+    return json(req, { error: result.error === "bill_not_found" ? MSG.notFound : MSG.generic }, 404);
+  }
 
   console.log("delete-bills:", JSON.stringify({ code: bill.code, rows: result.rows }));
   return json(req, { ok: true, message: MSG.done, code: bill.code });
@@ -193,6 +209,6 @@ Deno.serve(async (req) => {
     return await handleDelete(req, admin, anon, body);
   } catch (e) {
     console.error("delete-bills: unhandled:", e instanceof Error ? e.message : "unknown");
-    return json(req, { error: MSG.generic }, 500);
+    return json(req, { error: e instanceof Error ? e.message : MSG.generic }, 500);
   }
 });

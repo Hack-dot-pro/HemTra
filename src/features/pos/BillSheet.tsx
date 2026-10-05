@@ -3,7 +3,6 @@
 //   Logo → ☎️ SĐT → Mã đơn + thời gian → Địa chỉ → bảng → Tổng cộng → QR → lời chúc.
 // Render trên nền trắng chữ đen để chụp ảnh — KHÔNG dùng thẻ kính.
 
-import { Fragment } from 'react'
 import logoUrl from '../../assets/logo.webp'
 import { formatVnd, formatVndNumber } from '../../lib/format'
 
@@ -92,31 +91,30 @@ export default function BillSheet({ code, createdAt, items, total, qrDataUrl }: 
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
-            <Fragment key={item.key}>
-              <tr className="align-top">
+          {items.map((item) => {
+            const toppingUnitSum = item.toppings?.reduce((sum, t) => sum + t.unit_price, 0) ?? 0
+            const lineUnitPrice = item.unit_price + toppingUnitSum
+            const lineTotal = lineUnitPrice * item.qty
+            const hasToppings = Boolean(item.toppings && item.toppings.length > 0)
+            return (
+              <tr key={item.key} className="align-top">
                 <td className="py-1 pr-2">
                   <span className="font-medium">{item.name}</span>
+                  {hasToppings ? (
+                    <span className="ml-1.5 text-xs font-normal text-black/60">
+                      {item.toppings!.map((t) => `+ ${t.name}`).join(' ')}
+                    </span>
+                  ) : null}
                   {item.note ? (
                     <span className="block text-xs italic text-black/70">{item.note}</span>
                   ) : null}
                 </td>
                 <td className="py-1 pr-2 text-center tabular-nums">{item.qty}</td>
-                <td className="py-1 pr-2 text-right tabular-nums">{formatVndNumber(item.unit_price)}</td>
-                <td className="py-1 text-right tabular-nums">{formatVndNumber(item.unit_price * item.qty)}</td>
+                <td className="py-1 pr-2 text-right tabular-nums">{formatVndNumber(lineUnitPrice)}</td>
+                <td className="py-1 text-right tabular-nums">{formatVndNumber(lineTotal)}</td>
               </tr>
-              {item.toppings?.map((topping) => (
-                <tr key={topping.key}>
-                  <td className="py-0.5 pl-5 pr-2 text-left">+ {topping.name}</td>
-                  <td className="py-0.5 pr-2 text-center tabular-nums">{item.qty}</td>
-                  <td className="py-0.5 pr-2 text-right tabular-nums">{formatVndNumber(topping.unit_price)}</td>
-                  <td className="py-0.5 text-right tabular-nums">
-                    {formatVndNumber(topping.unit_price * item.qty)}
-                  </td>
-                </tr>
-              ))}
-            </Fragment>
-          ))}
+            )
+          })}
         </tbody>
       </table>
 
