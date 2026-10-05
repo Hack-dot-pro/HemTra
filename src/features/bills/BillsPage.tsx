@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, Trash2 } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
-import { useAuthProfile } from '../../app/authProfileContext'
 import { SERVER_ERROR } from '../../lib/http'
 import { formatVnd } from '../../lib/format'
 import { dataUrlToBlob } from '../../lib/outbox'
@@ -57,8 +56,6 @@ function toBillSheetItems(details: BillItemDetail[]): BillSheetItem[] {
 }
 
 export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
-  const authProfile = useAuthProfile()
-  const isAdmin = authProfile?.role === 'admin'
   const fallbackHostRef = useRef<HTMLDivElement | null>(null)
   const [rows, setRows] = useState<BillRow[]>(() => getCachedBillsPage()?.rows ?? [])
   const [total, setTotal] = useState(() => getCachedBillsPage()?.total ?? 0)
@@ -68,10 +65,9 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
   const [loading, setLoading] = useState(() => !getCachedBillsPage())
   const [error, setError] = useState('')
   const [modal, setModal] = useState<BillModal | null>(null)
-  /** P12-T10 — modal xóa bill (admin, mật khẩu xác minh server-side). */
+  /** Modal xác nhận xóa bill — hỏi lại Yes/No, không cần mật khẩu. */
   const [deleting, setDeleting] = useState<{
     row: BillRow
-    password: string
     busy: boolean
     error: string
   } | null>(null)
@@ -189,13 +185,13 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
     }
   }
 
-  /** P12-T10 — gọi EF `delete-bills`; thành công → đóng modal, nạp lại danh sách. */
+  /** Gọi EF `delete-bills`; thành công → đóng modal, nạp lại danh sách. */
   async function confirmDelete(): Promise<void> {
-    if (!deleting || deleting.busy || !deleting.password) return
-    const { row, password } = deleting
+    if (!deleting || deleting.busy) return
+    const { row } = deleting
     setDeleting((current) => (current ? { ...current, busy: true, error: '' } : current))
     try {
-      await api.deleteBill({ id: row.id, password })
+      await api.deleteBill({ id: row.id })
       setCachedBillsPage(null)
       setDeleting(null)
       setDoneNotice(`Đã xóa bill ${row.code} (ảnh + thống kê đã cập nhật).`)
@@ -213,9 +209,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
       <h1 className="text-xl font-semibold">Quản lý bill</h1>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         <p className="text-sm text-white/70">
-          {isAdmin
-            ? 'Bill chỉ đọc — admin xóa bill bằng mật khẩu admin.'
-            : 'Bill chỉ đọc — không có thao tác xóa.'}
+          Xóa bill sẽ xóa vĩnh viễn bill, ảnh và trừ doanh thu/thống kê tương ứng.
         </p>
         <span
           data-testid="retention-policy-tag"
@@ -306,18 +300,16 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
                     >
                       Xem Bill
                     </button>
-                    {isAdmin ? (
-                      <button
-                        type="button"
-                        className="glass-btn !px-2 !py-1 text-xs !border-red-300/40 !text-red-100"
-                        aria-label={`Xóa bill ${row.code}`}
-                        data-testid={`delete-bill-${row.code}`}
-                        onClick={() => setDeleting({ row, password: '', busy: false, error: '' })}
-                      >
-                        <Trash2 aria-hidden="true" className="mr-1 inline h-3 w-3" />
-                        Xóa
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      className="glass-btn !px-2 !py-1 text-xs !border-red-300/40 !text-red-100"
+                      aria-label={`Xóa bill ${row.code}`}
+                      data-testid={`delete-bill-${row.code}`}
+                      onClick={() => setDeleting({ row, busy: false, error: '' })}
+                    >
+                      <Trash2 aria-hidden="true" className="mr-1 inline h-3 w-3" />
+                      Xóa
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -457,7 +449,7 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
         </Modal>
       ) : null}
 
-      {/* P12-T10 — xác nhận xóa bill bằng mật khẩu admin (EF delete-bills) */}
+      {/* Xác nhận xóa bill — hỏi lại Yes/No, không cần mật khẩu */}
       {deleting ? (
         <Modal
           title={`Xóa bill ${deleting.row.code}`}
@@ -476,38 +468,19 @@ export default function BillsPage({ api = defaultBillsApi }: BillsPageProps) {
                 type="button"
                 className="glass-btn !border-red-300/50 !bg-red-500/25 !text-red-100"
                 data-testid="confirm-delete-bill"
-                disabled={deleting.busy || deleting.password.length === 0}
+                disabled={deleting.busy}
                 onClick={() => void confirmDelete()}
               >
-                {deleting.busy ? 'Đang xóa…' : 'Xóa vĩnh viễn'}
+                {deleting.busy ? 'Đang xóa…' : 'Xác nhận xóa'}
               </button>
             </>
           }
         >
           <p className="text-sm text-white/80">
-            Hành động này xóa vĩnh viễn bill, các dòng món và ảnh PNG của bill, và{' '}
+            Bạn có chắc chắn muốn xóa bill <strong>{deleting.row.code}</strong> không?
+            Hành động này xóa vĩnh viễn bill, các dòng món và ảnh PNG của bill, đồng thời{' '}
             <strong>trừ doanh thu/thống kê</strong> trên Dashboard. Không thể hoàn tác.
           </p>
-          <label className="mt-4 block text-sm text-white/70" htmlFor="delete-bill-password">
-            Nhập mật khẩu admin để xác nhận
-          </label>
-          <input
-            id="delete-bill-password"
-            data-testid="delete-bill-password"
-            type="password"
-            autoComplete="current-password"
-            className="glass-input mt-1 w-full"
-            value={deleting.password}
-            disabled={deleting.busy}
-            onChange={(event) =>
-              setDeleting((current) =>
-                current ? { ...current, password: event.target.value, error: '' } : current,
-              )
-            }
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') void confirmDelete()
-            }}
-          />
           {deleting.error ? (
             <p role="alert" className="mt-3 text-sm text-red-200">
               {deleting.error}

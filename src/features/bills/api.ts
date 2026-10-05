@@ -40,7 +40,7 @@ export type BillsApi = {
    * P12-T10 — xóa bill: gọi EF `delete-bills` (admin + mật khẩu admin xác minh
    * server-side). Trả về mã bill đã xóa để UI báo thành công.
    */
-  deleteBill(params: { id: string; password: string }): Promise<{ code: string }>
+  deleteBill(params: { id: string; password?: string }): Promise<{ code: string }>
 }
 
 type DeleteBillResponse = { ok?: boolean; code?: string; error?: string }
@@ -62,7 +62,7 @@ function toVietnamese(error: unknown): string {
 /** Gọi EF `delete-bills`, không ném — trả về {data, invokeError} để trên tự chọn. */
 async function invokeDeleteBills(
   client: SupabaseClient,
-  body: { bill_id: string; password: string },
+  body: { bill_id: string; password?: string },
 ): Promise<{ data: DeleteBillResponse | null; invokeError: unknown }> {
   try {
     const result = await client.functions.invoke('delete-bills', { body })

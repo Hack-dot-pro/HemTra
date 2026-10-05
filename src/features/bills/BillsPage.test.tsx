@@ -86,16 +86,11 @@ describe('P7-T1 — bảng bill hiển thị đủ cột', () => {
     expect(table).toHaveTextContent('—')
   })
 
-  it('không có nút xóa ở bất kỳ role nào (design §4.1)', async () => {
+  it('mọi user đều thấy nút Xóa ở từng dòng bill', async () => {
     render(<BillsPage api={fakeApi()} />)
     await screen.findByText('HT-261003-0001')
 
-    // Quét cả text lẫn aria-label: nút icon-only vẫn có accessible name.
-    const names = screen.getAllByRole('button').map((button) =>
-      [button.textContent ?? '', button.getAttribute('aria-label') ?? ''].join(' '),
-    )
-    expect(names.some((name) => /x[oó]a/i.test(name))).toBe(false)
-    expect(screen.queryByRole('button', { name: /x[oó]a/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Xóa bill HT-261003-0001' })).toBeInTheDocument()
   })
 })
 
@@ -335,46 +330,31 @@ describe('P7-T2 — modal xem ảnh bill qua signed URL', () => {
   })
 })
 
-describe('P12-T10 — nút "Xóa bill" của admin + xác nhận mật khẩu', () => {
-  it('staff (không role admin) → không thấy nút Xóa, header báo chỉ đọc', async () => {
-    const api = fakeApi()
-    renderWithRole(<BillsPage api={api} />, { role: 'staff', mustChangePassword: false })
-    await screen.findByText('HT-261003-0001')
-
-    expect(screen.queryByRole('button', { name: 'Xóa bill HT-261003-0001' })).not.toBeInTheDocument()
-    expect(screen.getByText('Bill chỉ đọc — không có thao tác xóa.')).toBeInTheDocument()
-    expect(api.deleteBill).not.toHaveBeenCalled()
-  })
-
-  it('admin → có nút Xóa; chưa nhập mật khẩu thì nút Xóa vĩnh viễn bị khóa', async () => {
+describe('Xóa bill — hỏi lại Yes/No, mọi user đều xóa được (không cần mật khẩu)', () => {
+  it('user có nút Xóa; bấm Xóa mở modal xác nhận Yes/No và xóa thành công', async () => {
     const api = fakeApi()
     const user = userEvent.setup()
-    renderWithRole(<BillsPage api={api} />, ADMIN_PROFILE)
+    renderWithRole(<BillsPage api={api} />, { role: 'staff', mustChangePassword: false })
     await screen.findByText('HT-261003-0001')
 
     await user.click(screen.getByRole('button', { name: 'Xóa bill HT-261003-0001' }))
     expect(await screen.findByRole('dialog', { name: 'Xóa bill HT-261003-0001' })).toBeInTheDocument()
-    expect(screen.getByTestId('confirm-delete-bill')).toBeDisabled()
-
-    await user.type(screen.getByTestId('delete-bill-password'), 'mat-khau-admin')
-    expect(screen.getByTestId('delete-bill-password')).toHaveValue('mat-khau-admin')
     expect(screen.getByTestId('confirm-delete-bill')).toBeEnabled()
 
     await user.click(screen.getByTestId('confirm-delete-bill'))
     await waitFor(() =>
       expect(api.deleteBill).toHaveBeenCalledWith({
         id: 'bill-1',
-        password: 'mat-khau-admin',
       }),
     )
     expect(await screen.findByText(/Đã xóa bill HT-261003-0001/)).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'Xóa bill HT-261003-0001' })).not.toBeInTheDocument()
   })
 
-  it('sai mật khẩu → hiện lỗi từ EF, giữ modal để nhập lại', async () => {
+  it('lỗi khi xóa → hiện thông báo lỗi, giữ modal', async () => {
     const api = fakeApi({
       deleteBill: vi.fn(async () => {
-        throw new Error('Mật khẩu admin không đúng')
+        throw new Error('Lỗi máy chủ, thử lại sau')
       }),
     })
     const user = userEvent.setup()
@@ -382,10 +362,9 @@ describe('P12-T10 — nút "Xóa bill" của admin + xác nhận mật khẩu', 
     await screen.findByText('HT-261003-0001')
 
     await user.click(screen.getByRole('button', { name: 'Xóa bill HT-261003-0001' }))
-    await user.type(screen.getByTestId('delete-bill-password'), 'sai-mat-khau')
     await user.click(screen.getByTestId('confirm-delete-bill'))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Mật khẩu admin không đúng')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Lỗi máy chủ, thử lại sau')
     expect(screen.getByRole('dialog', { name: 'Xóa bill HT-261003-0001' })).toBeInTheDocument()
     expect(screen.getByTestId('confirm-delete-bill')).toBeEnabled()
   })
