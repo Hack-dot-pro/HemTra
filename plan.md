@@ -185,6 +185,15 @@ Tài nguyên có sẵn từ user: `Logo.png`, `Favicon.png`, `background.png`, `
 
 ---
 
+## Phase 14: Bảo toàn dữ liệu doanh thu & Tự động reset định kỳ hằng năm (2026-10-09)
+
+- [x] **P14-T1** 📖 `backend` Cập nhật RPC `admin_delete_bill`: loại bỏ kiểm tra vét cạn `not exists (select 1 from public.bills)` để tránh vô tình xóa sạch doanh thu và xếp hạng khi các bill trước đã bị tự động xóa sau 7 ngày; giữ nguyên trừ đúng doanh thu/số lượng của bill bị xóa → xong 2026-10-09 (migration `20261009083500`, loại bỏ xóa vét cạn bảng bills, bảo toàn 100% doanh thu khi bill tự dọn sau 7 ngày)
+- [x] **P14-T2** 📖 `backend` Thiết lập hàm `reset_yearly_revenue` và lịch `pg_cron` vào 00:00 UTC ngày 01/02 hằng năm: dọn dẹp số liệu `stats_daily` và `stats_product_monthly` cũ trước ngày 01/01 của năm trước (giữ báo cáo trọn đủ 1 năm) → xong 2026-10-09 (migration `20261009083500`, hàm `reset_yearly_revenue`, cron job `hemtra-yearly-revenue-reset` chạy ngày 01/02)
+- [x] **P14-T3** 📖 `testing`, `release` Chạy kiểm thử tự động toàn diện: typecheck, lint, unit tests (50 test files) và kiểm tra advisors / migrations → xong 2026-10-09 (50/50 test files passed 100% - 544/544 tests, typecheck 0, lint 0, build thành công)
+- **Gate:** QC ☑ PASS (2026-10-09, 544/544 unit test xanh 50/50 files, typecheck + lint 0 lỗi, build pass) · SEC ☑ PASS (2026-10-09, RLS & RPC verified, search_path='' definer, no secret leaks)
+
+---
+
 ## Định nghĩa hoàn thành (DoD) mỗi task
 1. Code chạy, đúng `design.md`  2. Có test cho logic mới  3. `lint` + `typecheck` + `test` xanh (có output)  4. Không đụng ngoài phạm vi task  5. Đã ghi `state.json`.
 

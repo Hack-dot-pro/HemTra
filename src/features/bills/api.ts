@@ -55,7 +55,6 @@ function toVietnamese(error: unknown): string {
   const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : String(error ?? '')
   if (/Failed to fetch|fetch failed|NetworkError|network/i.test(raw)) return NETWORK_ERROR
   if (/row-level security|permission denied/i.test(raw)) return 'Bạn không có quyền thao tác này.'
-  if (raw && !raw.includes('non-2xx status code') && !raw.includes('[object Object]')) return raw
   return SERVER_ERROR
 }
 

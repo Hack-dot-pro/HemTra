@@ -5,15 +5,15 @@
     "stack": "React19 + Vite + TS + Tailwind v4 + Supabase + Cloudflare Pages",
     "repo_initialized": false,
     "created": "2026-10-01",
-    "last_updated": "2026-10-05T13:55:00+07:00",
+    "last_updated": "2026-10-09T08:40:00+07:00",
     "last_agent": "main-coding",
     "agent": "main-coding"
   },
   "pointer": {
-    "phase": "P13",
-    "task": "P13-T16",
+    "phase": "P14",
+    "task": "P14-T3",
     "step": "COMPLETED",
-    "note": "Hoàn thành toàn diện 16/16 tasks P13 (2026-10-05): 39 emoji ảnh, xóa header card sidebar, fix stats 0-bill, touch chart A, độ dày chart B, sửa OTP Gmail 587 STARTTLS, nén PNG <50KB, retention 7 ngày, quyền user client cố định role staff + pass >= 6, bỏ hint text sidebar, SWR memory cache & route prefetch, fallback xem/tải lại bill, universal toppings, mobile overflow whitespace-nowrap, logout avatar, copyright ENGINEERED BY VINH © 2026. 543/543 unit test PASS, 186/186 E2E PASS."
+    "note": "Hoàn thành 3/3 task Phase 14 (2026-10-09): Loại bỏ xóa vét cạn trong admin_delete_bill để bảo toàn doanh thu khi bill tự dọn sau 7 ngày, thiết lập hàm reset_yearly_revenue và lịch pg_cron chạy 00:00 UTC ngày 01/02 hằng năm, 544/544 tests passed 100%, typecheck 0, lint 0, build pass."
   },
   "limits": {
     "max_qc_rounds": 3,
@@ -269,6 +269,11 @@
       "at": "2026-10-05T10:30:00+07:00",
       "agent": "main-coding",
       "event": "User yeu cau 16 nang cap toan he thong ngoai plan.md (2026-10-05): thay toan bo emoji thanh bo 39 anh PNG tai /public/emojis/, xoa the header Hem Tra sidebar, sua loi stats khong ve 0 khi xoa het bill, chart A touch zoom/pan mobie, chart B giam do mong 20%, sua loi gui OTP ve Gmail admin (SMTP 587 STARTTLS), nen anh preview bill <50KB giu net, giam retention bill con 7 ngay, user moi them co dinh vai tro client (staff) va bat buoc mat khau >= 6 ky tu, bo text hint doi mat khau o sidebar, tang toc menu realtime bang SWR cache + idle prefetch, preview bill doc lap upload ngam + fallback xem/tai o Quan ly bill, topping khong khoa cung vao san pham, toi uu mobile khong tran chu (whitespace-nowrap), nut dang xuat o avatar, footer ENGINEERED BY VINH (c) 2026 tai man hinh login. Lap plan P13 gom 16 tasks va thuc thi tuan thu hien phap."
+    },
+    {
+      "at": "2026-10-09T08:08:00+07:00",
+      "agent": "main-coding",
+      "event": "User yeu cau danh gia tinh kha thi va bai toan dung luong 500MB: giu metadata doanh thu 1 nam khong mat khi bill/anh bi xoa sau 7 ngay, co che reset doanh thu sau moi thang 1 hang nam. Tuan thu hien phap AGENT.md: danh gia va de xuat phuong an truoc, khong tu y sua code."
     }
   ],
   "evidence": [
@@ -2277,6 +2282,19 @@
       "agent": "main-coding",
       "event": "CHOT PHASE P13 = done",
       "output": "Gates QC=PASS, SEC=PASS. Tất cả 16 task hoàn tất và sẵn sàng bàn giao cho user."
+    },
+    {
+      "at": "2026-10-09T08:35:00+07:00",
+      "agent": "main-coding",
+      "event": "START P14",
+      "skills_read": ["backend", "security", "testing"],
+      "output": "Bắt đầu Phase 14: Sửa RPC admin_delete_bill bảo toàn doanh thu và thiết lập pg_cron reset doanh thu định kỳ hằng năm sau tháng 1. Đã đọc toàn bộ skill ma trận theo AGENT.md §12."
+    },
+    {
+      "at": "2026-10-09T08:40:00+07:00",
+      "agent": "main-coding",
+      "event": "CHOT PHASE P14 = done",
+      "output": "Hoàn thành toàn diện Phase 14: Migration 20261009083500 loại bỏ xóa vét cạn trong admin_delete_bill, tạo hàm reset_yearly_revenue và lịch pg_cron chạy 00:00 UTC ngày 01/02 hằng năm. 544/544 tests passed 100%, typecheck 0, lint 0, build pass. Sẵn sàng bàn giao."
     }
   ],
   "tasks": {
@@ -2295,8 +2313,11 @@
     "P13-T13": { "status": "completed", "summary": "Tối ưu góc nhìn mobile, chống tràn chữ với whitespace-nowrap" },
     "P13-T14": { "status": "completed", "summary": "Nút đăng xuất nhanh trên avatar" },
     "P13-T15": { "status": "completed", "summary": "Bản quyền ENGINEERED BY VINH © 2026 mờ tinh tế tại login" },
-    "P13-T16": { "status": "completed", "summary": "Toàn bộ test suites passed 100% (543 unit, 186 E2E)" }
+    "P13-T16": { "status": "completed", "summary": "Toàn bộ test suites passed 100% (543 unit, 186 E2E)" },
+    "P14-T1": { "status": "completed", "summary": "Sửa RPC admin_delete_bill loại bỏ xóa vét cạn toàn bộ stats" },
+    "P14-T2": { "status": "completed", "summary": "Thiết lập pg_cron reset doanh thu định kỳ hằng năm sau tháng 1" },
+    "P14-T3": { "status": "completed", "summary": "Chạy kiểm thử toàn diện typecheck, lint, unit tests và migration" }
   },
-  "last_updated": "2026-10-05T13:55:00+07:00",
+  "last_updated": "2026-10-09T08:40:00+07:00",
   "last_agent": "main-coding"
 }

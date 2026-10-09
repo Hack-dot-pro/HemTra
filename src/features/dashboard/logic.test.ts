@@ -201,4 +201,29 @@ describe('dashboard/logic', () => {
       expect(ranks.topLeast[2].name).toBe('Trà sữa')
     })
   })
+
+  describe('bảo toàn thống kê và dọn dẹp hàng năm (P14)', () => {
+    it('Chart A vẫn hiển thị đúng các tháng trong năm dù bill chi tiết đã được dọn', () => {
+      const dailyStats: StatsDaily[] = [
+        { date: '2026-03-10', revenue: 200000, bill_count: 5 },
+        { date: '2026-07-20', revenue: 450000, bill_count: 12 },
+        { date: '2026-10-01', revenue: 150000, bill_count: 4 },
+      ]
+      const chartA = computeChartAData(dailyStats, '2026-10')
+      expect(chartA.series[2]).toBe(200000) // Tháng 3
+      expect(chartA.series[6]).toBe(450000) // Tháng 7
+      expect(chartA.series[9]).toBe(150000) // Tháng 10
+    })
+
+    it('khi đã dọn số liệu năm cũ trước cutoff, KPI và Chart chỉ nhận số liệu của năm hiện tại', () => {
+      const filteredStats: StatsDaily[] = [
+        { date: '2027-01-15', revenue: 300000, bill_count: 8 },
+        { date: '2027-02-01', revenue: 100000, bill_count: 3 },
+      ]
+      const chartA = computeChartAData(filteredStats, '2027-02')
+      expect(chartA.series[0]).toBe(300000) // Tháng 1/2027
+      expect(chartA.series[1]).toBe(100000) // Tháng 2/2027
+      expect(chartA.series[2]).toBe(0)      // Tháng 3/2027
+    })
+  })
 })
